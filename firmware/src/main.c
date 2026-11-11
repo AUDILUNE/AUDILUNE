@@ -320,3 +320,5 @@ UI_SMALL static void fm1_main(void)
         felucca_dbg.page = ui.page;
         felucca_dbg.home = ui.home;
         felucca_dbg.stage = 1;
+        ui_input();
+        felucca_dbg.stage = 2;
