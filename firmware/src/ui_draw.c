@@ -115,6 +115,7 @@ UI_SMALL static void draw_frame(void)
     for (i = 1; i < 4u; i++)
         lcd_fill(i * 60u - 1u, H_HEAD + 4, 1, Y_SEP_END - H_HEAD - 4, C_LINE);
 }
+
 #define LABEL_X (FELUCCA_ICONS ? ICON_CELL + ICON_GAP : 0)
 UI_SMALL static void draw_column(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon)
@@ -240,7 +241,7 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
     uint32_t len = trk_len(t), nv = NV_ZOOM[ clamp(1 + (int8_t)ui.zoom, 0, 3) ], v0, i, j;
     int32_t lo = 127, hi = 0, x0 = 22, w = 240 - 22 - 2, top = 14, bot = H_GRAPH - 4 - (ui.sheet ? 18 : 0), rh, sel_note = last_note, cx;
     const step_t *cs = &t->step[ ui.cursor ];
-    char b;
+    char b[ 12 ];
     if (nv > len)
         nv = len;
     v0 = ui.cursor / nv * nv;
@@ -328,17 +329,17 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
         cv_rect(x - 2, top, 5, 2, C_HI);
     }
     if (ui.sheet) {
-        char nu;
-        const char *val = {cs->flags & SF_SLIDE ? "ON" : "OFF", nu, FILL_N[ step_fill(t, ui.cursor) % 3u ], "", "", ""};
+        char nu[ 8 ];
+        const char *val[ 6 ] = {cs->flags & SF_SLIDE ? "ON" : "OFF", nu, FILL_N[ step_fill(t, ui.cursor) % 3u ], "", "", ""};
         fmt_int(nu, t->micro[ ui.cursor ]);
-        if (t->micro[ ui.cursor ] > 0) { nu = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
+        if (t->micro[ ui.cursor ] > 0) { nu[ 0 ] = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
         sheet_bar(H_GRAPH - 16, SHEET_N, val, ui.sheet - 1u, C_ACCENT);
     }
 }
 
 UI_SMALL static void graph_scale(const track_t *t, uint16_t c)
 {
-    static const uint8_t BLACK = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
+    static const uint8_t BLACK[ 12 ] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
     uint32_t i, mask = scale_mask(t);
     for (i = 0; i < 12u; i++) {
         uint32_t deg = (i + 12u - (uint32_t)t->p[ P_ROOT ]) % 12u;
@@ -381,7 +382,6 @@ UI_SMALL static void graph_slicer(const track_t *t, uint16_t c)
             cv_rect(x, 85, 11, 3, C_WHITE);
     }
 }
-
 UI_SMALL static uint32_t steps_hash(const track_t *t)
 {
     uint32_t h = 2166136261u, i;
@@ -448,7 +448,7 @@ UI_SMALL static void graph_browse(void)
         return;
     for (row = -3; row <= 3; row++) {
         int32_t y = 4 + (row + 3) * 17;
-        char tag, nm;
+        char tag[ 5 ], nm[ 13 ];
         int sel = row == 0;
         uint32_t n = (cur + total * 4u + (uint32_t)row) % total;
         e = preset_at(n, &k);
@@ -472,7 +472,7 @@ UI_SMALL static void graph_user(void)
     for (row = 0; row < 7; row++) {
         uint32_t k = (uint32_t)(first + row);
         int32_t y = 4 + row * 17;
-        char tag, nm;
+        char tag[ 4 ], nm[ 13 ];
         int sel = k == ui.uslot, used = up_used(k);
         up_slot_label(tag, k);
         if (used)
@@ -491,10 +491,10 @@ UI_SMALL static void graph_slots(void)
     uint32_t i;
     for (i = 0; i < 4u; i++) {
         int32_t y = 8 + (int32_t)i * 26;
-        char b;
+        char b[ 4 ];
         int sel = (int32_t)i + 1 == song.g[ G_SLOT ];
-        b = (char)('A' + i);
-        b = 0;
+        b[ 0 ] = (char)('A' + i);
+        b[ 1 ] = 0;
         if (sel)
             cv_rect(4, y + 6, 3, 3, C_WHITE);
         cv_text(14, y, &FONT_S, b, sel ? C_WHITE : C_GRAY);
@@ -540,7 +540,6 @@ UI_SMALL static void trk_short_name(uint32_t c, char *b)
     else
         str_cpy(b, e->name, 13);
 }
-
 UI_SMALL static void draw_tracks(void)
 {
     uint32_t c;
@@ -785,7 +784,7 @@ UI_SMALL static void draw_graph(void)
 }
 
 /* AUDILUNE Block 2: Persistent Bottom Info Bar (HUD Footer) */
-static char hud_popup[ 32 ];
+static char hud_popup[ 48 ];
 static uint32_t hud_popup_until;
 
 UI_SMALL static void hud_notify(const char *label, const char *val)
@@ -804,7 +803,7 @@ UI_SMALL static void hud_notify(const char *label, const char *val)
 
 UI_SMALL static void draw_foot(void)
 {
-    char line[ 48 ], b[ 12 ];
+    char line[ 48 ], b[ 16 ];
     const track_t *t = TSEL;
     const engine_t *e = ENGINES[ t->eng_req % NENGINES ];
     const char *ename = is_drum(t) ? "DRUMS" : e->name;
@@ -853,10 +852,11 @@ UI_SMALL static void draw_foot(void)
     cv_text((240 - text_w(&FONT_S, line)) / 2, 18, &FONT_S, line, popup_on || ui.hot_t ? C_WHITE : C_HI);
     cv_blit(0, Y_FOOT);
 }
+
 UI_SMALL static void draw_columns(void)
 {
     uint32_t c;
-    char val[ 12 ];
+    char val;
     const char *unit;
     if (ui.home) {
         for (c = 0; c < 4u; c++) {
@@ -895,7 +895,7 @@ UI_SMALL static void draw_columns(void)
     }
     if (cur_page()->graph == GR_BROWSE) {
         uint32_t total, cur = preset_pos(&total);
-        char u[ 8 ];
+        char u;
         fmt_int(val, (int32_t)cur + 1);
         str_cpy(u, "/", 8);
         fmt_int(u + 1, (int32_t)total);
@@ -916,14 +916,14 @@ UI_SMALL static void draw_columns(void)
     }
     if (cur_page()->scope == SC_STEP) {
         const step_t *st = &TSEL->step[ ui.cursor ];
-        char sn[ 8 ], sl[ 8 ], u[ 8 ], ln[ 8 ];
+        char sn, sl, u, ln;
         int on = step_on(st);
         uint32_t k = on ? ui.note_k % st->n : 0u;
         fmt_int(sn, (int32_t)ui.cursor + 1);
         str_cpy(sl, "/", 8);
         fmt_int(sl + 1, TSEL->p[ P_SLEN ]);
         draw_column(0, "NOTE", sn, sl, VAL(0u), -1, ICON_AUTO);
-        u[ 0 ] = 0;
+        u = 0;
         if (on) {
             note_name(val, st->note[ k ]);
             if (st->n > 1u) {
@@ -950,7 +950,7 @@ UI_SMALL static void draw_columns(void)
             draw_column(1, "ERASE", "--", "", project_used((uint32_t)song.g[ G_SLOT ] - 1u) ? C_HI : C_DIM, -1, ICON_AUTO);
             continue;
         }
-        if (!d || !d->label || d->label[ 0 ] == '-') {
+        if (!d || !d->label || d->label == '-') {
             draw_column(c, "", "", "", C_HI, -1, ICON_AUTO);
             continue;
         }
@@ -995,7 +995,7 @@ UI_SMALL static void ui_draw(void)
         ui_message("RECORDING");
     }
     if (ft_bars) {
-        char m[ 24 ];
+        char m;
         uint32_t n = ft_bars;
         ft_bars = 0;
         if (n == 0xFFu) {
@@ -1090,3 +1090,4 @@ UI_SMALL static void ui_draw(void)
     draw_foot();
     ui.force = 0;
 }
+
