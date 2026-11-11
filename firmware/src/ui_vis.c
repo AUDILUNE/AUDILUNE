@@ -130,7 +130,6 @@ static void vis_bands(int16_t *out)
         out[k] = (int16_t)clamp((v - 24) * 1000 / 80, 0, 1000);
     }
 }
-
 static void vis_stars_reset(void)
 {
     uint32_t i, seed = 0x5A17C3u;
@@ -261,11 +260,9 @@ static void vis_moon_loop(void)
     int32_t cx = 120 + ((icos(moon_a) * 10) >> 15);
     int32_t cy = 120 + ((isin(moon_a) * 10) >> 15);
 
-    /* Outer audio-reactive halo rings */
     vis_circle(120, 120, orbit_r, C_DIM);
-    vis_circle(120, 120, orbit_r + 12 + (vs.lvl[0] / 80), C_LINE);
+    vis_circle(120, 120, orbit_r + 12 + (vs.lvl[4] / 80), C_LINE);
 
-    /* Orbiting lunar nodes synced to beat */
     for (i = 0; i < 4u; i++) {
         uint32_t a = (bq * 2u + i * 256u) & 1023u;
         int32_t nx = 120 + ((icos(a) * orbit_r) >> 15);
@@ -274,7 +271,6 @@ static void vis_moon_loop(void)
         vis_ellipse(nx, ny, nr, nr, i == 0u ? C_WHITE : C_ACCENT);
     }
 
-    /* Central glowing crescent moon */
     vis_ellipse(cx, cy, r_outer, r_outer, C_HI);
     vis_ellipse(cx + r_outer * 38 / 100, cy - r_outer * 14 / 100, r_outer * 84 / 100, r_outer * 84 / 100, C_BLACK);
 }
@@ -290,3 +286,58 @@ static void vis_starfield(void)
         int32_t py = 120 + (vs.sy[i] * 160) / z;
         int32_t pz = z + 10 * warp;
         int32_t ox = 120 + (vs.sx[i] * 160) / pz;
+        int32_t oy = 120 + (vs.sy[i] * 160) / pz;
+        uint16_t col = z < 75 ? C_WHITE : z < 150 ? C_ACCENT : C_DIM;
+        if ((uint32_t)px < 240u && (uint32_t)py < 240u) {
+            cv_line(ox, oy, px, py, col);
+            if (z < 85)
+                cv_rect(px, py, 2, 2, C_WHITE);
+        }
+    }
+}
+
+/* Full-screen render (Bottom HUD explicitly hidden) */
+static void vis_draw(void)
+{
+    uint32_t pass;
+    if (!vis_shown_last || ui.force) {
+        vis_shown_last = 1;
+        lcd_fill(0, 0, 240, 240, C_BLACK);
+    } else if (ui.frame & 1u) {
+        return;
+    }
+    vis_update();
+    for (pass = 0; pass < 2u; pass++) {
+        cv_begin(240, 120, C_BLACK);
+        cv_oy = -(int32_t)(pass * 120u);
+        switch (vis_style % VIS_N) {
+        case 0: vis_scope(); break;
+        case 1: vis_spectrum(); break;
+        case 2: vis_moon_loop(); break;
+        default: vis_starfield(); break;
+        }
+        if (!pass && (vis_name_t || ui.msg_t)) {
+            char n[8];
+            const char *s = ui.msg_t ? ui.msg : VIS_NAME[vis_style % VIS_N];
+            cv_rect(0, 0, 240, 20, C_BLACK);
+            cv_text(120 - text_w(&FONT_S, s) / 2, 2, &FONT_S, s, C_WHITE);
+            if (!ui.msg_t) {
+                fmt_int(n, (int32_t)(vis_style % VIS_N) + 1);
+                str_cpy(n + str_len(n), "/4", 4);
+                cv_text(4, 2, &FONT_S, n, C_DIM);
+            }
+        }
+        cv_oy = 0;
+        cv_blit(0, pass * 120u);
+    }
+    if (vis_name_t)
+        vis_name_t--;
+}
+
+static void vis_select(int32_t s)
+{
+    vis_style = (uint8_t)((vis_style + (s > 0 ? 1u : VIS_N - 1u)) % VIS_N);
+    vis_name_t = 30;
+    ui.force = 1;
+    settings_later = 1;
+}
