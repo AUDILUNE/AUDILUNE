@@ -146,7 +146,7 @@ static void vis_stars_reset(void)
 static void vis_update(void)
 {
     uint32_t i, w, now = fm1_ms;
-    int32_t pk[4], mpk = 0;
+    int32_t pk, mpk = 0;
     w = scope_w;
     for (i = 0; i < VIS_FFT; i++) {
         vis_l[i] = scope_buf[(w + i) & (SCOPE_N - 1u)];
@@ -159,7 +159,7 @@ static void vis_update(void)
         pk[i] = trk[i].peak;
         trk[i].peak = 0;
     }
-    pk[3] = drums.peak;
+    pk = drums.peak;
     drums.peak = 0;
     vis_hit = 0;
     if (vis_kick_hit) {
@@ -169,7 +169,7 @@ static void vis_update(void)
     fm1_irq_on();
     for (i = 0; i < 4u; i++)
         vs.lvl[i] = (int16_t)(trk_level(i) && !trk[i].p[P_MUTE] ? vis_lvl(pk[i]) : 0);
-    vs.lvl[4] = (int16_t)vis_lvl(mpk);
+    vs.lvl = (int16_t)vis_lvl(mpk);
     vs.kick = (uint8_t)(vs.kick > 20 ? vs.kick - 20 : 0);
     {
         uint32_t dt = now - vs.last_ms;
@@ -177,14 +177,14 @@ static void vis_update(void)
         if (dt > 200u) dt = 200u;
         vs.free_q8 += dt * (uint32_t)song.g[G_BPM] * 256u / 60000u;
     }
-    vs.phase += 14u + (uint32_t)(vs.lvl[4] / 40);
+    vs.phase += 14u + (uint32_t)(vs.lvl / 40);
     vs.peak = mpk;
     {
         int32_t target = mpk < 1600 ? 1600 : mpk;
         vs.scale += (target - vs.scale) / 5;
     }
     if ((vis_style % VIS_N) == 1u) {
-        int16_t b[32];
+        int16_t b;
         vis_fft();
         vis_bands(b);
         for (i = 0; i < 32u; i++) {
@@ -199,7 +199,7 @@ static void vis_update(void)
             }
         }
     } else if ((vis_style % VIS_N) == 3u) {
-        int32_t spd = 4 + vs.lvl[4] / 65 + vs.kick / 28;
+        int32_t spd = 4 + vs.lvl / 65 + vs.kick / 28;
         if (!vs.stars_init)
             vis_stars_reset();
         for (i = 0; i < VIS_STARS; i++) {
@@ -253,15 +253,15 @@ static void vis_spectrum(void)
 static void vis_moon_loop(void)
 {
     uint32_t bq = vis_beat_q8(), i;
-    int32_t pulse = vs.kick * 14 / 255 + vs.lvl[4] * 10 / 1000;
+    int32_t pulse = vs.kick * 14 / 255 + vs.lvl * 10 / 1000;
     int32_t r_outer = 44 + pulse;
-    int32_t orbit_r = 74 + vs.lvl[4] * 16 / 1000;
+    int32_t orbit_r = 74 + vs.lvl * 16 / 1000;
     uint32_t moon_a = (bq * 2u + vs.phase) & 1023u;
     int32_t cx = 120 + ((icos(moon_a) * 10) >> 15);
     int32_t cy = 120 + ((isin(moon_a) * 10) >> 15);
 
     vis_circle(120, 120, orbit_r, C_DIM);
-    vis_circle(120, 120, orbit_r + 12 + (vs.lvl[4] / 80), C_LINE);
+    vis_circle(120, 120, orbit_r + 12 + (vs.lvl / 80), C_LINE);
 
     for (i = 0; i < 4u; i++) {
         uint32_t a = (bq * 2u + i * 256u) & 1023u;
@@ -279,7 +279,7 @@ static void vis_moon_loop(void)
 static void vis_starfield(void)
 {
     uint32_t i;
-    int32_t warp = 1 + vs.lvl[4] / 180;
+    int32_t warp = 1 + vs.lvl / 180;
     for (i = 0; i < VIS_STARS; i++) {
         int32_t z = vs.sz[i] > 1 ? vs.sz[i] : 1;
         int32_t px = 120 + (vs.sx[i] * 160) / z;
@@ -317,7 +317,7 @@ static void vis_draw(void)
         default: vis_starfield(); break;
         }
         if (!pass && (vis_name_t || ui.msg_t)) {
-            char n[8];
+            char n;
             const char *s = ui.msg_t ? ui.msg : VIS_NAME[vis_style % VIS_N];
             cv_rect(0, 0, 240, 20, C_BLACK);
             cv_text(120 - text_w(&FONT_S, s) / 2, 2, &FONT_S, s, C_WHITE);
