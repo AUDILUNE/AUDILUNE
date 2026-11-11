@@ -28,10 +28,10 @@ extern char _ustack_top[];
 #define STACK_MARK 0x4B4D5453u
 UI_SMALL static void stack_paint(char *lo, char *top)
 {
-    uint32_t a = (uint32_t)(uintptr_t)lo, lim = (uint32_t)(uintptr_t)top, p[3], i, *d;
-    p[0] = fm1_sp();
-    p[1] = fm1_ssp();
-    p[2] = fm1_usp();
+    uint32_t a = (uint32_t)(uintptr_t)lo, lim = (uint32_t)(uintptr_t)top, p, i, *d;
+    p = fm1_sp();
+    p = fm1_ssp();
+    p = fm1_usp();
     for (i = 0; i < 3u; i++)
         if (p[i] >= a + 512u && p[i] < lim + 512u && p[i] - 512u < lim)
             lim = p[i] - 512u;
@@ -102,12 +102,12 @@ UI_SMALL static void hexs(char *b, uint32_t v)
     uint32_t i;
     for (i = 0; i < 8u; i++)
         b[i] = "0123456789ABCDEF"[(v >> (28u - 4u * i)) & 15u];
-    b[8] = 0;
+    b = 0;
 }
 
 UI_SMALL static void fm1_fault(const fm1_crash_t *c)
 {
-    char b[12];
+    char b;
     uint32_t t0;
     if (fm1_c1_on)
         fm1_cpu1_bar();
@@ -127,7 +127,7 @@ UI_SMALL static void fm1_fault(const fm1_crash_t *c)
     hexs(b, c->sp);
     draw_text_box(10, 144, 220, &FONT_S, b, C_WHITE, 0);
     {
-        char t[28];
+        char t;
         str_cpy(t, "C1 ", sizeof t);
         fmt_int(t + str_len(t), (int32_t)cpu1_state);
         str_cpy(t + str_len(t), " LATE ", 7);
@@ -152,8 +152,8 @@ UI_SMALL static void felucca_init(void)
         track_t *t = &trk[i];
         track_defaults(t);
         if (i < NPART) {
-            set_engine_of(t, TRK_DEF[i][0]);
-            apply_preset_to(t, TRK_DEF[i][1]);
+            set_engine_of(t, TRK_DEF[i]);
+            apply_preset_to(t, TRK_DEF[i]);
             t->engine = t->eng_req;
         }
         track_defaults_steps(t);
@@ -165,12 +165,12 @@ UI_SMALL static void felucca_init(void)
     song.g[G_SYNC] = (int16_t)lights_sync;
     song.g[G_MIDI] = (int16_t)lights_mout;
     song.g[G_ROUTE] = (int16_t)lights_min;
-    song.g[G_CH1] = midi_set[0], song.g[G_CH2] = midi_set[1], song.g[G_CH3] = midi_set[2];
-    song.g[G_DRCH] = midi_set[3], song.g[G_CHOTH] = midi_set[4], song.g[G_BEND] = midi_set[5];
-    song.g[G_FXCH] = midi_set[6];
-    song.g[G_DRMAP] = midi_set[7];
-    song.g[G_CLKOUT] = midi_set[9];
-    song.g[G_RMCH] = midi_set[8];
+    song.g[G_CH1] = midi_set, song.g[G_CH2] = midi_set, song.g[G_CH3] = midi_set;
+    song.g[G_DRCH] = midi_set, song.g[G_CHOTH] = midi_set, song.g[G_BEND] = midi_set;
+    song.g[G_FXCH] = midi_set;
+    song.g[G_DRMAP] = midi_set;
+    song.g[G_CLKOUT] = midi_set;
+    song.g[G_RMCH] = midi_set;
     song.g[G_FXFADE] = fxfade;
     layers_init();
     go_home();
@@ -232,9 +232,8 @@ UI_SMALL static void fm1_main(void)
         uint32_t m = fm1_ms;
         fm1_wdt_feed();
         usb_retry(fm1_ms);
-        if ((uint32_t)(m - healthy_since) >= 30000u && bootguard.pending) {
+        if ((uint32_t)(m - healthy_since) >= 30000u && bootguard.pending)
             bootguard_clear(&bootguard);
-        }
         {
             int32_t b = fm1_adc_read(FM1_ADC_BATT);
             if (b > 0)
@@ -268,7 +267,7 @@ UI_SMALL static void fm1_main(void)
             } else if (fm1_ms - t0 > 2000u && fm1_ms - t0 <= 5000u) {
                 uint32_t left = (5000u - (fm1_ms - t0) + 999u) / 1000u;
                 if (left != shown) {
-                    char d[4] = {(char)('0' + left), '.', '.', 0};
+                    char d = {(char)('0' + left), '.', '.', 0};
                     ui_say("UPDATE MODE IN ", d);
                     shown = left;
                 }
@@ -322,3 +321,6 @@ UI_SMALL static void fm1_main(void)
         felucca_dbg.stage = 1;
         ui_input();
         felucca_dbg.stage = 2;
+        ui_leds();
+        ui_draw();
+        felucca_dbg.stage = 8;
