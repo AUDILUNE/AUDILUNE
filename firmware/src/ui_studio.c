@@ -223,7 +223,6 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     cv_rect(0, 39, 240, 1, TE_G1);
     cv_blit(0, 0);
 }
-
 /* --------------------------------------------------------------- TRACKS --- */
 /* swing, MPC style: "62%" */
 UI_SMALL static void swing_str(char *b, int32_t v)            /* 0 straight .. 100 the most (params.c F_SWING) */
@@ -362,7 +361,6 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
                 key_lit[k] = 6;
         }
 }
-
 UI_SMALL static void drum_screen_draw(void)
 {
     static uint32_t head, title_sig, body_sig, footer;
@@ -506,7 +504,6 @@ UI_SMALL static void drum_screen_draw(void)
         }
     }
 }
-
 /* the level order of the knobs: ghost < soft < norm < hard */
 static const uint8_t LV_UP[4] = {LV_GHOST, LV_SOFT, LV_NORM, LV_HARD};
 UI_SMALL static uint32_t lvl_rank(uint32_t lvl) { return lvl == LV_GHOST ? 0u : lvl == LV_SOFT ? 1u : lvl == LV_NORM ? 2u : 3u; }
@@ -598,6 +595,7 @@ UI_SMALL static void drum_sheet_knob(uint32_t k, int32_t s)
             }
     sync_reload = 1;
 }
+
 UI_SMALL static void drum_sheet_do(void)                 /* OCT+ tapped in the sheet */
 {
     undo_mark(TDRUM, (undo_sess += 4u) | 3u);
@@ -617,7 +615,6 @@ UI_SMALL static void drum_sheet_do(void)                 /* OCT+ tapped in the s
     }
     sync_reload = 1;
 }
-
 UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t notes)
 {
     uint32_t k, b;
@@ -745,7 +742,6 @@ UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t
         }
     }
 }
-
 /* ---------------------------------------------------------------- REC --- */
 /* a big seven-segment digit, TE style: w x h, segments t thick */
 UI_SMALL static void te_digit(int32_t x, int32_t y, int32_t w, int32_t h, int32_t t, uint32_t d, uint16_t c)
