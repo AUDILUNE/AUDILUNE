@@ -28,10 +28,10 @@ extern char _ustack_top[];
 #define STACK_MARK 0x4B4D5453u
 UI_SMALL static void stack_paint(char *lo, char *top)
 {
-    uint32_t a = (uint32_t)(uintptr_t)lo, lim = (uint32_t)(uintptr_t)top, p, i, *d;
-    p = fm1_sp();
-    p = fm1_ssp();
-    p = fm1_usp();
+    uint32_t a = (uint32_t)(uintptr_t)lo, lim = (uint32_t)(uintptr_t)top, p[3], i, *d;
+    p[0] = fm1_sp();
+    p[1] = fm1_ssp();
+    p[2] = fm1_usp();
     for (i = 0; i < 3u; i++)
         if (p[i] >= a + 512u && p[i] < lim + 512u && p[i] - 512u < lim)
             lim = p[i] - 512u;
@@ -102,12 +102,12 @@ UI_SMALL static void hexs(char *b, uint32_t v)
     uint32_t i;
     for (i = 0; i < 8u; i++)
         b[i] = "0123456789ABCDEF"[(v >> (28u - 4u * i)) & 15u];
-    b = 0;
+    b[8] = 0;
 }
 
 UI_SMALL static void fm1_fault(const fm1_crash_t *c)
 {
-    char b;
+    char b[12];
     uint32_t t0;
     if (fm1_c1_on)
         fm1_cpu1_bar();
@@ -127,7 +127,7 @@ UI_SMALL static void fm1_fault(const fm1_crash_t *c)
     hexs(b, c->sp);
     draw_text_box(10, 144, 220, &FONT_S, b, C_WHITE, 0);
     {
-        char t;
+        char t[28];
         str_cpy(t, "C1 ", sizeof t);
         fmt_int(t + str_len(t), (int32_t)cpu1_state);
         str_cpy(t + str_len(t), " LATE ", 7);
@@ -152,8 +152,8 @@ UI_SMALL static void felucca_init(void)
         track_t *t = &trk[i];
         track_defaults(t);
         if (i < NPART) {
-            set_engine_of(t, TRK_DEF[i]);
-            apply_preset_to(t, TRK_DEF[i]);
+            set_engine_of(t, TRK_DEF[i][0]);
+            apply_preset_to(t, TRK_DEF[i][1]);
             t->engine = t->eng_req;
         }
         track_defaults_steps(t);
@@ -165,12 +165,12 @@ UI_SMALL static void felucca_init(void)
     song.g[G_SYNC] = (int16_t)lights_sync;
     song.g[G_MIDI] = (int16_t)lights_mout;
     song.g[G_ROUTE] = (int16_t)lights_min;
-    song.g[G_CH1] = midi_set, song.g[G_CH2] = midi_set, song.g[G_CH3] = midi_set;
-    song.g[G_DRCH] = midi_set, song.g[G_CHOTH] = midi_set, song.g[G_BEND] = midi_set;
-    song.g[G_FXCH] = midi_set;
-    song.g[G_DRMAP] = midi_set;
-    song.g[G_CLKOUT] = midi_set;
-    song.g[G_RMCH] = midi_set;
+    song.g[G_CH1] = midi_set[0], song.g[G_CH2] = midi_set[1], song.g[G_CH3] = midi_set[2];
+    song.g[G_DRCH] = midi_set[3], song.g[G_CHOTH] = midi_set[4], song.g[G_BEND] = midi_set[5];
+    song.g[G_FXCH] = midi_set[6];
+    song.g[G_DRMAP] = midi_set[7];
+    song.g[G_CLKOUT] = midi_set[9];
+    song.g[G_RMCH] = midi_set[8];
     song.g[G_FXFADE] = fxfade;
     layers_init();
     go_home();
@@ -267,7 +267,7 @@ UI_SMALL static void fm1_main(void)
             } else if (fm1_ms - t0 > 2000u && fm1_ms - t0 <= 5000u) {
                 uint32_t left = (5000u - (fm1_ms - t0) + 999u) / 1000u;
                 if (left != shown) {
-                    char d = {(char)('0' + left), '.', '.', 0};
+                    char d[] = {(char)('0' + left), '.', '.', 0};
                     ui_say("UPDATE MODE IN ", d);
                     shown = left;
                 }
@@ -324,3 +324,63 @@ UI_SMALL static void fm1_main(void)
         ui_leds();
         ui_draw();
         felucca_dbg.stage = 8;
+        autosave_tick();
+#if FELUCCA_ARRANGER
+        sections_flush();
+#endif
+        felucca_dbg.stage = 9;
+        while (fm1_ms - m < 15u) {
+            ui_input();
+#if FELUCCA_OTA
+            ed_service();
+#endif
+        }
+    }
+}
+
+UI_SMALL void fm1_cstart(void)
+{
+    uint32_t *s, *d, p3, src, wdt, boot_mode;
+    fm1_cpu1_halt();
+    fm1_time_init();
+    fm1_supplies_stock();
+    fm1_reset_reason();
+    p3 = fm1_boot.p3_rst;
+    src = fm1_boot.rst_src;
+    wdt = fm1_boot.wdt_con;
+    fm1_wdt_arm(0x0D);
+    if ((p3 & 1u) && !(p3 & (4u | 0x40u)))
+        bootguard_clear(&bootguard);
+    boot_mode = bootguard_begin(&bootguard);
+    if (boot_mode == BOOT_ROM)
+        fm1_enter_uboot();
+    fm1_irq_init();
+    for (d = _bss_start; d < _bss_end; d++)
+        *d = 0;
+    for (d = _pool_start; d < _pool_end; d++)
+        *d = 0;
+    lowram_ok = lowram_test();
+    stack_paint(_ustack_lo, _ustack_top);
+    stack_paint(_sstack_lo, _sstack_top);
+    for (s = _data_load, d = _data_start; d < _data_end; s++, d++)
+        *d = *s;
+    for (s = _rt_load, d = _rt_start; d < _rt_end; s++, d++)
+        *d = *s;
+    for (s = _c1_load, d = _c1_start; d < _c1_end; s++, d++)
+        *d = *s;
+    fm1_mailbox_clear();
+    fm1_guard_enable(FM1_GUARD_STACK | FM1_GUARD_WRITE | FM1_GUARD_BUS | FM1_GUARD_PC);
+    fm1_boot.p3_rst = (uint8_t)p3;
+    fm1_boot.rst_src = src;
+    fm1_boot.wdt_con = (uint8_t)wdt;
+#if FELUCCA_OTA
+    if (boot_mode == BOOT_RECOVERY || recovery_key())
+        recovery_main();
+#else
+    if (boot_mode == BOOT_RECOVERY)
+        fm1_enter_uboot();
+#endif
+    fm1_main();
+    for (;;)
+        ;
+}
