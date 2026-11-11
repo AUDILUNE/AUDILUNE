@@ -6,6 +6,18 @@
 #ifndef FELUCCA_LOGO_TEXT
 #define FELUCCA_LOGO_TEXT 0
 #endif
+
+/* Watchdog-safe hardware tick delay (works before Timer5 interrupts start) */
+UI_SMALL static void splash_wait_ms(uint32_t ms)
+{
+    while (ms--) {
+        uint32_t t0 = fm1_ticks();
+        fm1_wdt_feed();
+        while ((uint32_t)(fm1_ticks() - t0) < 1000u * FM1_TICKS_PER_US)
+            ;
+    }
+}
+
 #if FELUCCA_LOGO_TEXT
 UI_SMALL static void sloop_logo_draw(uint32_t y0)
 {
@@ -59,7 +71,7 @@ UI_SMALL static void sloop_splash(void)
     /* Screen 1: Crescent moon logo only */
     lcd_fill(0, 0, 240, 240, C_BLACK);
     sloop_logo_draw(10);
-    fm1_delay_ms(2000);
+    splash_wait_ms(2000);
 
     /* Screen 2: AUDILUNE + version number */
     lcd_fill(0, 0, 240, 240, C_BLACK);
@@ -67,5 +79,5 @@ UI_SMALL static void sloop_splash(void)
     cv_text(120 - text_w(&FONT_L, title) / 2, 0, &FONT_L, title, C_WHITE);
     cv_text(120 - text_w(&FONT_S, ver) / 2, 36, &FONT_S, ver, RGB(196, 196, 204));
     cv_blit(0, 88);
-    fm1_delay_ms(2000);
+    splash_wait_ms(2000);
 }
