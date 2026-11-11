@@ -28,9 +28,9 @@ static uint32_t cv_w, cv_h;
 static int32_t cv_oy;
 
 #define RGB(r, g, b) ((uint16_t)((((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)))
-static uint16_t pal_bg = 0u;             /* Background Lock: strictly #000000 */
+static uint16_t pal_bg = 0u;
 #define C_BLACK pal_bg
-static uint16_t pal_hi = 0xFFFFu;        /* Default Foreground: strictly #FFFFFF */
+static uint16_t pal_hi = 0xFFFFu;
 #define C_WHITE pal_hi
 
 typedef struct {
@@ -40,14 +40,14 @@ typedef struct {
 
 /* AUDILUNE Block 1: 8 Color Themes (Teal #008080 default at index 0) */
 static const palette_t PALETTES[] = {
-    {"TEAL",     {RGB(0, 32, 32),   RGB(0, 64, 64),   RGB(0, 96, 96),   RGB(0, 128, 128), RGB(0, 197, 205)}}, /* #008080 */
-    {"ORANGE",   {RGB(64, 27, 0),   RGB(128, 54, 0),  RGB(192, 80, 0),  RGB(255, 107, 0), RGB(255, 160, 64)}}, /* #FF6B00 */
-    {"BURGUNDY", {RGB(32, 0, 8),    RGB(64, 0, 16),   RGB(96, 0, 24),   RGB(128, 0, 32),  RGB(190, 40, 72)}}, /* #800020 */
-    {"PURPLE",   {RGB(32, 0, 32),   RGB(64, 0, 64),   RGB(96, 0, 96),   RGB(128, 0, 128), RGB(192, 64, 192)}}, /* #800080 */
-    {"PINK",     {RGB(64, 26, 45),  RGB(128, 52, 90), RGB(192, 78, 135),RGB(255, 105, 180),RGB(255, 165, 210)}}, /* #FF69B4 */
-    {"BLUE",     {RGB(0, 0, 64),    RGB(0, 0, 128),   RGB(0, 0, 192),   RGB(0, 0, 255),   RGB(96, 140, 255)}}, /* #0000FF */
-    {"MINT",     {RGB(38, 64, 38),  RGB(76, 128, 76), RGB(114, 192, 114),RGB(152, 255, 152),RGB(200, 255, 200)}}, /* #98FF98 */
-    {"GREY",     {RGB(32, 32, 32),  RGB(64, 64, 64),  RGB(96, 96, 96),  RGB(128, 128, 128),RGB(196, 196, 196)}}, /* #808080 */
+    {"TEAL",     {RGB(0, 32, 32),   RGB(0, 64, 64),   RGB(0, 96, 96),   RGB(0, 128, 128), RGB(0, 197, 205)}},
+    {"ORANGE",   {RGB(64, 27, 0),   RGB(128, 54, 0),  RGB(192, 80, 0),  RGB(255, 107, 0), RGB(255, 160, 64)}},
+    {"BURGUNDY", {RGB(32, 0, 8),    RGB(64, 0, 16),   RGB(96, 0, 24),   RGB(128, 0, 32),  RGB(190, 40, 72)}},
+    {"PURPLE",   {RGB(32, 0, 32),   RGB(64, 0, 64),   RGB(96, 0, 96),   RGB(128, 0, 128), RGB(192, 64, 192)}},
+    {"PINK",     {RGB(64, 26, 45),  RGB(128, 52, 90), RGB(192, 78, 135),RGB(255, 105, 180),RGB(255, 165, 210)}},
+    {"BLUE",     {RGB(0, 0, 64),    RGB(0, 0, 128),   RGB(0, 0, 192),   RGB(0, 0, 255),   RGB(96, 140, 255)}},
+    {"MINT",     {RGB(38, 64, 38),  RGB(76, 128, 76), RGB(114, 192, 114),RGB(152, 255, 152),RGB(200, 255, 200)}},
+    {"GREY",     {RGB(32, 32, 32),  RGB(64, 64, 64),  RGB(96, 96, 96),  RGB(128, 128, 128),RGB(196, 196, 196)}},
 };
 #define NPALETTES (sizeof(PALETTES) / sizeof(PALETTES[0]))
 static uint16_t pal[5];
@@ -56,7 +56,7 @@ static uint16_t pal[5];
 #define C_GRAY pal[2]
 #define C_AMB pal[3]
 #define C_HI pal[4]
-#define C_ACCENT pal[3] /* Active theme exact accent color */
+#define C_ACCENT pal[3]
 
 #define THEME_MAGIC 0x324D4854u
 #define THEME_MAGIC1 0x314D4854u
@@ -151,7 +151,6 @@ static void palette_set(uint32_t i)
     int cu = theme_shown();
     for (k = 0; k < 5u; k++)
         pal[k] = cu ? theme.c[k] : PALETTES[i % NPALETTES].c[k];
-    /* AUDILUNE Block 1: Lock pure black background (#000000) and white fallback (#FFFFFF) */
     pal_bg = 0u;
     pal_hi = 0xFFFFu;
     for (k = 0; k < 4u; k++)
@@ -292,3 +291,8 @@ static void draw_text_box(uint32_t x, uint32_t y, uint32_t w, const felucca_font
     if (align == 1)
         tx = ((int32_t)w - tw) / 2;
     else if (align == 2)
+        tx = (int32_t)w - tw;
+    cv_text(tx, 0, f, s, c);
+    cv_blit(x, y);
+    lcd_sync();
+}
