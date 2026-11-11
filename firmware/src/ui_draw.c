@@ -9,6 +9,9 @@
 #define B24 24
 #define B32 32
 #define B48 48
+#define I0 0
+#define I1 1
+#define I2 2
 
 static void draw_menu(void);
 static uint32_t str_hash(uint32_t h, const char *s);
@@ -25,7 +28,7 @@ UI_SMALL static int is_eng_name(const char *s)
 UI_SMALL static void fit(char *d, const char *src, const felucca_font_t *f, int32_t maxw)
 {
     str_cpy(d, src, is_eng_name(src) ? 8 : 6);
-    while (d[ 0 ] && text_w(f, d) > maxw)
+    while (d[ I0 ] && text_w(f, d) > maxw)
         d[ str_len(d) - 1u ] = 0;
 }
 
@@ -84,14 +87,14 @@ UI_SMALL static void draw_head(void)
     }
     if (FELUCCA_ICONS) {
         cv_icon(156, 2, ICON_TAPE, C_GRAY);
-        b[ 0 ] = (char)('1' + song.sel);
-        b[ 1 ] = 0;
+        b[ I0 ] = (char)('1' + song.sel);
+        b[ I1 ] = 0;
         cv_rect(168, 2, 12, 16, C_ACCENT);
         cv_text(170, 1, &FONT_S, b, C_BLACK);
     } else {
-        b[ 0 ] = 'T';
-        b[ 1 ] = (char)('1' + song.sel);
-        b[ 2 ] = 0;
+        b[ I0 ] = 'T';
+        b[ I1 ] = (char)('1' + song.sel);
+        b[ I2 ] = 0;
         cv_text(158, 1, &FONT_S, b, C_HI);
     }
     {
@@ -148,7 +151,7 @@ UI_SMALL static void draw_column(uint32_t c, const char *label, const char *val,
     }
     if (c < 4u) {
         str_cpy(ui.big_l[ c ], l, 8);
-        fit(ui.big_v[ c ], val, &FONT_L, 112 - (unit ? 4 : 0));
+        fit(ui.big_v[ c ], val, &FONT_L, 112 - (unit[ I0 ] ? 4 : 0));
         str_cpy(ui.big_u[ c ], unit, 8);
         ui.big_c[ c ] = vc;
     }
@@ -161,9 +164,9 @@ UI_SMALL static void draw_column(uint32_t c, const char *label, const char *val,
         return;
     str_cpy(ui.col[ c ], key, sizeof ui.col[ c ]);
     cv_begin(55, Y_SEP_END - Y_LABEL, C_BLACK);
-    if (FELUCCA_ICONS && icon != ICON_NONE && l)
+    if (FELUCCA_ICONS && icon != ICON_NONE && l[ I0 ])
         cv_icon(0, 1, icon, C_ACCENT);
-    cv_text(l ? LABEL_X : 0, 0, &FONT_S, l, C_GRAY);
+    cv_text(l[ I0 ] ? LABEL_X : 0, 0, &FONT_S, l, C_GRAY);
     x = cv_text(0, Y_VALUE - Y_LABEL, &FONT_S, v, vc);
     cv_text(x + 3, Y_VALUE - Y_LABEL, &FONT_S, u, C_DIM);
     if (ratio >= 0) {
@@ -243,7 +246,6 @@ UI_SMALL static void graph_steps(const track_t *t, uint16_t c)
             cv_rect(x - 1, y + 16, 3, 3, C_WHITE);
     }
 }
-
 UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
 {
     uint32_t len = trk_len(t), nv = NV_ZOOM[ clamp(1 + (int8_t)ui.zoom, 0, 3) ], v0, i, j;
@@ -340,7 +342,7 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
         char nu[ B8 ];
         const char *val[ B8 ] = {cs->flags & SF_SLIDE ? "ON" : "OFF", nu, FILL_N[ step_fill(t, ui.cursor) % 3u ], "", "", ""};
         fmt_int(nu, t->micro[ ui.cursor ]);
-        if (t->micro[ ui.cursor ] > 0) { nu[ 0 ] = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
+        if (t->micro[ ui.cursor ] > 0) { nu[ I0 ] = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
         sheet_bar(H_GRAPH - 16, SHEET_N, val, ui.sheet - 1u, C_ACCENT);
     }
 }
@@ -396,7 +398,7 @@ UI_SMALL static uint32_t steps_hash(const track_t *t)
     uint32_t h = 2166136261u, i;
     for (i = 0; i < NSTEP; i++) {
         const step_t *st = &t->step[ i ];
-        h = (h ^ (st->note + st->n * 128u + st->time * 1024u + st->flags * 4096u + st->note * 65536u)) *
+        h = (h ^ (st->note[ I0 ] + st->n * 128u + st->time * 1024u + st->flags * 4096u + st->note[ I1 ] * 65536u)) *
             16777619u;
     }
     return h;
@@ -502,8 +504,8 @@ UI_SMALL static void graph_slots(void)
         int32_t y = 8 + (int32_t)i * 26;
         char b[ B4 ];
         int sel = (int32_t)i + 1 == song.g[ G_SLOT ];
-        b = (char)('A' + i);
-        b = 0;
+        b[ I0 ] = (char)('A' + i);
+        b[ I1 ] = 0;
         if (sel)
             cv_rect(4, y + 6, 3, 3, C_WHITE);
         cv_text(14, y, &FONT_S, b, sel ? C_WHITE : C_GRAY);
@@ -574,8 +576,8 @@ UI_SMALL static void draw_tracks(void)
         sig = 1u + sel + st * 2u;
         if (ui.force || sig != ts.head[ c ]) {
             ts.head[ c ] = sig;
-            b = (char)('1' + c);
-            b = 0;
+            b[ I0 ] = (char)('1' + c);
+            b[ I1 ] = 0;
             cv_begin(54, 16, C_BLACK);
             cv_text(0, 0, &FONT_S, b, sel ? C_WHITE : C_GRAY);
             if (sel)
@@ -589,7 +591,7 @@ UI_SMALL static void draw_tracks(void)
             cv_blit(x0, TS_HEAD_Y);
         }
         trk_short_name(c, b);
-        while (b && text_w(&FONT_S, b) > 54)
+        while (b[ I0 ] && text_w(&FONT_S, b) > 54)
             b[ str_len(b) - 1u ] = 0;
         sig = str_hash(2u + sel, b);
         if (ui.force || sig != ts.name[ c ]) {
@@ -685,27 +687,26 @@ UI_SMALL static void graph_scope(uint16_t c)
         py = y;
     }
 }
-
 UI_SMALL static void graph_big(void)
 {
     uint32_t c, n = 0;
     for (c = 0; c < 4u; c++)
-        n += ui.big_l[ c ][ 0 ] != 0;
+        n += ui.big_l[ c ][ I0 ] != 0;
     if (n > 1u) {
         cv_rect(119, 6, 1, 112, C_LINE);
         cv_rect(6, 62, 228, 1, C_LINE);
     }
     for (c = 0; c < 4u; c++) {
         int32_t x0 = c & 1u ? 126 : 6, y0 = c & 2u ? 64 : 2, x;
-        if (!ui.big_l[ c ][ 0 ])
+        if (!ui.big_l[ c ][ I0 ])
             continue;
         if (n == 1u) {
-            x0 = (240 - text_w(&FONT_L, ui.big_v[ c ]) - (ui.big_u[ c ][ 0 ] ? text_w(&FONT_S, ui.big_u[ c ]) + 4 : 0)) / 2;
+            x0 = (240 - text_w(&FONT_L, ui.big_v[ c ]) - (ui.big_u[ c ][ I0 ] ? text_w(&FONT_S, ui.big_u[ c ]) + 4 : 0)) / 2;
             y0 = 30;
         }
         cv_text(x0, y0 + 2, &FONT_S, ui.big_l[ c ], C_ACCENT);
         x = cv_text(x0, y0 + 20, &FONT_L, ui.big_v[ c ], ui.big_c[ c ] == C_DIM ? C_DIM : ui.big_c[ c ] == C_WHITE ? C_WHITE : C_HI);
-        if (ui.big_u[ c ][ 0 ])
+        if (ui.big_u[ c ][ I0 ])
             cv_text(x + 4, y0 + 34, &FONT_S, ui.big_u[ c ], C_GRAY);
     }
 }
@@ -730,9 +731,9 @@ UI_SMALL static void draw_graph(void)
     if (ui.home) {
         graph_scope(c);
     } else if (drum_note) {
-        static const char *const L[ 2 ] = {"DRUM TRACK", "SEQ  TRACKS  GLO DRUMS"};
-        cv_text((240 - text_w(&FONT_S, L[ 0 ])) / 2, 26, &FONT_S, L[ 0 ], C_HI);
-        cv_text((240 - text_w(&FONT_S, L[ 1 ])) / 2, 52, &FONT_S, L[ 1 ], C_DIM);
+        static const char *const L[ I2 ] = {"DRUM TRACK", "SEQ  TRACKS  GLO DRUMS"};
+        cv_text((240 - text_w(&FONT_S, L[ I0 ])) / 2, 26, &FONT_S, L[ I0 ], C_HI);
+        cv_text((240 - text_w(&FONT_S, L[ I1 ])) / 2, 52, &FONT_S, L[ I1 ], C_DIM);
     } else {
         switch (pg->graph) {
         case GR_ADSR:
@@ -801,7 +802,7 @@ UI_SMALL static void hud_notify(const char *label, const char *val)
     uint32_t n;
     str_cpy(hud_popup, label, sizeof hud_popup);
     n = str_len(hud_popup);
-    if (val && val[ 0 ] && n + 2u < sizeof hud_popup) {
+    if (val && val[ I0 ] && n + 2u < sizeof hud_popup) {
         str_cpy(hud_popup + n, ": ", sizeof hud_popup - n);
         n = str_len(hud_popup);
         str_cpy(hud_popup + n, val, sizeof hud_popup - n);
@@ -817,16 +818,16 @@ UI_SMALL static void draw_foot(void)
     const engine_t *e = ENGINES[ t->eng_req % NENGINES ];
     const char *ename = is_drum(t) ? "DRUMS" : e->name;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[ G_SLOT ] - 1;
-    uint32_t popup_on = hud_popup[ 0 ] && (int32_t)(hud_popup_until - fm1_ms) > 0;
+    uint32_t popup_on = hud_popup[ I0 ] && (int32_t)(hud_popup_until - fm1_ms) > 0;
     uint32_t sig;
 
     if (popup_on) {
         str_cpy(line, hud_popup, sizeof line);
-    } else if (ui.hot_t && ui.focus_l[ 0 ]) {
+    } else if (ui.hot_t && ui.focus_l[ I0 ]) {
         str_cpy(line, ui.focus_l, sizeof line);
         str_cpy(line + str_len(line), ": ", sizeof line - str_len(line));
         str_cpy(line + str_len(line), ui.focus_v, sizeof line - str_len(line));
-        if (ui.focus_u[ 0 ]) {
+        if (ui.focus_u[ I0 ]) {
             str_cpy(line + str_len(line), " ", sizeof line - str_len(line));
             str_cpy(line + str_len(line), ui.focus_u, sizeof line - str_len(line));
         }
@@ -835,8 +836,8 @@ UI_SMALL static void draw_foot(void)
         fmt_int(b, (int32_t)song.sel + 1);
         str_cpy(line + str_len(line), b, sizeof line - str_len(line));
         str_cpy(line + str_len(line), " | PAT ", sizeof line - str_len(line));
-        b[ 0 ] = (char)('A' + ((sect < 0 ? 0 : sect) & 3));
-        b[ 1 ] = 0;
+        b[ I0 ] = (char)('A' + ((sect < 0 ? 0 : sect) & 3));
+        b[ I1 ] = 0;
         str_cpy(line + str_len(line), b, sizeof line - str_len(line));
         str_cpy(line + str_len(line), " | ", sizeof line - str_len(line));
         fmt_int(b, song.g[ G_BPM ]);
@@ -856,7 +857,7 @@ UI_SMALL static void draw_foot(void)
     cv_rect(0, 12, 1, H_FOOT - 12, C_ACCENT);
     cv_rect(239, 12, 1, H_FOOT - 12, C_ACCENT);
 
-    while (line[ 0 ] && text_w(&FONT_S, line) > 230)
+    while (line[ I0 ] && text_w(&FONT_S, line) > 230)
         line[ str_len(line) - 1u ] = 0;
     cv_text((240 - text_w(&FONT_S, line)) / 2, 18, &FONT_S, line, popup_on || ui.hot_t ? C_WHITE : C_HI);
     cv_blit(0, Y_FOOT);
@@ -931,7 +932,7 @@ UI_SMALL static void draw_columns(void)
         str_cpy(sl, "/", 8);
         fmt_int(sl + 1, TSEL->p[ P_SLEN ]);
         draw_column(0, "NOTE", sn, sl, VAL(0u), -1, ICON_AUTO);
-        u[ 0 ] = 0;
+        u[ I0 ] = 0;
         if (on) {
             note_name(val, st->note[ k ]);
             if (st->n > 1u) {
@@ -958,7 +959,7 @@ UI_SMALL static void draw_columns(void)
             draw_column(1, "ERASE", "--", "", project_used((uint32_t)song.g[ G_SLOT ] - 1u) ? C_HI : C_DIM, -1, ICON_AUTO);
             continue;
         }
-        if (!d || !d->label || d->label[ 0 ] == '-') {
+        if (!d || !d->label[ I0 ] || d->label[ I0 ] == '-') {
             draw_column(c, "", "", "", C_HI, -1, ICON_AUTO);
             continue;
         }
