@@ -1,74 +1,198 @@
-/* SPDX-License-Identifier: GPL-3.0-only */
-/* AUDILUNE Block 1: config_and_boot two-phase 4000ms startup splash */
-#ifndef UI_SMALL
-#define UI_SMALL
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+/* AUDILUNE (based on SLOOP/FELUCCA): one compilation unit (the HAL is header-only). Order matters. */
+#include <stdint.h>
+#include "fm1_time.h"
+#include "fm1_sys.h"
+#include "fm1_irq.h"
+#include "fm1_guard.h"
+#include "fm1_input.h"
+#include "fm1_timer.h"
+#include "fm1_audio.h"
+#include "fm1_adc.h"
+#include "fm1_lcd_hw.h"
+#include "fm1_cpu1.h"
+#include "felucca_tables.h"
+
+#include "libc.c"
+#include "lcd.c"
+#include "gfx.c"
+#include "core.h"
+#include "cpu1.h"
+#include "engines.c"
+#include "drums.c"
+#include "params.c"
+#include "voice.c"
+#include "slicer.c"
+#include "fx.c"
+#ifndef FELUCCA_OTA
+#define FELUCCA_OTA 1
 #endif
-
-#include "sloop_logo.h"
-
-#define AUDILUNE_TURQUOISE RGB(0, 197, 205) /* #00C5CD */
-
-/* Phase 1: Centered AUDILUNE crescent moon graphic on #000000 black canvas */
-UI_SMALL static void audilune_logo_draw(void)
+#ifndef FELUCCA_OTA_DRYRUN
+#define FELUCCA_OTA_DRYRUN 0
+#endif
+#ifndef FELUCCA_CPU1
+#define FELUCCA_CPU1 1
+#endif
+#ifndef FELUCCA_ID
+#define FELUCCA_ID "FM-1_900"
+#endif
+#ifndef FELUCCA_CDC
+#define FELUCCA_CDC 0
+#endif
+#ifndef FELUCCA_UAC
+#define FELUCCA_UAC 1
+#endif
+#ifndef FELUCCA_UAC_TONE
+#define FELUCCA_UAC_TONE 0
+#endif
+#include "usb.c"
+#ifndef FELUCCA_UART
+#define FELUCCA_UART 1
+#endif
+#if FELUCCA_UART
+#include "midi_uart.c"
+#endif
+#define FELUCCA_ARRANGER 1
+#include "arranger.c"
+#include "seq.c"
+#include "audio.c"
+#include "cpu1.c"
+#include "panel.c"
+#include "ui.c"
+#include "ui_song.c"
+#include "ui_studio.c"
+#include "icons.c"
+#include "ui_draw.c"
+#include "ui_vis.c"
+#include "ui_layers.c"
+#include "ui_menu.c"
+#include "ui_input.c"
+#ifndef FELUCCA_FLASH
+#define FELUCCA_FLASH 1
+#endif
+#if FELUCCA_OTA && !FELUCCA_FLASH
+#error "FELUCCA_OTA needs FELUCCA_FLASH"
+#endif
+#if FELUCCA_FLASH
+#include "fm1_flash.h"
+static uint8_t flash_ok;
+static int st_read(uint32_t off, void *dst, uint32_t n)
 {
-    uint32_t r0;
-    uint32_t x0 = (240u - SLOOP_SPLASH_W) / 2u;
-    uint32_t y0 = (240u - SLOOP_SPLASH_H) / 2u;
-    for (r0 = 0; r0 < SLOOP_SPLASH_H; r0 += 120u) {
-        uint32_t rows = SLOOP_SPLASH_H - r0 > 120u ? 120u : SLOOP_SPLASH_H - r0;
-        uint32_t lo = r0 * SLOOP_SPLASH_W, hi = (r0 + rows) * SLOOP_SPLASH_W, pos = 0, i;
-        cv_begin(SLOOP_SPLASH_W, rows, C_BLACK);
-        for (i = 0; i < sizeof SLOOP_SPLASH_RLE && pos < hi; i++) {
-            uint32_t run = (SLOOP_SPLASH_RLE[i] >> 4) + 1u, c = SLOOP_SPLASH_RLE[i] & 15u, p;
-            if (c && pos + run > lo)
-                for (p = pos < lo ? lo : pos; p < pos + run && p < hi; p++)
-                    cv_px[p - lo] = swap16(SLOOP_SPLASH_PAL[c]);
-            pos += run;
-        }
-        cv_blit(x0, y0 + r0);
+    uint8_t *d = dst;
+    while (n) {
+        uint32_t k = n > 256u ? 256u : n, f = irq_save();
+        int rc = FL_FAR(fl_read_ram)(off, d, k);
+        irq_restore(f);
+        if (rc)
+            return rc;
+        off += k;
+        d += k;
+        n -= k;
     }
+    return 0;
 }
-
-/* Phase 2: Vivid turquoise "AUDILUNE" (#00C5CD) + white "v1.0.0" (#FFFFFF) */
-UI_SMALL static void audilune_version_draw(void)
+static void audio_silence(void)
 {
-    uint32_t w = text_w(&FONT_L, "AUDILUNE");
-    uint32_t k = (w * 2u <= 220u) ? 2u : 1u;
-    uint32_t h = 32u, y, x, off;
-
-    /* Line 1: "AUDILUNE" in vivid turquoise (#00C5CD) */
-    cv_begin(240, h * k, C_BLACK);
-    cv_text(0, 0, &FONT_L, "AUDILUNE", AUDILUNE_TURQUOISE);
-    off = (240u - w * k) / 2u;
-    if (k > 1u) {
-        for (y = h * k; y-- > 0;)
-            for (x = w * k; x-- > 0;)
-                cv_px[y * 240u + off + x] = cv_px[(y / k) * 240u + x / k];
-        for (y = 0; y < h * k; y++)
-            for (x = 0; x < off; x++)
-                cv_px[y * 240u + x] = swap16(C_BLACK);
+    uint32_t i;
+    for (i = 0; i < sizeof abuf / sizeof abuf[0]; i++)
+        abuf[i] = 0;
+}
+static int fl_erase4k_quiet(uint32_t off, uint32_t *took)
+{
+    uint32_t f = irq_save();
+    int rc;
+    audio_silence();
+    rc = FL_FAR(fl_erase4k_ram)(off, took);
+    irq_restore(f);
+    return rc;
+}
+static int st_erase(uint32_t off)
+{
+    uint32_t took;
+    if (!FL_STORE_OK(off, 0x1000u))
+        return -8;
+    return fl_erase4k_quiet(off, &took);
+}
+static int st_prog(uint32_t off, const void *src, uint32_t n)
+{
+    if (!FL_STORE_OK(off, n))
+        return -8;
+    return fl_write(off, src, n);
+}
+#define ST_XIP_PTR(off) fm1_xip_ptr(off)
+#include "storage.c"
+#endif
+#include "upreset.c"
+#include "project.c"
+#if FELUCCA_OTA
+static uint8_t recovery_active;
+#define OTA_IDENTITY (recovery_active ? "FM-1_000" : FELUCCA_ID)
+#include "ota.c"
+static void recovery_poll(void);
+static uint32_t ota_now_ms(void) { return fm1_ms; }
+static void ota_idle(void)
+{
+    fm1_wdt_feed();
+    if (recovery_active) recovery_poll();
+}
+static int ota_in_area(uint32_t off, uint32_t n) { return FL_IN(off, n, OTA_AREA, OTA_AREA + OTA_AREA_LEN); }
+static int ota_erase(uint32_t off)
+{
+    uint32_t took;
+    if (!ota_in_area(off, 0x1000u) || (off & 0xFFFu))
+        return -8;
+    return fl_erase4k_quiet(off, &took);
+}
+static int ota_prog(uint32_t off, const void *p, uint32_t n)
+{
+    if (!ota_in_area(off, n))
+        return -8;
+    return fl_write(off, p, n);
+}
+static int ota_fread(uint32_t off, void *p, uint32_t n) { return st_read(off, p, n); }
+static void ota_show(uint32_t step, int32_t code)
+{
+    static const char *const STEP[] = {"", "PACKAGE", "CHECK HEAD", "LOADER", "CONFIRM", "RESTART"};
+    char b[24];
+    if (recovery_active) return;
+    lcd_fill(0, 0, 240, 240, C_BLACK);
+    draw_text_box(0, 92, 240, &FONT_S, "UPDATE", C_WHITE, 1);
+    if (step < 9u) {
+        draw_text_box(0, 124, 240, &FONT_S, STEP[step < 6u ? step : 0], C_HI, 1);
+        return;
     }
-    cv_blit(0, 82);
-
-    /* Line 2: "v1.0.0" centered below in pure white (#FFFFFF) */
-    cv_begin(240, 24, C_BLACK);
-    cv_text(120 - text_w(&FONT_S, "v1.0.0") / 2, 0, &FONT_S, "v1.0.0", C_WHITE);
-    cv_blit(0, 152);
+    if (code == 1)
+        str_cpy(b, "DRY RUN OK", sizeof b);
+    else {
+        uint32_t k = 0, v = (uint32_t)-code;
+        str_cpy(b, "FAILED  -", sizeof b);
+        while (b[k])
+            k++;
+        if (v >= 10u)
+            b[k++] = (char)('0' + v / 10u);
+        b[k++] = (char)('0' + v % 10u);
+        b[k] = 0;
+    }
+    draw_text_box(0, 124, 240, &FONT_S, b, C_HI, 1);
+    fm1_delay_ms(1500);
 }
-
-/* Complete 4000ms two-phase boot splash sequence */
-UI_SMALL static void sloop_splash(void)
+static void ota_commit(const uint8_t *parm)
 {
-    /* Phase 1: Graphic Splash (2000 ms) */
-    lcd_fill(0, 0, 240, 240, C_BLACK);
-    audilune_logo_draw();
-    fm1_delay_ms(2000);
-
-    /* Phase 2: Version Splash (2000 ms) */
-    lcd_fill(0, 0, 240, 240, C_BLACK);
-    audilune_version_draw();
-    fm1_delay_ms(2000);
-
-    /* Performance Initialization: clear to pure black at 4000 ms */
-    lcd_fill(0, 0, 240, 240, C_BLACK);
+    bootguard_clear(&bootguard);
+    usb_detach();
+    fm1_delay_ms(30);
+    fm1_enter_update(parm);
 }
+#endif
+#if FELUCCA_OTA
+#include "editor.c"
+#endif
+#if FELUCCA_CDC
+#include "console.c"
+#endif
+#if FELUCCA_OTA
+#include "recovery.c"
+#endif
+#include "splash.c"
+#include "main.c"
