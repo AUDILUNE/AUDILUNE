@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* AUDILUNE boot splash: draws the crescent moon logo first, then AUDILUNE + version. */
+/* AUDILUNE boot splash:
+ * Screen 1: Crescent moon logo only (2 seconds)
+ * Screen 2: Bold 3D-embossed white AUDILUNE wordmark + version (2 seconds) */
 #ifndef UI_SMALL
 #define UI_SMALL
 #endif
-#ifndef FELUCCA_LOGO_TEXT
-#define FELUCCA_LOGO_TEXT 0
-#endif
+
+#include "sloop_logo.h"
 
 /* Watchdog-safe hardware tick delay (works before Timer5 interrupts start) */
 UI_SMALL static void splash_wait_ms(uint32_t ms)
@@ -18,29 +19,6 @@ UI_SMALL static void splash_wait_ms(uint32_t ms)
     }
 }
 
-#if FELUCCA_LOGO_TEXT
-UI_SMALL static void sloop_logo_draw(uint32_t y0)
-{
-    static const char L[8] = {'A', 'U', 'D', 'I', 'L', 'U', 'N', 'E'};
-    uint32_t i, w = text_w(&FONT_L, "AUDILUNE"), k = w * 3u <= 232u ? 3u : 2u, h = 32u, off, y, x;
-    int32_t px = 0;
-    char c[2] = {0, 0};
-    cv_begin(240, h * k, C_BLACK);
-    for (i = 0; i < 8u; i++) {
-        c[0] = L[i];
-        px = cv_text(px, 0, &FONT_L, c, i ? TE_COL_DEF[(i - 1u) & 3u] : C_WHITE);
-    }
-    off = (240u - w * k) / 2u;
-    for (y = h * k; y-- > 0;)
-        for (x = w * k; x-- > 0;)
-            cv_px[y * 240u + off + x] = cv_px[(y / k) * 240u + x / k];
-    for (y = 0; y < h * k; y++)
-        for (x = 0; x < off; x++)
-            cv_px[y * 240u + x] = swap16(C_BLACK);
-    cv_blit(0, y0 + 60u);
-}
-#else
-#include "sloop_logo.h"
 UI_SMALL static void sloop_logo_draw(uint32_t y0)
 {
     uint32_t r0;
@@ -58,26 +36,91 @@ UI_SMALL static void sloop_logo_draw(uint32_t y0)
         cv_blit((240u - SLOOP_SPLASH_W) / 2u, y0 + r0);
     }
 }
-#endif
 
-/* Two-stage boot screen:
- * 1) Crescent moon logo only (2 seconds)
- * 2) AUDILUNE title and version number (2 seconds) */
+/* Draws bold geometric letters for "AUDILUNE" (each glyph is 18x26 px, stroke 4 px) */
+UI_SMALL static void audilune_word_pass(int32_t ox, int32_t oy, uint16_t col)
+{
+    const int32_t w = 18, h = 26, s = 4, step = 23;
+    int32_t x = ox;
+
+    /* A */
+    lcd_fill(x + 2, oy, w - 4, s, col);
+    lcd_fill(x, oy + 2, s, h - 2, col);
+    lcd_fill(x + w - s, oy + 2, s, h - 2, col);
+    lcd_fill(x + s, oy + 12, w - 2 * s, s, col);
+    x += step;
+
+    /* U */
+    lcd_fill(x, oy, s, h - 2, col);
+    lcd_fill(x + w - s, oy, s, h - 2, col);
+    lcd_fill(x + 2, oy + h - s, w - 4, s, col);
+    x += step;
+
+    /* D */
+    lcd_fill(x, oy, s, h, col);
+    lcd_fill(x + s, oy, w - s - 3, s, col);
+    lcd_fill(x + s, oy + h - s, w - s - 3, s, col);
+    lcd_fill(x + w - s, oy + 3, s, h - 6, col);
+    x += step;
+
+    /* I (compact width 10 px) */
+    lcd_fill(x, oy, 10, s, col);
+    lcd_fill(x + 3, oy + s, 4, h - 2 * s, col);
+    lcd_fill(x, oy + h - s, 10, s, col);
+    x += 15;
+
+    /* L */
+    lcd_fill(x, oy, s, h, col);
+    lcd_fill(x + s, oy + h - s, w - s, s, col);
+    x += step;
+
+    /* U */
+    lcd_fill(x, oy, s, h - 2, col);
+    lcd_fill(x + w - s, oy, s, h - 2, col);
+    lcd_fill(x + 2, oy + h - s, w - 4, s, col);
+    x += step;
+
+    /* N */
+    lcd_fill(x, oy, s, h, col);
+    lcd_fill(x + w - s, oy, s, h, col);
+    lcd_fill(x + 4, oy + 4, 3, 6, col);
+    lcd_fill(x + 7, oy + 9, 4, 7, col);
+    lcd_fill(x + 11, oy + 15, 3, 6, col);
+    x += step;
+
+    /* E */
+    lcd_fill(x, oy, s, h, col);
+    lcd_fill(x + s, oy, w - s, s, col);
+    lcd_fill(x + s, oy + 11, w - s - 3, s, col);
+    lcd_fill(x + s, oy + h - s, w - s, s, col);
+}
+
+/* Two-stage boot screen */
 UI_SMALL static void sloop_splash(void)
 {
-    const char *title = "AUDILUNE";
     const char *ver = "v1.0";
+    /* Total wordmark width = 7*23 + 15 - 5 = 171 px -> centered at x = 34 */
+    const int32_t wx = 34;
+    const int32_t wy = 96;
 
-    /* Screen 1: Crescent moon logo only */
+    /* Screen 1: Crescent moon logo centered vertically */
     lcd_fill(0, 0, 240, 240, C_BLACK);
-    sloop_logo_draw(10);
+    sloop_logo_draw((240u - SLOOP_SPLASH_H) / 2u);
     splash_wait_ms(2000);
 
-    /* Screen 2: AUDILUNE + version number */
+    /* Screen 2: Floating 3D-embossed bold white AUDILUNE + version number */
     lcd_fill(0, 0, 240, 240, C_BLACK);
-    cv_begin(240, 64, C_BLACK);
-    cv_text(120 - text_w(&FONT_L, title) / 2, 0, &FONT_L, title, C_WHITE);
-    cv_text(120 - text_w(&FONT_S, ver) / 2, 36, &FONT_S, ver, RGB(196, 196, 204));
-    cv_blit(0, 88);
+    /* Deep drop shadow (bottom-right) */
+    audilune_word_pass(wx + 2, wy + 2, RGB(45, 50, 62));
+    /* Raised bevel edge (top-left) */
+    audilune_word_pass(wx - 1, wy - 1, RGB(155, 165, 180));
+    /* Crisp bold white top face */
+    audilune_word_pass(wx, wy, C_WHITE);
+
+    /* Version number centered neatly underneath */
+    cv_begin(240, 24, C_BLACK);
+    cv_text(120 - text_w(&FONT_S, ver) / 2, 0, &FONT_S, ver, RGB(145, 155, 170));
+    cv_blit(0, wy + 38);
+
     splash_wait_ms(2000);
 }
