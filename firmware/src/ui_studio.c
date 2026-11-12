@@ -104,7 +104,7 @@ UI_SMALL static void te_text_c(int32_t cx, int32_t y, const char *s, uint16_t c)
  * and 1.5s live parameter popups when turning any knob */
 UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *const val[4], int32_t sect, uint32_t *cache)
 {
-    char line[48], nb[12];
+    char line[36], nb[12];
     uint32_t hot = ui.hot_t > 0 && ui.hot_col < 4u && lab[ui.hot_col][0] != 0;
     uint32_t sig = studio_hash((uint32_t)song.sel * 17u + (uint32_t)song.g[G_BPM] * 31u +
                                (uint32_t)(sect + 1) * 97u + hot * 5003u + (uint32_t)ui.hot_col * 131u,
@@ -388,18 +388,18 @@ UI_SMALL static void studio_tracks_draw(void)
     }
 }
 /* ---------------------------------------------------------------- DRUMS --- */
-static const char *const LV_NAME = {"norm", "ghost", "soft", "hard"};
+static const char *const LV_NAME[4] = {"norm", "ghost", "soft", "hard"};
 UI_SMALL static uint32_t lvl_rank(uint32_t lvl);                 /* (below) ghost 0, soft 1, norm 2, hard 3 */
 UI_SMALL static uint16_t lvl_col(uint32_t lvl)                   /* a hit's colour by its level */
 {
-    return lvl == LV_GHOST ? TE_DIM : lvl == LV_SOFT ? TE_MID : lvl == LV_HARD ? C_WHITE : TE_DRUM;
+    return lvl == LV_GHOST ? TE_DIM[3] : lvl == LV_SOFT ? TE_MID[3] : lvl == LV_HARD ? C_WHITE : TE_DRUM;
 }
 static uint16_t pad_lit[DRUM_LANES];                   /* pads and key LEDs: frames left lit */
-static uint8_t key_lit;                             /* menu NOTES, a synth track: frames its key stays lit */
+static uint8_t key_lit[27];                             /* menu NOTES, a synth track: frames its key stays lit */
 static uint8_t key_lit_trk = 0xFF;                      /* (the track key_lit is for) */
 UI_SMALL static void pads_tick(void)                             /* once a frame: the hits since the last one */
 {
-    uint32_t i, hits, n[NPART], k, w;
+    uint32_t i, hits, n[NPART][4], k, w;
     fm1_irq_off();
     hits = drums.hits;
     drums.hits = 0;
@@ -422,7 +422,7 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
     for (k = 0; k < 27u; k++)
         if (key_lit[k])
             key_lit[k]--;
-    if (song.sel < NPART && (n[song.sel] | n[song.sel] | n[song.sel] | n[song.sel]))
+    if (song.sel < NPART && (n[song.sel][0] | n[song.sel][1] | n[song.sel][2] | n[song.sel][3]))
         for (k = 0; k < 27u; k++) {
             uint32_t note = kb_map(TSEL, k);
             if (note < 128u && (n[song.sel][note >> 5] >> (note & 31u)) & 1u)
@@ -436,21 +436,21 @@ UI_SMALL static void drum_screen_draw(void)
     if (drum_cursor >= len) drum_cursor = (uint8_t)(len - 1u);
     bank = drum_cursor / 16u;
     {
-        char st, nm;
+        char st[16], nm[9];
         const char *style = DRUM_KIT_STYLES[kit];
         if (kit >= DRUM_SYN) {                          /* SYN1..4: the name you gave it (editor DRUM SYNTH) */
             memcpy(nm, dsu_kit(kit - DRUM_SYN)->name, 8);
-            nm = 0;
-            if (nm)
+            nm[8] = 0;
+            if (nm[0])
                 style = nm;
         }
         te_lower(st, style, sizeof st);
-        st = 0;
+        st[12] = 0;
         te_header(st, TE_DRUM, &head, -1);
     }
     sig = kit * 131u + drum_page * 7u + drum_lane * 977u + bank * 31u + len + (uint32_t)drum_tweaked() * 7919u;   /* title band */
     if (ui.force || sig != title_sig) {
-        char b;
+        char b[8];
         title_sig = sig;
         cv_begin(240, 44, C_BLACK);
         cv_rect(2, 4, 34, 34, TE_DRUM);
@@ -471,8 +471,8 @@ UI_SMALL static void drum_screen_draw(void)
     for (i = 0; i < len; i++) {
         const dstep_t *s = &TDRUM->dstep[i];
         sig = sig * 31u + dstep_mask(s);
-        sig = sig * 31u + s->lvl + s->lvl * 7u + s->lvl * 49u + s->lvl * 343u;
-        sig = sig * 31u + s->rat + s->rat * 7u + s->rat * 49u + s->rat * 343u;
+        sig = sig * 31u + s->lvl[0] + s->lvl[1] * 7u + s->lvl[2] * 49u + s->lvl[3] * 343u;
+        sig = sig * 31u + s->rat[0] + s->rat[1] * 7u + s->rat[2] * 49u + s->rat[3] * 343u;
     }
     if (ui.force || sig != body_sig) {
         body_sig = sig;
@@ -503,15 +503,15 @@ UI_SMALL static void drum_screen_draw(void)
             }
             if (ui.sheet) {                            /* (2.7.2) OCT+ held: the hit's sheet (2.8.1: a strip at the bottom) */
                 const dstep_t *s = &TDRUM->dstep[drum_cursor];
-                char r, nu;
-                const char *val = {r, nu, FILL_N[step_fill(TDRUM, drum_cursor) % 3u], "", "", ""};
+                char r[4], nu[8];
+                const char *val[6] = {r, nu, FILL_N[step_fill(TDRUM, drum_cursor) % 3u], "", "", ""};
                 int8_t m = TDRUM->micro[drum_cursor];
                 str_cpy(r, dstep_has(s, drum_lane) ? "x1" : "--", 4);
                 if (dstep_has(s, drum_lane))
-                    r = (char)('1' + dstep_rat(s, drum_lane));
+                    r[1] = (char)('1' + dstep_rat(s, drum_lane));
                 fmt_int(nu, m);
-                if (m > 0) { nu = '+'; fmt_int(nu + 1, m); }
-                sheet_bar(84, DSHEET_N, val, ui.sheet - 1u, TE_DIM);
+                if (m > 0) { nu[0] = '+'; fmt_int(nu + 1, m); }
+                sheet_bar(84, DSHEET_N, val, ui.sheet - 1u, TE_DIM[3]);
             }
         } else {                                       /* KIT: 16 pads, lit on each hit; SOUND (2.7): the one KNOB 1 picks
                                                         * framed, a tuned or shortened / lengthened one marked */
@@ -530,43 +530,43 @@ UI_SMALL static void drum_screen_draw(void)
         cv_blit(0, 84);
     }
     {
-        static char v;
-        const char *val = {v, v, v, v};
-        static const char *const LG = {"sound", "step", "hit", "level"}, *const LK = {"kit", "level", "reverb", "pan"},
-                                 *const LS = {"sound", "tune", "decay", "level"};
-        int32_t ratio;
+        static char v[4][12];
+        const char *val[4] = {v[0], v[1], v[2], v[3]};
+        static const char *const LG[4] = {"sound", "step", "hit", "level"}, *const LK[4] = {"kit", "level", "reverb", "pan"},
+                                 *const LS[4] = {"sound", "tune", "decay", "level"};
+        int32_t ratio[4];
         if (!drum_page) {
             const dstep_t *s = &TDRUM->dstep[drum_cursor];
-            str_cpy(v, LANE_SHORT[drum_lane], 8);
-            fmt_int(v, drum_cursor + 1);
-            str_cpy(v, dstep_has(s, drum_lane) ? "on" : "--", 4);
-            str_cpy(v, dstep_has(s, drum_lane) ? LV_NAME[dstep_lvl(s, drum_lane)] : "--", 8);
-            ratio = (int32_t)drum_lane * 1000 / (DRUM_LANES - 1);
-            ratio = (int32_t)drum_cursor * 1000 / (int32_t)(len > 1u ? len - 1u : 1u);
-            ratio = v == 'o' ? 1000 : 0;
-            ratio = dstep_has(s, drum_lane) ? (int32_t)lvl_rank(dstep_lvl(s, drum_lane)) * 333 : 0;
+            str_cpy(v[0], LANE_SHORT[drum_lane], 8);
+            fmt_int(v[1], drum_cursor + 1);
+            str_cpy(v[2], dstep_has(s, drum_lane) ? "on" : "--", 4);
+            str_cpy(v[3], dstep_has(s, drum_lane) ? LV_NAME[dstep_lvl(s, drum_lane)] : "--", 8);
+            ratio[0] = (int32_t)drum_lane * 1000 / (DRUM_LANES - 1);
+            ratio[1] = (int32_t)drum_cursor * 1000 / (int32_t)(len > 1u ? len - 1u : 1u);
+            ratio[2] = v[2][0] == 'o' ? 1000 : 0;
+            ratio[3] = dstep_has(s, drum_lane) ? (int32_t)lvl_rank(dstep_lvl(s, drum_lane)) * 333 : 0;
             te_dials(184, LG, val, ratio, 1u, &footer);
         } else if (drum_page == 2u) {                  /* SOUND (2.7): the sound, its TUNE and DECAY, the drums' level */
-            str_cpy(v, LANE_SHORT[drum_lane], 8);
-            fmt_int(v, drum_tune[drum_lane]);
-            if (drum_tune[drum_lane] > 0) { v = '+'; fmt_int(v + 1, drum_tune[drum_lane]); }
-            fmt_int(v, drum_dec[drum_lane]);
-            if (drum_dec[drum_lane] > 0) { v = '+'; fmt_int(v + 1, drum_dec[drum_lane]); }
-            fmt_int(v, song.g[G_DRLVL] * 100 / 127);
-            ratio = (int32_t)drum_lane * 1000 / (DRUM_LANES - 1);
-            ratio = (drum_tune[drum_lane] - DRUM_TUNE_MIN) * 1000 / (DRUM_TUNE_MAX - DRUM_TUNE_MIN);
-            ratio = (drum_dec[drum_lane] - DRUM_DEC_MIN) * 1000 / (DRUM_DEC_MAX - DRUM_DEC_MIN);
-            ratio = song.g[G_DRLVL] * 1000 / 127;
+            str_cpy(v[0], LANE_SHORT[drum_lane], 8);
+            fmt_int(v[1], drum_tune[drum_lane]);
+            if (drum_tune[drum_lane] > 0) { v[1][0] = '+'; fmt_int(v[1] + 1, drum_tune[drum_lane]); }
+            fmt_int(v[2], drum_dec[drum_lane]);
+            if (drum_dec[drum_lane] > 0) { v[2][0] = '+'; fmt_int(v[2] + 1, drum_dec[drum_lane]); }
+            fmt_int(v[3], song.g[G_DRLVL] * 100 / 127);
+            ratio[0] = (int32_t)drum_lane * 1000 / (DRUM_LANES - 1);
+            ratio[1] = (drum_tune[drum_lane] - DRUM_TUNE_MIN) * 1000 / (DRUM_TUNE_MAX - DRUM_TUNE_MIN);
+            ratio[2] = (drum_dec[drum_lane] - DRUM_DEC_MIN) * 1000 / (DRUM_DEC_MAX - DRUM_DEC_MIN);
+            ratio[3] = song.g[G_DRLVL] * 1000 / 127;
             te_dials(184, LS, val, ratio, 3u, &footer);
         } else {
-            fmt_int(v, (int32_t)kit + 1);
-            fmt_int(v, song.g[G_DRLVL] * 100 / 127);
-            fmt_int(v, song.g[G_DRREV] * 100 / 127);
-            fmt_int(v, TDRUM->p[P_PAN]);
-            ratio = (int32_t)kit * 1000 / (int32_t)(DRUM_KITS - 1u);
-            ratio = song.g[G_DRLVL] * 1000 / 127;
-            ratio = song.g[G_DRREV] * 1000 / 127;
-            ratio = (TDRUM->p[P_PAN] + 64) * 1000 / 127;
+            fmt_int(v[0], (int32_t)kit + 1);
+            fmt_int(v[1], song.g[G_DRLVL] * 100 / 127);
+            fmt_int(v[2], song.g[G_DRREV] * 100 / 127);
+            fmt_int(v[3], TDRUM->p[P_PAN]);
+            ratio[0] = (int32_t)kit * 1000 / (int32_t)(DRUM_KITS - 1u);
+            ratio[1] = song.g[G_DRLVL] * 1000 / 127;
+            ratio[2] = song.g[G_DRREV] * 1000 / 127;
+            ratio[3] = (TDRUM->p[P_PAN] + 64) * 1000 / 127;
             te_dials(184, LK, val, ratio, 2u, &footer);
         }
     }
