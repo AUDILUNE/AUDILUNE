@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* AUDILUNE Block 2: Display Engine — top status bar, columns, graphs, and
+/* AUDILUNE Block 2: Display Engine — top status bar, columns, step graphs, and
  * persistent 1px-bordered Bottom Info Bar (HUD Footer) with 1.5s popups. */
 #define B4 4
 #define B8 8
@@ -112,7 +112,6 @@ UI_SMALL static void draw_head(void)
     }
     cv_blit(0, Y_HEAD);
 }
-
 UI_SMALL static void draw_frame(void)
 {
     uint32_t i;
@@ -225,7 +224,6 @@ UI_SMALL static void graph_lfo(const track_t *t, uint16_t c)
     }
     cv_line(0, 50, 239, 50, C_LINE);
 }
-
 UI_SMALL static void graph_steps(const track_t *t, uint16_t c)
 {
     uint32_t i, len = (uint32_t)t->p[ P_SLEN ];
@@ -370,7 +368,6 @@ UI_SMALL static void graph_fx(const track_t *t, uint16_t c)
         cv_rect(x - 3, 90 - h, 7, 1, c);
     }
 }
-
 UI_SMALL static void graph_slicer(const track_t *t, uint16_t c)
 {
     uint32_t i, pat = sl_pattern(t), mode = (uint32_t)t->p[ P_SLCR ], cur = sl[ t - trk ].idx;
@@ -423,11 +420,11 @@ UI_SMALL static uint32_t graph_signature(void)
     uint32_t h = 2166136261u, i;
     if (ui.hot_t && settings.zoom)
         h = str_hash(str_hash(str_hash(h ^ 0x5555u, ui.focus_v), ui.focus_l), ui.focus_u);
-    if (!ui.home && big_page(pg))
+    if (ui.home || big_page(pg))
         for (i = 0; i < 4u; i++)
             h = str_hash(str_hash(str_hash(h ^ ui.big_c[ i ] * 31u, ui.big_v[ i ]), ui.big_l[ i ]), ui.big_u[ i ]);
     if (ui.home)
-        return h ^ (ui.frame / 2u);
+        return h ^ (uint32_t)TSEL->eng_req * 131u ^ song.sel * 7777u;
     h ^= (uint32_t)pg->graph * 131u + TSEL->eng_req + song.sel * 7777u;
     for (i = 0; i < P_COUNT; i++)
         h = (h ^ (uint32_t)t->p[ i ]) * 16777619u;
@@ -496,7 +493,6 @@ UI_SMALL static void graph_user(void)
         cv_text(54, y, &FONT_S, nm, used ? (sel ? C_WHITE : C_HI) : C_DIM);
     }
 }
-
 UI_SMALL static void graph_slots(void)
 {
     uint32_t i;
@@ -659,34 +655,6 @@ UI_SMALL static void draw_tracks(void)
         }
     }
 }
-
-#include "scratch.h"
-_Static_assert(sizeof main_scratch.snap == SCOPE_N * sizeof(int16_t), "the scratch holds the snapshot");
-UI_SMALL static void graph_scope(uint16_t c)
-{
-    int16_t *snap = main_scratch.snap;
-    uint32_t w = scope_w, i, trig = 0;
-    int32_t py = 50, x, peak = 1500;
-    for (i = 0; i < SCOPE_N; i++) {
-        snap[ i ] = scope_buf[ (w + i) & (SCOPE_N - 1u) ];
-        if (snap[ i ] > peak)
-            peak = snap[ i ];
-        else if (-snap[ i ] > peak)
-            peak = -snap[ i ];
-    }
-    for (i = 1; i < SCOPE_N - 240u; i++)
-        if (snap[ i - 1 ] < 0 && snap[ i ] >= 0) {
-            trig = i;
-            break;
-        }
-    cv_line(0, 50, 239, 50, C_LINE);
-    for (x = 0; x < 240; x++) {
-        int32_t y = 50 - snap[ trig + (uint32_t)x ] * 44 / peak;
-        if (x)
-            cv_line(x - 1, py, x, y, c);
-        py = y;
-    }
-}
 UI_SMALL static void graph_big(void)
 {
     uint32_t c, n = 0;
@@ -711,6 +679,7 @@ UI_SMALL static void graph_big(void)
     }
 }
 
+/* AUDILUNE Block 2: Strictly step-and-parameter based editor rendering (zero waveforms) */
 UI_SMALL static void draw_graph(void)
 {
     const page_t *pg = cur_page();
@@ -729,7 +698,8 @@ UI_SMALL static void draw_graph(void)
     cv_begin(240, H_GRAPH, C_BLACK);
     cv_oy = G_OY;
     if (ui.home) {
-        graph_scope(c);
+        cv_oy = 0;
+        graph_big();
     } else if (drum_note) {
         static const char *const L[ I2 ] = {"DRUM TRACK", "SEQ  TRACKS  GLO DRUMS"};
         cv_text((240 - text_w(&FONT_S, L[ I0 ])) / 2, 26, &FONT_S, L[ I0 ], C_HI);
@@ -778,10 +748,10 @@ UI_SMALL static void draw_graph(void)
             break;
         }
     }
-    top = !ui.home && !drum_note && (pg->graph == GR_BROWSE || pg->graph == GR_SLOTS || pg->graph == GR_USER ||
-                                     pg->graph == GR_ROLL || big_page(pg));
+    top = ui.home || (!drum_note && (pg->graph == GR_BROWSE || pg->graph == GR_SLOTS || pg->graph == GR_USER ||
+                                     pg->graph == GR_ROLL || big_page(pg)));
     cv_oy = 0;
-    if (ui.hot_t && settings.zoom && !(top && (big_page(pg) || pg->graph == GR_ROLL) && !drum_note)) {
+    if (ui.hot_t && settings.zoom && !(top && (ui.home || big_page(pg) || pg->graph == GR_ROLL) && !drum_note)) {
         int32_t x;
         top = 1;
         cv_rect(0, 0, 150, 50, C_BLACK);
