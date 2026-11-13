@@ -6,23 +6,19 @@
 #define AUDILUNE_GENRE_COUNT 6
 #define AUDILUNE_THEME_COUNT 8
 
-static const char *const AUDILUNE_GENRE_NAMES[AUDILUNE_GENRE_COUNT] = {
-    "AMBIENT", "DOWNTEMPO", "GLITCH HOP", "PUNCHY", "EXPERIMENTAL", "INDUSTRIAL"
-};
-
 static const char *const AUDILUNE_THEME_NAMES[AUDILUNE_THEME_COUNT] = {
     "TEAL", "ORANGE", "BURGY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"
 };
 
 static uint8_t audilune_genre_idx = 0;
 static uint8_t audilune_theme_idx = 0;
-static uint8_t audilune_infinite_on = 0;
 
 /* Bare-metal HUD popup formatter (no stdio.h needed) for 1.5s status bar linger */
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit)
 {
-    char buf[36], num[14];
+    char buf[30 + 6], num[10 + 4];
     uint32_t p = 0, n = 0;
+
     int32_t v = val;
     while (label && label[p] && p < 18u) {
         buf[p] = label[p];
