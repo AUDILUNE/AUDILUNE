@@ -5,9 +5,24 @@
 #ifndef AUDILUNE_GEN_C
 #define AUDILUNE_GEN_C
 
-/* Forward declarations for internal generative helpers */
-static uint32_t next_rand(void);
-static uint8_t audilune_gen_clamp_note(int32_t note);
+/* Internal generative helpers */
+static uint32_t next_rand(void)
+{
+    static uint32_t gen_seed = 0x5A17C39Du;
+    gen_seed ^= gen_seed << 13;
+    gen_seed ^= gen_seed >> 17;
+    gen_seed ^= gen_seed << 5;
+    return gen_seed;
+}
+
+static uint8_t audilune_gen_clamp_note(int32_t note)
+{
+    if (note < 24)
+        return 24u;
+    if (note > 108)
+        return 108u;
+    return (uint8_t)note;
+}
 
 /* Shared state read/written by ui_input.c (HOME 3s hold & ALGORITHM encoder) */
 static volatile uint8_t audilune_infinite_on;
@@ -18,6 +33,7 @@ enum {
     GENRE_AMBIENT = 0,
     GENRE_DOWNTEMPO = 1,
     GENRE_GLITCH_HOP = 2,
+
     GENRE_PUNCHY = 3,
     GENRE_EXPERIMENTAL = 4,
     GENRE_INDUSTRIAL = 5,
