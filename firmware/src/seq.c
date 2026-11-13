@@ -209,6 +209,25 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
     return kb_pitch(t, k, song.octave);
 }
 
+/* ------------------------------------------- AUDILUNE forward declarations --- */
+#ifndef CHAIN_MAX
+#define CHAIN_MAX 16u
+#endif
+static int8_t live_sec = -1;
+static int8_t live_req = -1;
+static uint8_t srec;
+static uint8_t chain_n;
+static uint8_t chain_sec[CHAIN_MAX];
+
+static void seq_release(track_t *t);
+static uint32_t step_vel(const step_t *s, uint32_t i);
+static void seq_stop(void);
+static void seq_reset_tracks(uint32_t phase);
+static void live_block(void);
+static void click_tick(void);
+static void srec_stop(void);
+static void click_on(int accent);
+
 static const int8_t CHORD_DEG[6][4] = {
     {0, -1, -1, -1},                     /* OFF */
     {0, 2, 4, -1},                       /* TRIAD: 1 3 5 */
@@ -223,6 +242,7 @@ static uint32_t chord_notes(const track_t *t, uint32_t n, uint8_t *c)
     uint32_t k = 0, j;
     if (type == 5u) {
         static const uint8_t PW[3] = {0, 7, 12};
+
         for (j = 0; j < 3u; j++)
             if (n + PW[j] < 128u)
                 c[k++] = (uint8_t)(n + PW[j]);
@@ -1509,9 +1529,122 @@ static void arp_play(track_t *t, uint32_t n)
         rec_note(t, n, 100, 0, 0);
 }
 
+/* ------------------------------------------- AUDILUNE transport & chain --- */
+static uint32_t step_vel(const step_t *s, uint32_t i)
+{
+    uint32_t lv = (s->lvl >> (2u * i)) & 3u;
+    return lvl_vel(lv, s->vel ? s->vel : 100u);
+}
+
+static void seq_release(track_t *t)
+{
+    uint32_t i;
+    for (i = 0; i < t->seq_n && i < 4u; i++) {
+        uint32_t n = t->seq_notes[i];
+        if (!live_has(t, n))
+            trk_note_off(t, n);
+        seq_out_off(t, n);
+    }
+    t->seq_n = 0;
+    t->seq_hold = 0;
+    t->slide_glide = 0;
+}
+
+static uint8_t click_env;
+static uint32_t click_rem;
+static void click_on(int accent)
+{
+    if (!song.g[G_CLICK] && !ci_on)
+        return;
+    click_env = accent ? 2u : 1u;
+    click_rem = FS / 40u;
+}
+static void click_tick(void)
+{
+    static uint32_t last_beat = 0xFFFFFFFFu;
+    if (song.playing && clk_beat != last_beat) {
+        last_beat = clk_beat;
+        if (song.g[G_CLICK])
+            click_on((clk_beat & 3u) == 0u);
+    } else if (!song.playing) {
+        last_beat = 0xFFFFFFFFu;
+    }
+    if (click_rem) {
+        if (click_rem <= CTL) {
+            click_rem = 0;
+            click_env = 0;
+        } else {
+            click_rem -= CTL;
+        }
+    }
+}
+
+static void seq_reset_tracks(uint32_t phase)
+{
+    uint32_t i;
+    (void)phase;
+    for (i = 0; i < NTRK; i++) {
+        track_t *t = &trk[i];
+        if (!is_drum(t))
+            seq_release(t);
+        t->seq_abs = SEQ_NONE;
+        t->seq_idx = 0;
+        t->seq_off = 0;
+        t->seq_hold = 0;
+        t->seq_skip = 0;
+        t->pass = 0;
+        t->rskip_n = 0;
+        t->rskip_lanes = 0;
+        locks_restore(t);
+    }
+}
+
+static void srec_stop(void)
+{
+    srec = 0;
+    chain_n = 0;
+    live_req = -1;
+}
+
+static void live_block(void)
+{
+    static uint32_t last_bar = 0xFFFFFFFFu;
+    uint32_t bar = clk_beat >> 2;
+    if (bar == last_bar)
+        return;
+    last_bar = bar;
+    if (live_req >= 0) {
+        live_sec = live_req;
+        live_req = -1;
+    }
+}
+
+static void seq_stop(void)
+{
+    uint32_t i;
+    song.playing = 0;
+    clk_pos = 0;
+    clk_beat = 0;
+    srec_stop();
+    live_sec = -1;
+    for (i = 0; i < NTRK; i++) {
+        track_t *t = &trk[i];
+        if (!is_drum(t))
+            seq_release(t);
+        t->seq_abs = SEQ_NONE;
+        t->seq_idx = 0;
+        t->seq_off = 0;
+        t->seq_hold = 0;
+        t->seq_skip = 0;
+        t->rh_n = 0;
+        locks_restore(t);
+    }
+    seq_out_all_off();
+}
+
 static int arp_step(track_t *t)
 {
-    uint32_t list[65], cnt, len = arp_list(t, list, &cnt), i, o, top = 0;
+    uint32_t list[60 + 5], cnt, len = arp_list(t, list, &cnt), i, o, top = 0;
     if (!len)
         return 0;
     t->arp_idx++;
@@ -1523,6 +1656,7 @@ static int arp_step(track_t *t)
     o = t->arp_idx % (uint32_t)(t->p[P_AOCT] > 0 ? t->p[P_AOCT] : 1);
     for (i = 0; i < cnt && i < 4u; i++) {
         uint32_t nt = (uint32_t)clamp((int32_t)list[i] + 12 * (int32_t)o, 0, 127);
+
         if (nt == 127u && top++)
             continue;
         if (!t->arp_note)
