@@ -2,6 +2,10 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
  * Adapted for AUDILUNE Firmware (Block 3: hardware_controls - ui_layers.c) */
 
+/* Forward declarations for AUDILUNE HUD helpers defined in ui_input.c */
+UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
+UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
+
 static const uint8_t LAYER_BTN[LY_COUNT] = {NB, B_FX, B_EDIT, B_ARP, B_SEQ, B_SCL, B_GLO, B_SAVE};
 static const char *const LAYER_NAME[LY_COUNT] = {"", "punch", "erase", "roll", "steps", "key", "mix", "song"};
 static void section_store(uint32_t s);
@@ -14,7 +18,7 @@ static uint8_t chain_tap[CHAIN_MAX], chain_taps;
 #define SHOW_MS 350u
 
 /* AUDILUNE 6 Master & Step Punch-In FX Names (OP1-OP6) */
-static const char *const AUDILUNE_FX_NAMES[6] = {
+static const char *const AUDILUNE_FX_NAMES[6u] = {
     "STUTTER", "TAPE STOP", "CRUSH", "REVERSE", "WASH", "OCT SLAM"
 };
 
@@ -42,8 +46,8 @@ UI_SMALL static void layers_init(void)
     uint32_t l;
     for (l = LY_FX; l < LY_COUNT; l++)
         ly_bit[l] = 1u << panel.btn[LAYER_BTN[l]];
-    dyn_bit[0] = 1u << panel.btn[B_OCTDN];
-    dyn_bit[1] = 1u << panel.btn[B_OCTUP];
+    dyn_bit[0u] = 1u << panel.btn[B_OCTDN];
+    dyn_bit[1u] = 1u << panel.btn[B_OCTUP];
     ft_btn_mask = 1u << panel.btn[B_REC];
     ft_drop_mask = 1u << panel.btn[B_PLAY];
     ui.lock_par = P_ED_FLT;
@@ -69,9 +73,9 @@ UI_SMALL static void pattern_rotate(track_t *t, int32_t d)
         keep = t->step[len - 1u];
         for (i = len - 1u; i > 0; i--)
             t->step[i] = t->step[i - 1u];
-        t->step[0] = keep;
+        t->step[0u] = keep;
     } else {
-        keep = t->step[0];
+        keep = t->step[0u];
         for (i = 0; i + 1u < len; i++)
             t->step[i] = t->step[i + 1u];
         t->step[len - 1u] = keep;
@@ -93,7 +97,7 @@ UI_SMALL static void pattern_length(track_t *t, int32_t d)
     }
     fm1_irq_on();
     {
-        char b[8];
+        char b[8u];
         fmt_int(b, t->p[P_SLEN]);
         ui_say("STEPS ", b);
     }
@@ -284,7 +288,7 @@ UI_SMALL static void steps_held_clear(void)
 UI_SMALL static void steps_held_fill(void)
 {
     track_t *t = TSEL;
-    static const char *const MSG[3] = {"FILL: NORMAL", "FILL ONLY", "NO FILL"};
+    static const char *const MSG[3u] = {"FILL: NORMAL", "FILL ONLY", "NO FILL"};
     uint32_t w, v = 0, first = 1;
     layer_undo_mark(t);
     step_pend_off &= (uint16_t)~ui.step_held;
@@ -365,7 +369,7 @@ UI_SMALL static void layer_key(uint32_t layer, uint32_t k, uint32_t down)
             return;
         }
         if (w < 0) {
-            static const int8_t PG[12] = {-1, 0, -1, 1, -1, 2, -1, -1, 3, -1, -1, -1};
+            static const int8_t PG[12u] = {-1, 0, -1, 1, -1, 2, -1, -1, 3, -1, -1, -1};
             if (k < 12u && PG[k] >= 0 && (uint32_t)PG[k] * 16u < trk_len(TSEL))
                 ui.step_page = (uint8_t)PG[k];
             return;
@@ -381,10 +385,10 @@ UI_SMALL static void layer_key(uint32_t layer, uint32_t k, uint32_t down)
         return;
     }
     case LY_SONG: {
-        char b[2] = {0, 0};
+        char b[2u] = {0, 0};
         if (w < 0)
             return;
-        b[0] = (char)('A' + (w & 3));
+        b[0u] = (char)('A' + (w & 3));
         if (w < 4) {
             if (arrangement_clock.running) {
                 ui_message("SONG PLAYS");
@@ -469,7 +473,7 @@ UI_SMALL static void chain_release(void)
         for (i = 0; i < chain_taps && i < CHAIN_MAX; i++)
             chain_sec[i] = chain_tap[i];
         chain_i = 0;
-        chain_bars = (uint8_t)section_bars(chain_tap[0]);
+        chain_bars = (uint8_t)section_bars(chain_tap[0u]);
         chain_n = (uint8_t)(chain_taps < CHAIN_MAX ? chain_taps : CHAIN_MAX);
         fm1_irq_on();
     }
@@ -555,7 +559,7 @@ UI_SMALL static void layer_knobs(uint32_t layer)
                 if (is_drum(t)) {
                     pen_lane_move(s);
                 } else {
-                    pen_note[0] = (uint8_t)clamp(pen_note[0] + s, 0, 127);
+                    pen_note[0u] = (uint8_t)clamp(pen_note[0u] + s, 0, 127);
                     pen_n = 1;
                 }
             } else if (k == 1u) {
@@ -574,7 +578,7 @@ UI_SMALL static void layer_knobs(uint32_t layer)
                     t->p[P_CHORD] = (int16_t)clamp(t->p[P_CHORD] + s, 0, 5);
             } else if (k == 1u) {
                 uint32_t i;
-                int16_t v = (int16_t)clamp(trk[0].p[P_SCALE] + s, 0, NSCALES - 1);
+                int16_t v = (int16_t)clamp(trk[0u].p[P_SCALE] + s, 0, NSCALES - 1);
                 for (i = 0; i < NPART; i++)
                     trk[i].p[P_SCALE] = v;
             } else if (k == 2u) {
@@ -600,7 +604,7 @@ UI_SMALL static void layer_knobs(uint32_t layer)
 }
 /* --------------------------------------------------------- drawing --- */
 typedef struct {
-    char lab;
+    char lab[8u];
     uint16_t bg, fg, top;
     uint8_t marks;
     uint8_t tag;
@@ -680,7 +684,7 @@ UI_SMALL static void punch_tiles_draw(const tile_t *tl, uint32_t *cache)
     }
 }
 
-static char hdr_r = "";
+static char hdr_r[12u] = "";
 UI_SMALL static void layer_title(const char *name, const char *sub, uint16_t col, uint32_t *cache)
 {
     uint32_t locked = ly_lock != LY_PLAY;
@@ -696,7 +700,7 @@ UI_SMALL static void layer_title(const char *name, const char *sub, uint16_t col
         int32_t w = (int32_t)text_w(&FONT_S, "LOCK") + 8;
         cv_rect(236 - w, 4, w, 15, C_WHITE);
         cv_text(240 - w, 4, &FONT_S, "LOCK", C_BLACK);
-    } else if (hdr_r) {
+    } else if (hdr_r[0u]) {
         cv_text(236 - text_w(&FONT_S, hdr_r), 4, &FONT_S, hdr_r, TE_G3);
     }
     cv_rect(0, 38, 240, 1, TE_G1);
@@ -705,7 +709,7 @@ UI_SMALL static void layer_title(const char *name, const char *sub, uint16_t col
 
 UI_SMALL static const char *lock_label(const track_t *t, uint32_t id)
 {
-    static char b;
+    static char b[8u];
     te_lower(b, track_desc(t, id % P_COUNT)->label, 8);
     return b;
 }
@@ -716,9 +720,9 @@ UI_SMALL static void layer_screen_draw(void)
 {
     static uint32_t head, tiles, foot;
     static tile_t tl[PUNCH_NFX];
-    static char v, sub;
-    const char *lab = {"", "", "", ""}, *val = {v, v, v, v};
-    int32_t ratio = {-1, -1, -1, -1};
+    static char v[4u][10u], sub[24u];
+    const char *lab[4u] = {"", "", "", ""}, *val[4u] = {v[0u], v[1u], v[2u], v[3u]};
+    int32_t ratio[4u] = {-1, -1, -1, -1};
     uint32_t i, layer = ui.layer, sel = song.sel;
     track_t *t = TSEL;
     uint16_t col = TE_COL[sel & 3u];
@@ -728,16 +732,16 @@ UI_SMALL static void layer_screen_draw(void)
         layer_shown = 1;
     }
     for (i = 0; i < 4u; i++)
-        v[i] = 0;
-    hdr_r = 0;
+        v[i][0u] = 0;
+    hdr_r[0u] = 0;
     memset(tl, 0, sizeof tl);
     for (i = 0; i < 16u; i++) {
         tl[i].bg = TE_G1;
         tl[i].fg = TE_G3;
     }
     str_cpy(sub, "track ", sizeof sub);
-    sub = (char)('1' + sel);
-    sub = 0;
+    sub[6u] = (char)('1' + sel);
+    sub[7u] = 0;
     switch (layer) {
     case LY_FX:
         col = TE_DRUM;
@@ -753,17 +757,17 @@ UI_SMALL static void layer_screen_draw(void)
             tl[i].fg = on ? C_BLACK : black ? TE_G3 : TE_G4;
             tl[i].top = on || black ? 0 : TE_DIM[i / 4u];
         }
-        lab = "delay", lab = "reverb", lab = "satur", lab = "chorus";
+        lab[0u] = "delay", lab[1u] = "reverb", lab[2u] = "satur", lab[3u] = "chorus";
         str_cpy(hdr_r, "fade ", sizeof hdr_r);
         fmt_int(hdr_r + 5, song.g[G_FXFADE]);
-        fmt_int(v, audilune_dsp_to_pct(t->p[P_DLY]));
-        fmt_int(v, audilune_dsp_to_pct(t->p[P_REV]));
-        fmt_int(v, audilune_dsp_to_pct(t->p[P_DIST]));
-        fmt_int(v, audilune_dsp_to_pct(t->p[P_CHOR]));
-        ratio = t->p[P_DLY] * 1000 / 127;
-        ratio = t->p[P_REV] * 1000 / 127;
-        ratio = t->p[P_DIST] * 1000 / 127;
-        ratio = t->p[P_CHOR] * 1000 / 127;
+        fmt_int(v[0u], audilune_dsp_to_pct(t->p[P_DLY]));
+        fmt_int(v[1u], audilune_dsp_to_pct(t->p[P_REV]));
+        fmt_int(v[2u], audilune_dsp_to_pct(t->p[P_DIST]));
+        fmt_int(v[3u], audilune_dsp_to_pct(t->p[P_CHOR]));
+        ratio[0u] = t->p[P_DLY] * 1000 / 127;
+        ratio[1u] = t->p[P_REV] * 1000 / 127;
+        ratio[2u] = t->p[P_DIST] * 1000 / 127;
+        ratio[3u] = t->p[P_CHOR] * 1000 / 127;
         break;
     case LY_ERASE:
     case LY_ROLL: {
@@ -806,16 +810,16 @@ UI_SMALL static void layer_screen_draw(void)
         if (layer == LY_ERASE && is_drum(t) && !mute && !undo.valid)
             str_cpy(sub, "black key: mute", sizeof sub);
         if (layer == LY_ERASE) {
-            lab = "shift", lab = "length", lab = is_drum(t) ? "" : "transp";
-            str_cpy(v, "<  >", 8);
-            fmt_int(v, t->p[P_SLEN]);
-            str_cpy(v, is_drum(t) ? "" : "-  +", 8);
+            lab[0u] = "shift", lab[1u] = "length", lab[2u] = is_drum(t) ? "" : "transp";
+            str_cpy(v[0u], "<  >", 8);
+            fmt_int(v[1u], t->p[P_SLEN]);
+            str_cpy(v[2u], is_drum(t) ? "" : "-  +", 8);
             if (!mute)
                 str_cpy(sub, undo.valid ? (undo.undone ? "oct+ redo" : "oct- undo") : sub, sizeof sub);
         } else {
-            lab = "rate";
-            str_cpy(v, N_ROLL[clamp(song.g[G_ROLL], 0, 4)], 8);
-            ratio = song.g[G_ROLL] * 250;
+            lab[0u] = "rate";
+            str_cpy(v[0u], N_ROLL[clamp(song.g[G_ROLL], 0, 4)], 8);
+            ratio[0u] = song.g[G_ROLL] * 250;
         }
         break;
     }
@@ -840,12 +844,12 @@ UI_SMALL static void layer_screen_draw(void)
                 if (on) {
                     lv = st->lvl & 3u;
                     rt = st->rat & 3u;
-                    note_name(tl[i].lab, st->note[0]);
+                    note_name(tl[i].lab, st->note[0u]);
                 } else if (st->time == ST_TIE) {
                     str_cpy(tl[i].lab, "--", 8);
                 }
             }
-            if (!tl[i].lab[0])
+            if (!tl[i].lab[0u])
                 fmt_int(tl[i].lab, (int32_t)idx + 1);
             tl[i].bg = on ? (lv == LV_GHOST ? TE_DIM[sel & 3u] : lv == LV_SOFT ? TE_MID[sel & 3u] : lv == LV_HARD ? C_WHITE : col)
                           : TE_G1;
@@ -859,9 +863,9 @@ UI_SMALL static void layer_screen_draw(void)
                 tl[i].top = TE_RED;
         }
         if (len > 16u) {
-            char p[4] = {'1', '/', '1', 0};
-            p[0] = (char)('1' + page);
-            p[2] = (char)('0' + (len + 15u) / 16u);
+            char p[4u] = {'1', '/', '1', 0};
+            p[0u] = (char)('1' + page);
+            p[2u] = (char)('0' + (len + 15u) / 16u);
             str_cpy(sub, "page ", sizeof sub);
             str_cpy(sub + 5, p, 4);
             if (is_drum(t))
@@ -869,39 +873,39 @@ UI_SMALL static void layer_screen_draw(void)
         } else if (is_drum(t)) {
             str_cpy(sub, "black keys: sound", sizeof sub);
         }
-        lab[0] = is_drum(t) ? "sound" : "note";
+        lab[0u] = is_drum(t) ? "sound" : "note";
         if (is_drum(t))
-            str_cpy(v[0], LANE_SHORT[pen_lane], 8);
+            str_cpy(v[0u], LANE_SHORT[pen_lane], 8);
         else
-            note_name(v[0], pen_note[0]);
-        ratio[0] = is_drum(t) ? pen_lane * 1000 / 15 : pen_note[0] * 1000 / 127;
+            note_name(v[0u], pen_note[0u]);
+        ratio[0u] = is_drum(t) ? pen_lane * 1000 / 15 : pen_note[0u] * 1000 / 127;
         if (ui.step_held) {
             uint32_t id = ui.lock_par % P_COUNT, w, idx;
             int k;
             for (w = 0; w < 16u && !((ui.step_held >> w) & 1u); w++)
                 ;
             idx = (page * 16u + w) % NSTEP;
-            lab[1] = is_drum(t) ? "level" : "vel", lab[2] = "ratchet", lab[3] = "nudge";
-            str_cpy(v[1], "-  +", 8);
+            lab[1u] = is_drum(t) ? "level" : "vel", lab[2u] = "ratchet", lab[3u] = "nudge";
+            str_cpy(v[1u], "-  +", 8);
             if (!is_drum(t)) {
                 const step_t *st = &t->step[idx];
                 if (step_on(st)) {
-                    fmt_int(v[1], (int32_t)step_vel_shown(st));
-                    ratio[1] = (int32_t)step_vel_shown(st) * 1000 / 127;
+                    fmt_int(v[1u], (int32_t)step_vel_shown(st));
+                    ratio[1u] = (int32_t)step_vel_shown(st) * 1000 / 127;
                 } else {
-                    str_cpy(v[1], "--", 8);
+                    str_cpy(v[1u], "--", 8);
                 }
             }
-            str_cpy(v[2], "x1 x4", 8);
+            str_cpy(v[2u], "x1 x4", 8);
             {
                 int32_t m = t->micro[idx];
                 if (m > 0) {
-                    v[3][0] = '+';
-                    fmt_int(v[3] + 1, m);
+                    v[3u][0u] = '+';
+                    fmt_int(v[3u] + 1, m);
                 } else {
-                    fmt_int(v[3], m);
+                    fmt_int(v[3u], m);
                 }
-                ratio[3] = (m - MICRO_MIN) * 1000 / (MICRO_MAX - MICRO_MIN);
+                ratio[3u] = (m - MICRO_MIN) * 1000 / (MICRO_MAX - MICRO_MIN);
             }
             str_cpy(sub, "lock ", sizeof sub);
             str_cpy(sub + 5, lock_label(t, id), 8);
@@ -909,43 +913,43 @@ UI_SMALL static void layer_screen_draw(void)
             k = lock_find(t, idx, id, 0);
             if (k >= 0) {
                 const char *u;
-                char b[8];
+                char b[8u];
                 param_format(lock_desc(t, id), t->lock[k].val, b, &u);
                 te_lower(sub + str_len(sub), b, 8);
             } else {
                 str_cpy(sub + str_len(sub), "--", 3);
             }
         } else {
-            lab[1] = "div", lab[2] = "swing", lab[3] = "steps";
-            str_cpy(v[1], N_SDIV[t->p[P_SDIV] % NDIV_STEP], 8);
-            swing_str(v[2], t->p[P_SSWING]);
-            fmt_int(v[3], t->p[P_SLEN]);
-            ratio[1] = t->p[P_SDIV] * 1000 / (NDIV_STEP - 1);
-            ratio[2] = t->p[P_SSWING] * 10;
-            ratio[3] = (t->p[P_SLEN] - 1) * 1000 / 63;
+            lab[1u] = "div", lab[2u] = "swing", lab[3u] = "steps";
+            str_cpy(v[1u], N_SDIV[t->p[P_SDIV] % NDIV_STEP], 8);
+            swing_str(v[2u], t->p[P_SSWING]);
+            fmt_int(v[3u], t->p[P_SLEN]);
+            ratio[1u] = t->p[P_SDIV] * 1000 / (NDIV_STEP - 1);
+            ratio[2u] = t->p[P_SSWING] * 10;
+            ratio[3u] = (t->p[P_SLEN] - 1) * 1000 / 63;
         }
         break;
     }
     case LY_SCALE: {
-        uint32_t root = (uint32_t)trk[0].p[P_ROOT] % 12u, mask = SCALE_MASK[clamp(trk[0].p[P_SCALE], 0, NSCALES - 1)];
-        col = TE_COL[1];
+        uint32_t root = (uint32_t)trk[0u].p[P_ROOT] % 12u, mask = SCALE_MASK[clamp(trk[0u].p[P_SCALE], 0, NSCALES - 1)];
+        col = TE_COL[1u];
         str_cpy(sub, "key: ", sizeof sub);
         str_cpy(sub + 5, N_NOTE[root], 4);
         str_cpy(sub + str_len(sub), " ", 2);
-        te_lower(sub + str_len(sub), N_SCALE[clamp(trk[0].p[P_SCALE], 0, NSCALES - 1)], 8);
+        te_lower(sub + str_len(sub), N_SCALE[clamp(trk[0u].p[P_SCALE], 0, NSCALES - 1)], 8);
         for (i = 0; i < 16u; i++) {
             uint32_t k = key_of_white(i), pc = (53u + k) % 12u, in = (mask >> ((pc + 12u - root) % 12u)) & 1u;
             if (!is_drum(t) && t->p[P_CHORD]) {
-                uint8_t c[4];
+                uint8_t c[4u];
                 uint32_t n = kb_map(t, k), m;
                 if (n != KB_SILENT && (m = chord_notes(t, n, c)) != 0u) {
-                    uint32_t third = m > 1u ? (uint32_t)(c[1] - c[0]) : 4u;
-                    str_cpy(tl[i].lab, N_NOTE[c[0] % 12u], 8);
+                    uint32_t third = m > 1u ? (uint32_t)(c[1u] - c[0u]) : 4u;
+                    str_cpy(tl[i].lab, N_NOTE[c[0u] % 12u], 8);
                     if (t->p[P_CHORD] == 5)
                         str_cpy(tl[i].lab + str_len(tl[i].lab), "5", 2);
                     else if (third == 3u)
                         str_cpy(tl[i].lab + str_len(tl[i].lab), "m", 2);
-                    pc = c[0] % 12u;
+                    pc = c[0u] % 12u;
                     in = 1;
                 }
             } else {
@@ -954,17 +958,17 @@ UI_SMALL static void layer_screen_draw(void)
             tl[i].bg = pc == root ? col : TE_G1;
             tl[i].fg = pc == root ? C_BLACK : in ? C_WHITE : TE_G2;
         }
-        lab[0] = "chord", lab[1] = "scale", lab[2] = "keys", lab[3] = "transp";
-        te_lower(v[0], N_CHORD[clamp(t->p[P_CHORD], 0, 5)], 8);
-        te_lower(v[1], N_SCALE[clamp(trk[0].p[P_SCALE], 0, NSCALES - 1)], 8);
-        te_lower(v[2], N_QUANT[clamp(t->p[P_QUANT], 0, 2)], 8);
-        fmt_int(v[3], t->p[P_TRANS]);
+        lab[0u] = "chord", lab[1u] = "scale", lab[2u] = "keys", lab[3u] = "transp";
+        te_lower(v[0u], N_CHORD[clamp(t->p[P_CHORD], 0, 5)], 8);
+        te_lower(v[1u], N_SCALE[clamp(trk[0u].p[P_SCALE], 0, NSCALES - 1)], 8);
+        te_lower(v[2u], N_QUANT[clamp(t->p[P_QUANT], 0, 2)], 8);
+        fmt_int(v[3u], t->p[P_TRANS]);
         if (is_drum(t))
-            v[0][0] = v[2][0] = v[3][0] = 0;
-        ratio[0] = t->p[P_CHORD] * 200;
-        ratio[1] = trk[0].p[P_SCALE] * 1000 / (NSCALES - 1);
-        ratio[2] = t->p[P_QUANT] * 500;
-        ratio[3] = (t->p[P_TRANS] + 24) * 1000 / 48;
+            v[0u][0u] = v[2u][0u] = v[3u][0u] = 0;
+        ratio[0u] = t->p[P_CHORD] * 200;
+        ratio[1u] = trk[0u].p[P_SCALE] * 1000 / (NSCALES - 1);
+        ratio[2u] = t->p[P_QUANT] * 500;
+        ratio[3u] = (t->p[P_TRANS] + 24) * 1000 / 48;
         break;
     }
     case LY_MIX: {
@@ -973,30 +977,30 @@ UI_SMALL static void layer_screen_draw(void)
         for (i = 0; i < 4u; i++) {
             int m = trk[i].p[P_MUTE] != 0, so = (song.solo >> i) & 1u;
             str_cpy(tl[i].lab, "mute 1", 8);
-            tl[i].lab[5] = (char)('1' + i);
+            tl[i].lab[5u] = (char)('1' + i);
             tl[i].bg = m ? TE_G2 : TE_COL[i];
             tl[i].fg = m ? TE_G3 : C_BLACK;
-            str_cpy(tl[4 + i].lab, "solo 1", 8);
-            tl[4 + i].lab[5] = (char)('1' + i);
-            tl[4 + i].bg = so ? C_WHITE : TE_G1;
-            tl[4 + i].fg = so ? C_BLACK : TE_G3;
-            tl[4 + i].top = TE_DIM[i];
+            str_cpy(tl[4u + i].lab, "solo 1", 8);
+            tl[4u + i].lab[5u] = (char)('1' + i);
+            tl[4u + i].bg = so ? C_WHITE : TE_G1;
+            tl[4u + i].fg = so ? C_BLACK : TE_G3;
+            tl[4u + i].top = TE_DIM[i];
         }
-        str_cpy(tl[8].lab, "fill", 8);
-        tl[8].bg = fill_now ? C_WHITE : TE_G1;
-        tl[8].fg = fill_now ? C_BLACK : TE_G4;
-        str_cpy(tl[9].lab, "bar", 8);
-        tl[9].bg = fill_bar_on ? C_WHITE : TE_G1;
-        tl[9].fg = fill_bar_on ? C_BLACK : TE_G4;
-        tl[9].top = fill_arm ? C_WHITE : 0;
-        fmt_int(tl[15].lab, song.g[G_BPM]);
-        tl[15].bg = song.playing && clk_pos < BEAT_U / 4u ? C_WHITE : TE_G2;
-        tl[15].fg = tl[15].bg == C_WHITE ? C_BLACK : C_WHITE;
-        str_cpy(tl[14].lab, "tap>", 8);
-        tl[14].bg = C_BLACK;
+        str_cpy(tl[8u].lab, "fill", 8);
+        tl[8u].bg = fill_now ? C_WHITE : TE_G1;
+        tl[8u].fg = fill_now ? C_BLACK : TE_G4;
+        str_cpy(tl[9u].lab, "bar", 8);
+        tl[9u].bg = fill_bar_on ? C_WHITE : TE_G1;
+        tl[9u].fg = fill_bar_on ? C_BLACK : TE_G4;
+        tl[9u].top = fill_arm ? C_WHITE : 0;
+        fmt_int(tl[15u].lab, song.g[G_BPM]);
+        tl[15u].bg = song.playing && clk_pos < BEAT_U / 4u ? C_WHITE : TE_G2;
+        tl[15u].fg = tl[15u].bg == C_WHITE ? C_BLACK : C_WHITE;
+        str_cpy(tl[14u].lab, "tap>", 8);
+        tl[14u].bg = C_BLACK;
         for (i = 0; i < 4u; i++) {
             uint32_t lv = trk_level(i);
-            static const char *const L[4] = {"1", "2", "3", "4"};
+            static const char *const L[4u] = {"1", "2", "3", "4"};
             lab[i] = L[i];
             fmt_int(v[i], (int32_t)lv * 100 / 127);
             ratio[i] = (int32_t)lv * 1000 / 127;
@@ -1005,10 +1009,10 @@ UI_SMALL static void layer_screen_draw(void)
     }
     case LY_SONG: {
         uint32_t ready = arrangement_ready();
-        static const char *const SL[4] = {"A", "B", "C", "D"};
+        static const char *const SL[4u] = {"A", "B", "C", "D"};
         col = C_WHITE;
         if (srec == 2u) {
-            char b[8];
+            char b[8u];
             str_cpy(sub, "rec ", sizeof sub);
             str_cpy(sub + 4, SL[srec_e[srec_n ? srec_n - 1u : 0u].scene & 3u], 2);
             str_cpy(sub + str_len(sub), " bar ", 6);
@@ -1027,22 +1031,22 @@ UI_SMALL static void layer_screen_draw(void)
             tl[i].bg = used ? (playing ? TE_COL[i] : TE_DIM[i]) : TE_G1;
             tl[i].fg = used ? C_BLACK : TE_G3;
             tl[i].top = next ? C_WHITE : 0;
-            str_cpy(tl[4 + i].lab, "save A", 8);
-            tl[4 + i].lab[5] = (char)('A' + i);
-            tl[4 + i].bg = sec_armed == i + 1u ? TE_RED : TE_G1;
-            tl[4 + i].fg = sec_armed == i + 1u ? C_BLACK : TE_G4;
-            tl[4 + i].top = TE_DIM[i];
+            str_cpy(tl[4u + i].lab, "save A", 8);
+            tl[4u + i].lab[5u] = (char)('A' + i);
+            tl[4u + i].bg = sec_armed == i + 1u ? TE_RED : TE_G1;
+            tl[4u + i].fg = sec_armed == i + 1u ? C_BLACK : TE_G4;
+            tl[4u + i].top = TE_DIM[i];
         }
-        str_cpy(tl[12].lab, arrangement_enabled ? "song" : "loop", 8);
-        tl[12].bg = arrangement_enabled ? C_WHITE : TE_G2;
-        tl[12].fg = arrangement_enabled ? C_BLACK : C_WHITE;
-        str_cpy(tl[13].lab, "rec", 8);
-        tl[13].bg = srec == 2u ? TE_RED : TE_G1;
-        tl[13].fg = srec == 2u ? C_BLACK : TE_RED;
-        tl[13].top = srec == 1u ? TE_RED : 0;
-        str_cpy(tl[15].lab, "chain", 8);
-        tl[15].bg = TE_G1;
-        tl[15].fg = TE_G4;
+        str_cpy(tl[12u].lab, arrangement_enabled ? "song" : "loop", 8);
+        tl[12u].bg = arrangement_enabled ? C_WHITE : TE_G2;
+        tl[12u].fg = arrangement_enabled ? C_BLACK : C_WHITE;
+        str_cpy(tl[13u].lab, "rec", 8);
+        tl[13u].bg = srec == 2u ? TE_RED : TE_G1;
+        tl[13u].fg = srec == 2u ? C_BLACK : TE_RED;
+        tl[13u].top = srec == 1u ? TE_RED : 0;
+        str_cpy(tl[15u].lab, "chain", 8);
+        tl[15u].bg = TE_G1;
+        tl[15u].fg = TE_G4;
         break;
     }
     default:
@@ -1070,7 +1074,7 @@ UI_SMALL static void hold_screen_draw(void)
     uint32_t span = ui.hold_kind == 1u ? HOLD_CLEAR_MS : HOLD_SAVE_MS, el = fm1_ms - ui.hold_t0;
     int32_t ratio = el >= span ? 1000 : (int32_t)(el * 1000u / span);
     uint32_t sig = ui.hold_kind * 7u + (uint32_t)ratio / 20u + ui.hold_trk * 131u;
-    char b[24];
+    char b[24u];
     if (!layer_shown) {
         lcd_fill(0, 0, 240, 240, C_BLACK);
         layer_shown = 1;
@@ -1095,10 +1099,10 @@ UI_SMALL static void hold_screen_draw(void)
     cv_begin(240, 60, C_BLACK);
     if (ui.hold_kind == 1u) {
         str_cpy(b, "track 1", sizeof b);
-        b[6] = (char)('1' + ui.hold_trk);
+        b[6u] = (char)('1' + ui.hold_trk);
     } else {
         str_cpy(b, "section A", sizeof b);
-        b[8] = (char)('A' - 1 + clamp(song.g[G_SLOT], 1, 4));
+        b[8u] = (char)('A' - 1 + clamp(song.g[G_SLOT], 1, 4));
     }
     te_text_c(120, 4, b, TE_G4);
     te_text_c(120, 30, "keep holding", TE_G3);
