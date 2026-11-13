@@ -268,3 +268,46 @@ static void audilune_gen_block(void)
 }
 
 #endif /* AUDILUNE_GEN_C */
+uint8_t audilune_gen_eval_step(uint8_t track, uint8_t step, uint8_t genre, uint8_t *out_note, uint8_t *out_vel) {
+    /* Trigger probability thresholds (%) across the 6 AUDILUNE Macro-Genres:
+       0: Ambient, 1: Downtempo, 2: Glitch Hop, 3: Punchy, 4: Experimental, 5: Industrial */
+    static const uint8_t k_genre_prob[6] = { 28, 42, 65, 60, 52, 75 };
+    if (genre > 5) {
+        genre = 0;
+    }
+
+    uint32_t r = next_rand();
+    uint8_t chance = (uint8_t)(r % 100u);
+
+    /* Encourage rhythmic downbeats on 16-step bar boundaries */
+    uint8_t threshold = k_genre_prob[genre];
+    if ((step % 16u) == 0u) {
+        threshold = (threshold + 25u > 95u) ? 95u : (uint8_t)(threshold + 25u);
+    }
+
+    if (chance >= threshold) {
+        return 0; /* Rest step */
+    }
+
+    /* Track-aware base octaves: Track 0 = Bass, Tracks 1-4 = Mid/Lead, Track 5 = Drum/Perc */
+    uint8_t base_note = 60;
+    if (track == 0) {
+        base_note = 36 + (uint8_t)((r >> 8) % 12u);
+    } else if (track == 5) {
+        base_note = 36 + (uint8_t)((r >> 8) % 8u);
+    } else {
+        base_note = 48 + (uint8_t)((r >> 8) % 24u);
+    }
+
+    if (out_note) {
+        *out_note = (track == 5) ? base_note : audilune_gen_clamp_note(base_note);
+    }
+    if (out_vel) {
+        uint8_t base_vel = (genre == 0) ? 65 : 95;
+        uint8_t spread   = (uint8_t)((r >> 16) % 30u);
+        uint16_t vel     = (uint16_t)base_vel + spread;
+        *out_vel         = (vel > 127u) ? 127u : (uint8_t)vel;
+    }
+
+    return 1; /* Trigger note */
+}
