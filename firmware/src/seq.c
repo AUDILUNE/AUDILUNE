@@ -1238,8 +1238,7 @@ static void ft_close(void)
     if (!bars) {
         ft_bars = 0xFF;
         return;
-    }
-    len = 16u * bars;
+    }    len = 16u * bars;
     undo_mark(t, (undo_sess += 4u) | 3u);
     steps_clear(t);
     for (i = 0; i < NTRK; i++) {
@@ -1248,7 +1247,7 @@ static void ft_close(void)
     }
     for (i = 0; i < ft_n; i++) {
         uint32_t idx = (ft_ev[i].t * len * 2u + T) / (2u * T) % len;
-        int was_empty = is_drum(t) ? !(t->dstep[idx].on | t->dstep[idx].on)
+        int was_empty = is_drum(t) ? !(t->dstep[idx].on[0] | t->dstep[idx].on[1])
                                    : !(t->step[idx].time == ST_NOTE && t->step[idx].n);
         if (is_drum(t))
             dstep_set(&t->dstep[idx], ft_ev[i].note & 15u, ft_ev[i].vel & 3u, 0);
@@ -1313,7 +1312,7 @@ static uint8_t er_trk;
 static uint16_t er_lanes;
 static volatile uint16_t drum_mute;
 static volatile uint8_t er_mute;
-static uint32_t er_notes;
+static uint32_t er_notes[4];
 static volatile uint8_t er_flash;
 
 static int er_has(uint32_t note) { return (er_notes[(note >> 5) & 3u] >> (note & 31u)) & 1u; }
@@ -1364,10 +1363,10 @@ static void erase_now(track_t *t)
             erase_step(t, i);
     }
 }
-static int erasing(const track_t *t) { return trk_index(t) == er_trk && (er_lanes || er_notes || er_notes || er_notes || er_notes); }
+static int erasing(const track_t *t) { return trk_index(t) == er_trk && (er_lanes || er_notes[0] || er_notes[1] || er_notes[2] || er_notes[3]); }
 
-static uint8_t held_key[NTRK];
-static int8_t held_dt[NTRK];
+static uint8_t held_key[NTRK][16];
+static int8_t held_dt[NTRK][16];
 static uint8_t in_key;
 static void arp_add(track_t *t, uint32_t note)
 {
@@ -1429,7 +1428,7 @@ static uint32_t arp_list(const track_t *t, uint32_t *list, uint32_t *cnt)
     if (!n)
         return 0;
     if (m == AM_REPEAT) {
-        list = last;
+        list[0] = last;
         return 1;
     }
     if (!t->p[P_AORDER] && m != AM_ORD)
@@ -1449,7 +1448,7 @@ static uint32_t arp_pick(track_t *t, uint32_t *list, uint32_t len)
 {
     uint32_t i = t->arp_idx, m = (uint32_t)t->p[P_AMODE], cyc, k, w;
     if (m == AM_UP8)
-        list[len++] = (uint32_t)clamp((int32_t)list + 12 * t->p[P_AOCT], 0, 127);
+        list[len++] = (uint32_t)clamp((int32_t)list[0] + 12 * t->p[P_AOCT], 0, 127);
     cyc = len > 1u ? 2u * len - 2u : 1u;
     k = i % cyc;
     switch (m) {
@@ -1485,6 +1484,7 @@ static uint32_t arp_pick(track_t *t, uint32_t *list, uint32_t len)
         return i % len;
     }
 }
+
 static void arp_end(track_t *t)
 {
     uint32_t i;
@@ -1511,7 +1511,7 @@ static void arp_play(track_t *t, uint32_t n)
 
 static int arp_step(track_t *t)
 {
-    uint32_t list, cnt, len = arp_list(t, list, &cnt), i, o, top = 0;
+    uint32_t list[65], cnt, len = arp_list(t, list, &cnt), i, o, top = 0;
     if (!len)
         return 0;
     t->arp_idx++;
@@ -1623,10 +1623,10 @@ static uint32_t midi_drum_lane(uint32_t note)
 static const uint8_t *in_chord;
 static uint32_t in_chord_n, in_chord_i;
 static uint8_t sus_on[NTRK];
-static uint32_t sus_wait[NTRK];
+static uint32_t sus_wait[NTRK][4];
 static void input_off_now(track_t *t, uint32_t note);
-static uint32_t kh_set[NTRK];
-static uint32_t kh_mo[NTRK];
+static uint32_t kh_set[NTRK][4];
+static uint32_t kh_mo[NTRK][4];
 static uint8_t kh_mc[NTRK];
 static uint8_t kh_phys[NTRK];
 static int kh_on(const track_t *t) { return !t->p[P_AMODE] && t->p[P_AHOLD] && !is_drum(t); }
@@ -1637,16 +1637,17 @@ static int kh_has(const track_t *t, uint32_t note)
 static int kh_any(const track_t *t)
 {
     const uint32_t *m = kh_set[trk_index(t) % NTRK];
-    return (m | m | m | m) != 0u;
+    return (m[0] | m[1] | m[2] | m[3]) != 0u;
 }
-static uint32_t live_held[NTRK];
-static uint32_t mi_trk_held[NTRK];
+static uint32_t live_held[NTRK][4];
+static uint32_t mi_trk_held[NTRK][4];
 static volatile uint8_t mono_hint;
 static void live_set(const track_t *t, uint32_t note, int on)
 {
     uint32_t *w = &live_held[trk_index(t) % NTRK][(note >> 5) & 3u], bit = 1u << (note & 31u);
     *w = on ? *w | bit : *w & ~bit;
 }
+
 static int live_has(const track_t *t, uint32_t note)
 {
     uint32_t ti = trk_index(t) % NTRK, w = (note >> 5) & 3u, bit = 1u << (note & 31u);
