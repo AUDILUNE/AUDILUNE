@@ -65,6 +65,42 @@ static const genre_dna_t GENRE_DNA[GENRE_COUNT] = {
     /* Experimental */ {50, 52, 25, 35, 25, 35, 22, 24},
     /* Industrial */   {72, 85,  8, 48, 38, 75,  3, 16}
 };
+
+/* Macro-Genre DSP morph targets: attack, decay, release, warmth/saturation, chorus, delay, reverb */
+typedef struct {
+    int16_t atk;
+    int16_t dec;
+    int16_t rel;
+    int16_t dist;
+    int16_t chor;
+    int16_t dly;
+    int16_t rev;
+} genre_dsp_t;
+
+static const genre_dsp_t GENRE_DSP[GENRE_COUNT] = {
+    /* Ambient */      {62, 95, 102,  8, 54, 68, 92},
+    /* Downtempo */    {24, 76,  72, 28, 34, 48, 56},
+    /* Glitch Hop */   { 4, 38,  30, 46, 18, 42, 26},
+    /* Punchy */       { 2, 44,  34, 36, 12, 24, 22},
+    /* Experimental */ {18, 64,  68, 52, 48, 74, 64},
+    /* Industrial */   { 4, 52,  38, 86, 14, 38, 42}
+};
+
+static void audilune_genre_morph_dsp(uint8_t g)
+{
+    const genre_dsp_t *dsp = &GENRE_DSP[g % GENRE_COUNT];
+    uint32_t i;
+    for (i = 0; i < NPART; i++) {
+        trk[i].p[P_ATK] = dsp->atk;
+        trk[i].p[P_DEC] = dsp->dec;
+        trk[i].p[P_REL] = dsp->rel;
+        trk[i].p[P_DIST] = dsp->dist;
+        trk[i].p[P_CHOR] = dsp->chor;
+        trk[i].p[P_DLY] = dsp->dly;
+        trk[i].p[P_REV] = dsp->rev;
+    }
+}
+
 static uint8_t audilune_inf_was;
 static uint8_t audilune_genre_was = 0xFFu;
 static uint32_t audilune_gen_bar_last = 0xFFFFFFFFu;
@@ -78,6 +114,7 @@ static uint32_t gen_pct(void)
 
 /* Builds a live harmonic scale mask from active non-generative anchor tracks */
 static uint32_t gen_anchor_scale_mask(uint32_t trk_idx, int32_t *out_root)
+
 {
     uint32_t i, s, combined = 0u;
     int32_t root = trk[0u].p[P_ROOT];
@@ -250,7 +287,7 @@ static void audilune_back_home_trigger(void)
 static void audilune_back_home_tick(void)
 {
     uint32_t i, elapsed;
-    if (!audilune_back_home_active)
+     if (!audilune_back_home_active)
         return;
 
     elapsed = clk_beat - audilune_back_home_start_beat;
@@ -259,7 +296,7 @@ static void audilune_back_home_tick(void)
         if (elapsed >= 4u)
             memset(trk[i].micro, 0, sizeof trk[i].micro);
     }
-       if (elapsed >= 4u)
+    if (elapsed >= 4u)
         audilune_back_home_active = 0u;
 }
 
@@ -269,6 +306,12 @@ static void audilune_gen_block(void)
     uint32_t g = audilune_genre % GENRE_COUNT;
     const genre_dna_t *dna = &GENRE_DNA[g];
     uint32_t i;
+    int genre_changed = (g != audilune_genre_was);
+
+    if (genre_changed) {
+        audilune_genre_was = (uint8_t)g;
+        audilune_genre_morph_dsp((uint8_t)g);
+    }
 
     /* Trigger 1-bar Back-Home Resolution when ARP generative drift turns off */
     if (audilune_gen_arp_was && !audilune_arp_drift_mask)
@@ -278,9 +321,8 @@ static void audilune_gen_block(void)
 
     /* Handle Infinite Algorithmic Compositions Engine activation (HOME 3s hold) */
     if (audilune_infinite_on) {
-        int just_enabled = !audilune_inf_was || (g != audilune_genre_was);
+        int just_enabled = !audilune_inf_was || genre_changed;
         audilune_inf_was = 1u;
-        audilune_genre_was = (uint8_t)g;
 
         if (!song.playing && !transport_req)
             transport_req = 1u;
@@ -293,6 +335,7 @@ static void audilune_gen_block(void)
         } else if (song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
             /* Evolve composition subtly on every 2nd bar boundary */
             audilune_gen_bar_last = clk_beat >> 2;
+
             if ((audilune_gen_bar_last & 1u) == 0u) {
                 for (i = 0; i < NPART; i++)
                     gen_populate_synth(i, dna, 0);
