@@ -14,6 +14,14 @@ enum { PX_LOOP4, PX_LOOP8, PX_LOOP16, PX_LOOP32, PX_STUT, PX_REV, PX_STOP, PX_HA
        PX_LPF, PX_HPF, PX_TEL, PX_CRUSH, PX_DOWN, PX_GATE, PX_ECHO, PX_WOBBLE,
        /* the black keys, F#3 .. F#5 */
        PX_KLOW, PX_KMID, PX_KHIGH, PX_RWD, PX_OCT, PX_FLANGE, PX_PAN, PX_FREEZE, PX_LOOP8T, PX_MONO, PX_FADE };
+static const uint8_t AUDILUNE_OP_FX[6] = {
+    PX_LOOP16, /* OP1: 16th-Note Beat Stutter */
+    PX_STOP,   /* OP2: Vinyl/Tape Speed Stop */
+    PX_CRUSH,  /* OP3: Lo-Fi Bit & Sample-Rate Crush */
+    PX_REV,    /* OP4: Real-Time Buffer Reverse */
+    PX_ECHO,   /* OP5: Harmonic Delay Feedback Wash */
+    PX_HALF    /* OP6: Sub-Octave Pitch Slam */
+};
 static const char *const PUNCH_NAME[PUNCH_NFX] = {
     "LOOP 4", "LOOP 8", "LOOP 16", "LOOP 32", "STUTTER", "REVERSE", "STOP", "HALF",
     "LOW", "HIGH", "PHONE", "CRUSH", "ALIAS", "GATE", "ECHO", "WOBBLE",
@@ -58,6 +66,7 @@ static int32_t ring_raw(uint32_t i) { return punch_ring[i & (PUNCH_N - 1u)]; }  
 static int32_t ring_at(uint32_t i) { return ring_raw(i) << 3; }
 static int32_t ring_q16(uint32_t p)                 /* read at Q16 position, linear (on the stored values: no overflow) */
 {
+
     int32_t a = ring_raw(p >> 16), b = ring_raw((p >> 16) + 1u);
     return (a + (((b - a) * (int32_t)((p >> 1) & 0x7FFFu)) >> 15)) << 3;
 }
