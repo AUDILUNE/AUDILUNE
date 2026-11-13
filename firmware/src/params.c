@@ -103,19 +103,20 @@ static const param_desc_t TP[P_COUNT] = {
     [P_ROOT] = PD("ROOT", F_NOTE, 0, 11, 0),
     [P_SCALE] = PE("SCL", N_SCALE, 0),
     [P_QUANT] = PE("QNT", N_QUANT, 0),
-    [P_TRANS] = PD("TRN", F_SEMI, -24, 24, 0),
+        [P_TRANS] = PD("TRN", F_SEMI, -24, 24, 0),
     [P_SLEN] = PD("LEN", F_STEPS, 1, NSTEP, 16),
     [P_SDIV] = PE("DIV", N_SDIV, 2),
     [P_SSWING] = PD("SWG", F_SWING, 0, 100, 0),
     [P_SGATE] = PD("GATE", F_PCT, 1, 127, 64),
-    [P_DIST] = PD("DST", F_PCT, 0, 127, 0),
-    [P_CHOR] = PD("CHO", F_PCT, 0, 127, 0),
-    [P_DLY] = PD("DLY", F_PCT, 0, 127, 0),
-    [P_REV] = PD("REV", F_PCT, 0, 127, 0),
+    [P_DIST] = PD("DST", F_PCT, 0, 140, 0),
+    [P_CHOR] = PD("CHO", F_PCT, 0, 140, 0),
+    [P_DLY] = PD("DLY", F_PCT, 0, 140, 0),
+    [P_REV] = PD("REV", F_PCT, 0, 140, 0),
     [P_VOICE] = PE("VCE", N_VOICE, 0),
     [P_GLIDE] = PD("GLD", F_TIME, 0, 127, 0),
     [P_GLMODE] = PE("GLMOD", N_GLMODE, 0),
     [P_PRIO] = PE("PRIO", N_PRIO, 0),
+
     [P_ALLOC] = PE("ALLOC", N_ALLOC, 0),
     [P_DETUNE] = PD("DTUNE", F_INT, 0, 127, 40),
     [P_PAN] = PD("PAN", F_BIPCT, -64, 63, 0),
@@ -259,8 +260,8 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
 {
     *unit = "";
     switch (d->fmt) {
-    case F_PCT:                                       /* of the range: 0 .. 100 % */
-        fmt_int(val, d->max > 0 ? (v * 100 + d->max / 2) / d->max : v);
+    case F_PCT:                                       /* 0..127 -> 0..100%, 128..140 -> 101..110% */
+        fmt_int(val, d->max > 127 ? (v * 100 + 63) / 127 : (d->max > 0 ? (v * 100 + d->max / 2) / d->max : v));
         *unit = "%";
         break;
     case F_SWING:                                     /* 0 straight .. 100 the most (2.5: it showed MPC's 50..75 %,
@@ -268,6 +269,7 @@ static void param_format(const param_desc_t *d, int32_t v, char *val, const char
         fmt_int(val, clamp(v, 0, 100));
         break;
     case F_FILT:                                      /* LP 1..100 % closed, HP 1..100 % */
+
         if (!v) {
             str_cpy(val, "OFF", 6);
         } else {
