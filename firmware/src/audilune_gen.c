@@ -252,7 +252,7 @@ static void gen_populate_drums(const genre_dna_t *dna, int full_seed)
         /* Lane 4: Hi-Hat groove with genre ratchets */
         if (gen_pct() < dna->drum_prob) {
             uint32_t rat = (gen_pct() < dna->ratchet_prob) ? (1u + (rng() & 1u)) : 0u;
-            uint32_t lvl = (s % 2u == 0u) ? LV_NORM : LV_GHOST;
+                 uint32_t lvl = (s % 2u == 0u) ? LV_NORM : LV_GHOST;
             dstep_set(ds, 4u, lvl, rat);
         }
 
@@ -262,15 +262,20 @@ static void gen_populate_drums(const genre_dna_t *dna, int full_seed)
     }
     t->seq_active = 1;
 }
-/* Triggers step-level Punch-In FX (P_ED_FX 1..6) when the sequencer enters a step with an FX lock */
+/* Triggers step-level Punch-In FX (P_ED_FX 1..6) using the AUDILUNE OP1-OP6 matrix */
+static uint8_t audilune_step_fx_held;
+
 static void audilune_step_fx_apply(const track_t *t)
 {
     int32_t fx_val = t->p[P_ED_FX];
     if (fx_val >= 1 && fx_val <= 6) {
-        if (!punch.keybit)
-            punch.req = (int8_t)(fx_val - 1);
-    } else if (!punch.keybit && punch.req >= 0 && punch.req < 6) {
+        if (!punch.keybit) {
+            punch.req = (int8_t)AUDILUNE_OP_FX[fx_val - 1];
+            audilune_step_fx_held = 1u;
+        }
+    } else if (audilune_step_fx_held && !punch.keybit) {
         punch.req = -1;
+        audilune_step_fx_held = 0u;
     }
 }
 
