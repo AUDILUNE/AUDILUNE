@@ -707,11 +707,10 @@ UI_SMALL static void hold_marker_clear(track_t *t, uint32_t j, uint32_t also)
             return;
     memset(s, 0, sizeof *s);
     s->time = ST_REST;
-}
-UI_SMALL static void hold_restart(track_t *t, uint32_t j, uint32_t len, uint32_t abs)
+}UI_SMALL static void hold_restart(track_t *t, uint32_t j, uint32_t len, uint32_t abs)
 {
     step_t *s = &t->step[j % NSTEP];
-    uint8_t c;
+    uint8_t c[4];
     uint32_t n = chain_notes(t, j, c), i, k, m = 0;
     for (i = 0; i < n; i++) {
         for (k = 0; k < t->rh_offn && t->rh_off[k] != c[i]; k++)
@@ -740,7 +739,7 @@ UI_SMALL static void rec_note(track_t *t, uint32_t note, uint32_t vel, uint32_t 
     uint32_t len = trk_len(t), later, abs = rec_target(t, &later), idx = abs % len, k;
     int was_empty = !(t->step[idx % NSTEP].time == ST_NOTE && t->step[idx % NSTEP].n);
     step_t *st = &t->step[idx % NSTEP];
-    uint8_t ch, keep;
+    uint8_t ch[4], keep[4];
     uint32_t nc = 0, nk = 0, merged = 0;
     undo_mark(t, UNDO_REC(t));
     if (t->p[P_VOICE] == V_POLY && !rat && hold && t->rh_n && st->time != ST_TIE && !(st->time == ST_NOTE && st->n) &&
@@ -775,7 +774,7 @@ UI_SMALL static void rec_note(track_t *t, uint32_t note, uint32_t vel, uint32_t 
             chain_end(t, (idx + 1u) % len, keep, nk);
     } else {
         uint32_t last = t->rh_ties || t->rh_rs ? t->rh_last : t->rh_start;
-        int leg = t->p[P_VOICE] != V_POLY && !rat && hold && t->rh_n && !(t->rh_n == 1u && t->rh_note == note) &&
+        int leg = t->p[P_VOICE] != V_POLY && !rat && hold && t->rh_n && !(t->rh_n == 1u && t->rh_note[0] == note) &&
                   idx != t->rh_start && (idx == (last + 1u) % len || (t->rh_ties && idx == last && st->time == ST_TIE));
         step_add(t, idx, note, vel, vel_lvl(vel), rat);
         if (leg)
@@ -817,7 +816,7 @@ static uint8_t roll_rec;
 static void rec_hit(track_t *t, uint32_t lane, uint32_t lvl, uint32_t rat)
 {
     uint32_t later, abs = rec_target(t, &later), idx = abs % trk_len(t);
-    int was_empty = !(t->dstep[idx % NSTEP].on | t->dstep[idx % NSTEP].on);
+    int was_empty = !(t->dstep[idx % NSTEP].on[0] | t->dstep[idx % NSTEP].on[1]);
     undo_mark(t, UNDO_REC(t));
     dstep_set(&t->dstep[idx], lane, lvl, rat);
     if (!roll_rec)
@@ -852,7 +851,7 @@ UI_SMALL static int hold_merge(track_t *t, step_t *s)
 }
 UI_SMALL static int hold_only(track_t *t, step_t *s, uint32_t idx)
 {
-    uint8_t c;
+    uint8_t c[4];
     uint32_t n = chain_notes(t, idx, c), i, other = 0;
     if (s->time == ST_TIE)
         return 0;
@@ -886,7 +885,7 @@ UI_SMALL static void rec_hold(track_t *t, uint32_t idx, uint32_t len, uint32_t a
         return;
     }
     if (step_pure_cont(s)) {
-        uint8_t keep;
+        uint8_t keep[4];
         uint32_t nk = cont_notes(s, 0x100u, keep);
         t->rh_bak = *s;
         t->rh_last = (uint8_t)idx;
@@ -956,7 +955,7 @@ UI_SMALL static void rec_release(track_t *t, uint32_t note)
         t->step[t->rh_last] = t->rh_bak;
     {
         uint32_t j = t->rh_ties && early ? t->rh_last : (uint32_t)(t->rh_ties || t->rh_rs ? t->rh_last : t->rh_start) + 1u;
-        uint8_t c, keep;
+        uint8_t c[4], keep[4];
         uint32_t n, i, nk = 0, has = 0;
         j %= len;
         if (t->step[j].time != ST_TIE || j == t->rh_start)
@@ -972,6 +971,7 @@ UI_SMALL static void rec_release(track_t *t, uint32_t note)
             chain_end(t, j, keep, nk);
     }
 }
+
 
 static volatile uint8_t rec_wait;
 static uint8_t rec_tempo;
@@ -1179,7 +1179,7 @@ static uint32_t ft_bpm10(uint32_t T, uint32_t n)
 
 static uint32_t ft_fit(uint32_t T, uint32_t *bpm)
 {
-    static const uint8_t BARS = {1, 2, 4};
+    static const uint8_t BARS[] = {1, 2, 4};
     uint32_t i, best = 0, cur = (uint32_t)song.g[G_BPM] * 10u, err = 0xFFFFFFFFu;
     for (i = 0; i < 3u; i++) {
         uint32_t b = ft_bpm10(T, BARS[i]), e;
@@ -1194,6 +1194,7 @@ static uint32_t ft_fit(uint32_t T, uint32_t *bpm)
                 *bpm = cur / 10u;
         }
     }
+
     return best;
 }
 
