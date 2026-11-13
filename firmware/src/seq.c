@@ -216,9 +216,16 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
 static int8_t live_sec = -1;
 static int8_t live_req = -1;
 static uint8_t srec;
+static uint8_t srec_done;
+static uint8_t srec_n;
+static struct { uint8_t scene, bars; } srec_e[CHAIN_MAX];
 static uint8_t chain_n;
+static uint8_t chain_i;
+static uint8_t chain_bars;
 static uint8_t chain_sec[CHAIN_MAX];
 
+static int live_has(const track_t *t, uint32_t note);
+static uint32_t section_bars(uint32_t s);
 static void seq_release(track_t *t);
 static uint32_t step_vel(const step_t *s, uint32_t i);
 static void seq_stop(void);
@@ -226,13 +233,13 @@ static void seq_reset_tracks(uint32_t phase);
 static void live_block(void);
 static void click_tick(void);
 static void srec_stop(void);
-static void click_on(int accent);
 
-static const int8_t CHORD_DEG[6][4] = {
+static const int8_t CHORD_DEG[3 + 3][2 + 2] = {
     {0, -1, -1, -1},                     /* OFF */
     {0, 2, 4, -1},                       /* TRIAD: 1 3 5 */
     {0, 2, 4, 6},                        /* 7TH: 1 3 5 7 */
     {0, 2, 6, 8},                        /* 9TH: 1 3 7 9 */
+
     {0, 3, 4, -1},                       /* SUS4: 1 4 5 */
     {0, -1, -1, -1},                     /* POWER: 1 5 8 */
 };
@@ -1550,15 +1557,6 @@ static void seq_release(track_t *t)
     t->slide_glide = 0;
 }
 
-static uint8_t click_env;
-static uint32_t click_rem;
-static void click_on(int accent)
-{
-    if (!song.g[G_CLICK] && !ci_on)
-        return;
-    click_env = accent ? 2u : 1u;
-    click_rem = FS / 40u;
-}
 static void click_tick(void)
 {
     static uint32_t last_beat = 0xFFFFFFFFu;
@@ -1566,6 +1564,7 @@ static void click_tick(void)
         last_beat = clk_beat;
         if (song.g[G_CLICK])
             click_on((clk_beat & 3u) == 0u);
+
     } else if (!song.playing) {
         last_beat = 0xFFFFFFFFu;
     }
