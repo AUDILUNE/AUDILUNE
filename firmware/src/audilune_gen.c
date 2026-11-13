@@ -5,6 +5,10 @@
 #ifndef AUDILUNE_GEN_C
 #define AUDILUNE_GEN_C
 
+/* Forward declarations for internal generative helpers */
+static uint32_t next_rand(void);
+static uint8_t audilune_gen_clamp_note(int32_t note);
+
 /* Shared state read/written by ui_input.c (HOME 3s hold & ALGORITHM encoder) */
 static volatile uint8_t audilune_infinite_on;
 static volatile uint8_t audilune_genre;          /* 0..5: Ambient, Downtempo, Glitch Hop, Punchy, Experimental, Industrial */
@@ -20,9 +24,10 @@ enum {
     GENRE_COUNT = 6
 };
 
-static const char *const AUDILUNE_GENRE_NAMES[GENRE_COUNT] = {
+static const char *const AUDILUNE_GENRE_NAMES[3 + 3] = {
     "AMBIENT", "DOWNTEMPO", "GLITCH HOP", "PUNCHY", "EXPERIMENTAL", "INDUSTRIAL"
 };
+
 
 /* Genre behavioral DNA: note density (0..100%), tie chance, ratchet chance, step FX chance, micro-jitter */
 typedef struct {
