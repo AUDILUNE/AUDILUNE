@@ -202,14 +202,24 @@ static uint32_t delay_samples(void)
 static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t *rev_in, int32_t *wet_l,
                      int32_t *wet_r, uint32_t n)
 {
-    uint32_t i, k, dl = delay_samples();
+    uint32_t i, k, ti, dl = delay_samples();
+    int32_t max_dly_send = 0;
+    for (ti = 0; ti < NTRK; ti++)
+        if (trk[ti].p[P_DLY] > max_dly_send)
+            max_dly_send = trk[ti].p[P_DLY];
     int32_t fb = song.g[G_DFDBK] * 230, col = 2000 + song.g[G_DCOLOR] * 240;
     if (thr_dly && fb < 89 * 230)                       /* ECHO THROW: FDBK at least 70 %, gliding with it (2.6) */
         fb += ((89 * 230 - fb) * thr_dly) >> 15;
+    if (max_dly_send > 127) {                           /* 101%..110% expansion zone: warm self-oscillating cascade */
+        int32_t cascade_fb = 29210 + (max_dly_send - 127) * 320;
+        if (fb < cascade_fb)
+            fb = cascade_fb;
+    }
     int32_t dmix = song.g[G_DMIX] * 258;
     int32_t g = 17000 + song.g[G_RSIZE] * 104, lpk = 32767 - song.g[G_RDAMP] * 200;   /* loop gain (RT60 ~0.4..4 s), damping */
     int32_t frnd = rev_frz ? 128 : 0;                  /* FREEZE: what is in the lines stays there (below: no
                                                          * loss, rounded to nearest; 0: as always, bit for bit) */
+
     int32_t cdepth = song.g[G_CDEPTH] * 6;
     int32_t ca0, ca1, cb0, cb1, ma, mb, dca, dcb;
     const uint32_t L0 = REV_LINE[0] + REV_MOD + 2u, B1 = L0, B2 = B1 + REV_LINE[1], B3 = B2 + REV_LINE[2];
@@ -229,7 +239,7 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         /* chorus: two modulated short delays, 5..15 ms, the LFO half a turn apart: left and right move apart */
         cho_buf[fx.cho_w & (CHO_LEN - 1u)] = (int16_t)clamp(cho_in[i] >> 1, -32768, 32767);
         {
-            int32_t r0 = ca0 + dca * (int32_t)i, r1 = cb0 + dcb * (int32_t)i;
+              int32_t r0 = ca0 + dca * (int32_t)i, r1 = cb0 + dcb * (int32_t)i;
             uint32_t i0 = (uint32_t)r0 >> 8, i1 = (uint32_t)r1 >> 8;
             int32_t c0 = cho_buf[(fx.cho_w - i0) & (CHO_LEN - 1u)], c1 = cho_buf[(fx.cho_w - i0 - 1u) & (CHO_LEN - 1u)];
             int32_t d0 = cho_buf[(fx.cho_w - i1) & (CHO_LEN - 1u)], d1 = cho_buf[(fx.cho_w - i1 - 1u) & (CHO_LEN - 1u)];
@@ -237,13 +247,18 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
             yr = (d0 + (((d1 - d0) * (r1 & 255)) >> 8)) << 1;
         }
         fx.cho_w++;
-        /* delay with a low-passed feedback (in the middle) */
+        /* delay with a low-passed, soft-limited feedback loop (musical cascade past 100%) */
         x = dly_buf[(fx.dly_w - dl) & (DLY_LEN - 1u)];
         fx.dly_lp += mulq15(x - fx.dly_lp, col);
-        dly_buf[fx.dly_w & (DLY_LEN - 1u)] =
-            (int16_t)clamp((dly_in[i] >> 1) + mulq15(fx.dly_lp, fb), -32768, 32767);
+        {
+            int32_t dly_sum = (dly_in[i] >> 1) + mulq15(fx.dly_lp, fb);
+            if (fb > 29210)
+                dly_sum = softclip(dly_sum);
+            dly_buf[fx.dly_w & (DLY_LEN - 1u)] = (int16_t)clamp(dly_sum, -32768, 32767);
+        }
         fx.dly_w++;
         x = mulq15(x << 1, dmix);
+
         yl += x;
         yr += x;
         /* reverb: two diffusers, then the four lines */
