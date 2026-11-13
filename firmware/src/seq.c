@@ -1179,7 +1179,7 @@ static uint32_t ft_bpm10(uint32_t T, uint32_t n)
 
 static uint32_t ft_fit(uint32_t T, uint32_t *bpm)
 {
-    static const uint8_t BARS[3] = {1, 2, 4};
+    static const uint8_t BARS = {1, 2, 4};
     uint32_t i, best = 0, cur = (uint32_t)song.g[G_BPM] * 10u, err = 0xFFFFFFFFu;
     for (i = 0; i < 3u; i++) {
         uint32_t b = ft_bpm10(T, BARS[i]), e;
@@ -1226,7 +1226,6 @@ static void ft_note_off(uint32_t note)
             return;
         }
 }
-
 static void ft_close(void)
 {
     track_t *t = &trk[ft_trk % NTRK];
@@ -1389,7 +1388,6 @@ static void arp_add(track_t *t, uint32_t note)
         t->arp_idx = 0xFFFFFFFFu;
     }
 }
-
 static void arp_remove(track_t *t, uint32_t note)
 {
     uint32_t i, k = 0;
@@ -1586,7 +1584,6 @@ static void arp_tick(track_t *t, uint32_t adv)
     if ((uint32_t)(rng() & 127u) <= (uint32_t)t->p[P_APROB] && arp_step(t))
         t->arp_off = slen * (uint32_t)t->p[P_AGATE] / 128u;
 }
-
 static void arm_start(track_t *t)
 {
     if (!rec_wait || t != TSEL || song.playing || ci_on)
@@ -1714,363 +1711,7 @@ static void input_on(track_t *t, uint32_t note, uint32_t vel)
     }
     if (t->p[P_VOICE] != V_POLY && (((song.rec >> trk_index(t)) & 1u) || (ft_on && ft_trk == trk_index(t)))) {
         const uint32_t *h = live_held[trk_index(t) % NTRK];
-        if (h | h | h | h)
-            mono_hint = 1;
-    }
-    live_set(t, note, 1);
-    if (((song.rec >> trk_index(t)) & 1u) && song.playing)
-        rec_note(t, note, vel, 0, 1);
-    if (in_chord)
-        trk_note_chord(t, in_chord, in_chord_n, in_chord_i, vel);
-    else
-        trk_note_on(t, note, vel);
-}
-static uint8_t held_key[NTRK];
-static int8_t held_dt[NTRK];
-static uint8_t in_key;
-static void arp_add(track_t *t, uint32_t note)
-{
-    uint32_t i;
-    if (t->p[P_AHOLD] && t->arp_phys == 0u)
-        t->nheld = 0;
-    t->arp_phys++;
-    for (i = 0; i < t->nheld; i++)
-        if (t->held[i] == note)
-            return;
-    if (t->nheld < 16u) {
-        uint32_t k = in_key - 1u, ti = trk_index(t);
-        held_key[ti][t->nheld] = in_key && kb_scaled(t) ? (uint8_t)(in_key | (uint32_t)(kb_oct[k % 27u] + 3) << 5) : 0u;
-        held_dt[ti][t->nheld] = (int8_t)(held_key[ti][t->nheld] ? (int32_t)note - kb_root[k % 27u] : 0);
-        t->held[t->nheld++] = (uint8_t)note;
-    }
-    if (t->nheld == 1u) {
-        t->arp_new = 1;
-        t->arp_idx = 0xFFFFFFFFu;
-    }
-}
-
-static void arp_remove(track_t *t, uint32_t note)
-{
-    uint32_t i, k = 0;
-    if (t->arp_phys)
-        t->arp_phys--;
-    if (t->p[P_AHOLD])
-        return;
-    for (i = 0; i < t->nheld; i++)
-        if (t->held[i] != note) {
-            held_key[trk_index(t)][k] = held_key[trk_index(t)][i];
-            held_dt[trk_index(t)][k] = held_dt[trk_index(t)][i];
-            t->held[k++] = t->held[i];
-        }
-    t->nheld = (uint8_t)k;
-}
-
-enum { AM_OFF, AM_UP, AM_DN, AM_UPDN, AM_RND, AM_ORD, AM_REPEAT, AM_DNUP, AM_UP8, AM_CONV, AM_DIVG, AM_PINKY,
-       AM_THUMB, AM_WALK, AM_CHORD };
-static uint32_t arp_list(const track_t *t, uint32_t *list, uint32_t *cnt)
-{
-    uint32_t n = 0, len = 0, i, j, o, ti = trk_index(t), last = 0, m = (uint32_t)t->p[P_AMODE];
-    for (i = 0; i < t->nheld; i++) {
-        uint32_t x = t->held[i], s = held_key[ti][i];
-        if (s) {
-            x = kb_pitch(t, (s & 31u) - 1u, (int32_t)(s >> 5) - 3);
-            if (x == KB_SILENT)
-                continue;
-            x = (uint32_t)clamp((int32_t)x + held_dt[ti][i], 0, 127);
-        }
-        last = x;
-        for (j = 0; j < n && list[j] != x; j++)
-            ;
-        if (j == n)
-            list[n++] = x;
-    }
-    *cnt = n;
-    if (!n)
-        return 0;
-    if (m == AM_REPEAT) {
-        list = last;
-        return 1;
-    }
-    if (!t->p[P_AORDER] && m != AM_ORD)
-        for (i = 1; i < n; i++)
-            for (j = i; j > 0 && list[j - 1] > list[j]; j--) {
-                uint32_t x = list[j];
-                list[j] = list[j - 1];
-                list[j - 1] = x;
-            }
-    for (o = 0; o < (uint32_t)t->p[P_AOCT]; o++)
-        for (i = 0; i < n && len < 64u; i++)
-            list[len++] = (uint32_t)clamp((int32_t)list[i] + 12 * (int32_t)o, 0, 127);
-    return len;
-}
-
-static uint32_t arp_pick(track_t *t, uint32_t *list, uint32_t len)
-{
-    uint32_t i = t->arp_idx, m = (uint32_t)t->p[P_AMODE], cyc, k, w;
-    if (m == AM_UP8)
-        list[len++] = (uint32_t)clamp((int32_t)list + 12 * t->p[P_AOCT], 0, 127);
-    cyc = len > 1u ? 2u * len - 2u : 1u;
-    k = i % cyc;
-    switch (m) {
-    case AM_DN:
-        return len - 1u - i % len;
-    case AM_UPDN:
-        return k < len ? k : cyc - k;
-    case AM_DNUP:
-        return k < len ? len - 1u - k : k - (len - 1u);
-    case AM_RND:
-        return rng() % len;
-    case AM_CONV:
-    case AM_DIVG:
-        k = i % len;
-        if (m == AM_DIVG)
-            k = len - 1u - k;
-        return (k & 1u) ? len - 1u - k / 2u : k / 2u;
-    case AM_PINKY:
-        return len < 2u ? 0u : (k & 1u) ? len - 1u : k / 2u;
-    case AM_THUMB:
-        return len < 2u ? 0u : (k & 1u) ? 1u + k / 2u : 0u;
-    case AM_WALK:
-        w = t->arp_walk;
-        if (!i)
-            w = 0;
-        else if (w >= len)
-            w = len - 1u;
-        else if (len > 1u)
-            w = !w ? 1u : w == len - 1u ? w - 1u : (rng() >> 7) & 1u ? w + 1u : w - 1u;
-        t->arp_walk = (uint8_t)w;
-        return w;
-    default:
-        return i % len;
-    }
-}
-static void arp_end(track_t *t)
-{
-    uint32_t i;
-    for (i = 0; i < 3u; i++)
-        if (t->arp_ch[i]) {
-            trk_note_off(t, t->arp_ch[i]);
-            seq_out_off(t, t->arp_ch[i]);
-            t->arp_ch[i] = 0;
-        }
-    if (t->arp_note) {
-        trk_note_off(t, t->arp_note);
-        seq_out_off(t, t->arp_note);
-        t->arp_note = 0;
-    }
-}
-
-static void arp_play(track_t *t, uint32_t n)
-{
-    trk_note_on(t, n, 100);
-    seq_out_on(t, n, 100);
-    if (((song.rec >> trk_index(t)) & 1u) && song.playing)
-        rec_note(t, n, 100, 0, 0);
-}
-
-static int arp_step(track_t *t)
-{
-    uint32_t list, cnt, len = arp_list(t, list, &cnt), i, o, top = 0;
-    if (!len)
-        return 0;
-    t->arp_idx++;
-    if (t->p[P_AMODE] != AM_CHORD) {
-        t->arp_note = (uint8_t)list[arp_pick(t, list, len)];
-        arp_play(t, t->arp_note);
-        return 1;
-    }
-    o = t->arp_idx % (uint32_t)(t->p[P_AOCT] > 0 ? t->p[P_AOCT] : 1);
-    for (i = 0; i < cnt && i < 4u; i++) {
-        uint32_t nt = (uint32_t)clamp((int32_t)list[i] + 12 * (int32_t)o, 0, 127);
-        if (nt == 127u && top++)
-            continue;
-        if (!t->arp_note)
-            t->arp_note = (uint8_t)nt;
-        else
-            t->arp_ch[i - 1u] = (uint8_t)nt;
-        arp_play(t, nt);
-    }
-    return 1;
-}
-static void arp_tick(track_t *t, uint32_t adv)
-{
-    uint32_t div = (uint32_t)t->p[P_ARATE] % NDIV_SHORT, u = div_units(div), into, slen, abs = 0, fire = 0;
-    if (t->arp_note) {
-        if (t->arp_off <= adv) {
-            arp_end(t);
-        } else {
-            t->arp_off -= adv;
-        }
-    }
-    if (!t->p[P_AMODE] || !t->nheld) {
-        if (!t->nheld && t->arp_note)
-            arp_end(t);
-        t->arp_new = 0;
-        return;
-    }
-    if (song.playing) {
-        abs = grid_at(div, swings(div) ? swing_units(t->p[P_ASWING], u) : 0u, &into, &slen);
-        if (t->arp_new) {
-            t->arp_new = 0;
-            t->arp_abs = into * 4u >= slen * 3u ? abs : abs - 1u;
-        } else if (div != t->arp_den) {
-            t->arp_abs = abs;
-        }
-        t->arp_den = (uint8_t)div;
-        if (abs + 1u == t->arp_abs)
-            abs = t->arp_abs;
-        fire = abs != t->arp_abs;
-        t->arp_abs = abs;
-    } else {
-        uint32_t sw = swings(div) ? swing_units(t->p[P_ASWING], u) : 0u, lim;
-        if (t->arp_new) {
-            t->arp_new = 0;
-            t->arp_odd = 0;
-            t->arp_pos = u - sw;
-        }
-        lim = t->arp_odd ? u + sw : u - sw;
-        t->arp_pos += adv;
-        if (t->arp_pos >= lim) {
-            t->arp_pos = t->arp_pos - lim < lim ? t->arp_pos - lim : 0;
-            t->arp_odd ^= 1u;
-            fire = 1;
-        }
-        slen = t->arp_odd ? u + sw : u - sw;
-    }
-    if (!fire)
-        return;
-    arp_end(t);
-    if ((uint32_t)(rng() & 127u) <= (uint32_t)t->p[P_APROB] && arp_step(t))
-        t->arp_off = slen * (uint32_t)t->p[P_AGATE] / 128u;
-}
-
-static void arm_start(track_t *t)
-{
-    if (!rec_wait || t != TSEL || song.playing || ci_on)
-        return;
-    if (project_empty() && !rec_tempo) {
-        ft_start(t);
-    } else if (rec_count) {
-        return;
-    } else {
-#if FELUCCA_ARRANGER
-        arrangement_enabled = 0;
-#endif
-        seq_start();
-        if (song.playing)
-            rec_begin();
-    }
-}
-static void drum_input(uint32_t lane, uint32_t lvl, uint32_t rat, int rec);
-#define REMOTE_CC0 102u
-static volatile uint32_t remote_lbl, remote_up;
-static void remote_cc(uint32_t k, uint32_t value)
-{
-    uint32_t bit = 1u << k;
-    if (value >= 64u) {
-        remote_lbl |= bit;
-        remote_up &= ~bit;
-    } else if (remote_lbl & bit) {
-        remote_up |= bit;
-    }
-}
-static uint32_t midi_drum_lane(uint32_t note)
-{
-    return song.g[G_DRMAP] ? (note + 128u - 36u) % 16u : lane_of_note(note);
-}
-static const uint8_t *in_chord;
-static uint32_t in_chord_n, in_chord_i;
-static uint8_t sus_on[NTRK];
-static uint32_t sus_wait[NTRK];
-static void input_off_now(track_t *t, uint32_t note);
-static uint32_t kh_set[NTRK];
-static uint32_t kh_mo[NTRK];
-static uint8_t kh_mc[NTRK];
-static uint8_t kh_phys[NTRK];
-static int kh_on(const track_t *t) { return !t->p[P_AMODE] && t->p[P_AHOLD] && !is_drum(t); }
-static int kh_has(const track_t *t, uint32_t note)
-{
-    return (kh_set[trk_index(t) % NTRK][(note >> 5) & 3u] >> (note & 31u)) & 1u;
-}
-static int kh_any(const track_t *t)
-{
-    const uint32_t *m = kh_set[trk_index(t) % NTRK];
-    return (m | m | m | m) != 0u;
-}
-static uint32_t live_held[NTRK];
-static uint32_t mi_trk_held[NTRK];
-static volatile uint8_t mono_hint;
-static void live_set(const track_t *t, uint32_t note, int on)
-{
-    uint32_t *w = &live_held[trk_index(t) % NTRK][(note >> 5) & 3u], bit = 1u << (note & 31u);
-    *w = on ? *w | bit : *w & ~bit;
-}
-static int live_has(const track_t *t, uint32_t note)
-{
-    uint32_t ti = trk_index(t) % NTRK, w = (note >> 5) & 3u, bit = 1u << (note & 31u);
-    return ((live_held[ti][w] | sus_wait[ti][w]) & bit) != 0u || (kh_on(t) && kh_has(t, note));
-}
-static int seq_has(const track_t *t, uint32_t note)
-{
-    uint32_t i;
-    for (i = 0; i < t->seq_n && i < 4u; i++)
-        if (t->seq_notes[i] == note)
-            return 1;
-    return 0;
-}
-static void kh_release(track_t *t)
-{
-    uint32_t ti = trk_index(t) % NTRK, w, b;
-    for (w = 0; w < 4u; w++)
-        for (b = 0; b < 32u; b++)
-            if ((kh_set[ti][w] >> b) & 1u) {
-                uint32_t n = w * 32u + b;
-                if (ft_on && t == &trk[ft_trk % NTRK])
-                    ft_note_off(n);
-                rec_release(t, n);
-                live_set(t, n, 0);
-                trk_note_off(t, n);
-                if ((kh_mo[ti][w] >> b) & 1u)
-                    midi_out_note(kh_mc[ti], n, 0);
-            }
-    memset(kh_set[ti], 0, sizeof kh_set[ti]);
-    memset(kh_mo[ti], 0, sizeof kh_mo[ti]);
-    kh_phys[ti] = 0;
-}
-static void input_on(track_t *t, uint32_t note, uint32_t vel)
-{
-    if (is_drum(t)) {
-        drum_input(midi_drum_lane(note), vel_lvl(vel), 0, 1);
-        return;
-    }
-    last_note = (uint8_t)note;
-    {
-        uint32_t *w = &sus_wait[trk_index(t) % NTRK][(note >> 5) & 3u], bit = 1u << (note & 31u);
-        if (*w & bit) {
-            *w &= ~bit;
-            input_off_now(t, note);
-        }
-    }
-    arm_start(t);
-    if (kh_on(t)) {
-        uint32_t ti = trk_index(t) % NTRK;
-        if (!kh_phys[ti])
-            kh_release(t);
-        if (kh_phys[ti] < 255u)
-            kh_phys[ti]++;
-        if (kh_has(t, note))
-            return;
-        kh_set[ti][(note >> 5) & 3u] |= 1u << (note & 31u);
-    }
-    if (ft_on && t == &trk[ft_trk % NTRK])
-        ft_note_on(note, vel);
-    if (t->p[P_AMODE]) {
-        arp_add(t, note);
-        return;
-    }
-    if (t->p[P_VOICE] != V_POLY && (((song.rec >> trk_index(t)) & 1u) || (ft_on && ft_trk == trk_index(t)))) {
-        const uint32_t *h = live_held[trk_index(t) % NTRK];
-        if (h | h | h | h)
+        if (h[0] | h[1] | h[2] | h[3])
             mono_hint = 1;
     }
     live_set(t, note, 1);
@@ -2123,8 +1764,7 @@ static void drum_input(uint32_t lane, uint32_t lvl, uint32_t rat, int rec)
     trk_note_on(t, LANE_NOTE[lane], lvl_vel(lvl, 100));
 }
 
-/* -------------------------------------------------------------- roll --- */
-static const uint8_t ROLL_DEN = {2, 4, 8, 12, 16};
+static const uint8_t ROLL_DEN[5] = {2, 4, 8, 12, 16};
 #define NROLL 4u
 static struct {
     uint8_t on, key, trk, note, lvl;
@@ -2245,11 +1885,10 @@ static void roll_block(uint32_t adv)
         }
     }
 }
-/* ---------------------------------------------------------- keyboard --- */
 static uint32_t key_lvl(void)
 {
     uint32_t b = fm1_in.buttons;
-    return (b & dyn_bit) ? LV_GHOST : (b & dyn_bit) ? LV_HARD : LV_NORM;
+    return (b & dyn_bit[0]) ? LV_GHOST : (b & dyn_bit[1]) ? LV_HARD : LV_NORM;
 }
 
 static uint32_t chord_mods(void)
@@ -2265,7 +1904,7 @@ static void chord_revoice(uint32_t sel)
     uint32_t k, i, j, mods = chord_mods(), mc = trk_midi_ch(sel);
     track_t *t = &trk[sel % NTRK];
     for (k = 0; k < 27u; k++) {
-        uint8_t nw;
+        uint8_t nw[4];
         uint32_t nn;
         if (kb_kind[k] != KS_NOTE || kb_trk[k] != sel || !t->p[P_CHORD] || is_drum(t))
             continue;
@@ -2323,6 +1962,7 @@ static void midi_fx(uint32_t note, int on)
             punch.req = -1;
     }
 }
+
 static void key_down(uint32_t k)
 {
     uint32_t layer = layer_now(), sel = song.sel % NTRK, i, mc;
@@ -2345,7 +1985,7 @@ static void key_down(uint32_t k)
     case LY_MIX:
     case LY_SONG:
         kb_kind[k] = KS_UI;
-        kb_nt[k] = (uint8_t)layer;
+        kb_nt[k][0] = (uint8_t)layer;
         lk_push(layer, k, 1);
         return;
     case LY_ERASE:
@@ -2362,20 +2002,20 @@ static void key_down(uint32_t k)
             undo_erase_sess = (undo_sess += 4u) | 2u;
         if (er_trk != sel) {
             er_lanes = 0;
-            er_notes = er_notes = er_notes = er_notes = 0;
+            er_notes[0] = er_notes[1] = er_notes[2] = er_notes[3] = 0;
             er_trk = (uint8_t)sel;
         }
         if (is_drum(t)) {
-            kb_nt[k] = (uint8_t)lane_of_key(k);
+            kb_nt[k][0] = (uint8_t)lane_of_key(k);
             kb_n[k] = 1;
-            er_lanes |= (uint16_t)(1u << kb_nt[k]);
+            er_lanes |= (uint16_t)(1u << kb_nt[k][0]);
         } else {
             uint32_t n = kb_map(t, k);
             if (n == KB_SILENT)
                 return;
             kb_n[k] = (uint8_t)(t->p[P_CHORD] ? chord_notes(t, n, kb_nt[k]) : 1u);
             if (!t->p[P_CHORD])
-                kb_nt[k] = (uint8_t)n;
+                kb_nt[k][0] = (uint8_t)n;
             for (i = 0; i < kb_n[k]; i++)
                 er_notes[(kb_nt[k][i] >> 5) & 3u] |= 1u << (kb_nt[k][i] & 31u);
         }
@@ -2386,13 +2026,13 @@ static void key_down(uint32_t k)
     }
     if (is_drum(t) && layer == LY_PLAY && kb_grid) {
         kb_kind[k] = KS_UI;
-        kb_nt[k] = (uint8_t)KB_GRID;
+        kb_nt[k][0] = (uint8_t)KB_GRID;
         lk_push(KB_GRID, k, 1);
         return;
     }
     if (is_drum(t)) {
         uint32_t lane = lane_of_key(k), lvl = key_lvl();
-        kb_nt[k] = (uint8_t)lane;
+        kb_nt[k][0] = (uint8_t)lane;
         kb_n[k] = 1;
         if (layer == LY_ROLL) {
             kb_kind[k] = KS_ROLL;
@@ -2416,7 +2056,7 @@ static void key_down(uint32_t k)
         }
         if (layer == LY_ROLL) {
             kb_kind[k] = KS_ROLL;
-            kb_nt[k] = (uint8_t)n;
+            kb_nt[k][0] = (uint8_t)n;
             kb_n[k] = 1;
             roll_start(k, t, n, LV_NORM);
             return;
@@ -2427,7 +2067,7 @@ static void key_down(uint32_t k)
         if (t->p[P_CHORD]) {
             kb_n[k] = (uint8_t)chord_play_notes(t, n, chord_mods(), kb_nt[k]);
         } else {
-            kb_nt[k] = (uint8_t)n;
+            kb_nt[k][0] = (uint8_t)n;
             kb_n[k] = 1;
         }
         mc = trk_midi_ch(sel);
@@ -2447,6 +2087,7 @@ static void key_down(uint32_t k)
             pen_note[pen_n++] = kb_nt[k][i];
     }
 }
+
 static void key_up(uint32_t k)
 {
     uint32_t i, mc, kind = kb_kind[k];
@@ -2460,14 +2101,14 @@ static void key_up(uint32_t k)
         }
         return;
     case KS_UI:
-        lk_push(kb_nt[k], k, 0);
+        lk_push(kb_nt[k][0], k, 0);
         return;
     case KS_MOD:
         chord_revoice(kb_trk[k]);
         return;
     case KS_ERASE:
         if (is_drum(t))
-            er_lanes &= (uint16_t)~(1u << kb_nt[k]);
+            er_lanes &= (uint16_t)~(1u << kb_nt[k][0]);
         else
             for (i = 0; i < kb_n[k]; i++)
                 er_notes[(kb_nt[k][i] >> 5) & 3u] &= ~(1u << (kb_nt[k][i] & 31u));
@@ -2492,9 +2133,9 @@ static void key_up(uint32_t k)
         return;
     case KS_DRUM:
         if (ft_on && ft_trk == TRK_DRUM)
-            ft_note_off(kb_nt[k]);
+            ft_note_off(kb_nt[k][0]);
         mc = trk_midi_ch(TRK_DRUM);
-        midi_out_note(mc, (uint32_t)LANE_NOTE[kb_nt[k] & 15u], 0);
+        midi_out_note(mc, (uint32_t)LANE_NOTE[kb_nt[k][0] & 15u], 0);
         return;
     default:
         return;
@@ -2555,202 +2196,6 @@ static void rec_follow(uint32_t sel)
     if (song.rec)
         song.rec = (uint8_t)(1u << (sel % NTRK));
 }
-/* -------------------------------------------------------- metronome --- */
-#define CLICK_REC 1
-#define CLICK_ON 2
-static uint32_t click_last = SEQ_NONE;
-static void click_tick(void)
-{
-    uint32_t mode = (uint32_t)song.g[G_CLOCK];
-    if (!song.playing || clk_beat == click_last)
-        return;
-    click_last = clk_beat;
-    if (mode == CLICK_ON || (mode == CLICK_REC && song.rec))
-        click_on(clk_beat % 4u == 0u);
-}
-
-/* -------------------------------------------------------- sequencer --- */
-#if FELUCCA_ARRANGER
-static volatile int8_t live_req = -1;
-static volatile int8_t live_sec = -1;
-static uint32_t live_bar = 0xFFFFFFFFu;
-#define CHAIN_MAX 8u
-static volatile uint8_t chain_sec[CHAIN_MAX];
-static volatile uint8_t chain_n, chain_i;
-static volatile uint8_t chain_bars;
-static uint32_t section_bars(uint32_t s);
-static volatile uint8_t srec;
-static arr_entry_t srec_e[ARR_STEPS];
-static volatile uint8_t srec_n;
-static volatile uint8_t srec_done;
-
-static void srec_finish(void)
-{
-    uint32_t i, n = 0;
-    for (i = 0; i < srec_n; i++)
-        if (srec_e[i].bars)
-            srec_e[n++] = srec_e[i];
-    if (n) {
-        arrangement.count = (uint8_t)n;
-        arrangement.loop = 0;
-        for (i = 0; i < n; i++)
-            arrangement.entry[i] = srec_e[i];
-    }
-    srec_done = (uint8_t)(n ? n : 0xFFu);
-    srec = 0;
-    srec_n = 0;
-}
-static void srec_add(uint32_t s)
-{
-    if (srec_n >= ARR_STEPS) {
-        srec_finish();
-        return;
-    }
-    srec_e[srec_n].scene = (uint8_t)s;
-    srec_e[srec_n].bars = 0;
-    srec_n++;
-}
-static void srec_stop(void)
-{
-    if (srec == 2u && srec_n && srec_e[srec_n - 1u].bars < 64u &&
-        ((!(clk_beat & 3u) && (clk_beat >> 2) != live_bar) || (clk_beat & 3u)))
-        srec_e[srec_n - 1u].bars++;
-    if (srec == 2u)
-        srec_finish();
-    srec = 0;
-}
-static void seq_reset_tracks(uint32_t pos);
-static void live_block(void)
-{
-    if ((clk_beat & 3u) || (clk_beat >> 2) == live_bar)
-        return;
-    live_bar = clk_beat >> 2;
-    if (srec == 2u && srec_n) {
-        arr_entry_t *e = &srec_e[srec_n - 1u];
-        if (e->bars < 64u) {
-            e->bars++;
-        } else {
-            srec_add(e->scene);
-            if (srec == 2u)
-                srec_e[srec_n - 1u].bars = 1;
-        }
-    }
-    if (chain_n && live_req < 0 && live_bar >= chain_bars) {
-        chain_i = (uint8_t)((chain_i + 1u) % (chain_n < CHAIN_MAX ? chain_n : CHAIN_MAX));
-        live_req = (int8_t)(chain_sec[chain_i] & 3u);
-    }
-    if (live_req >= 0) {
-        uint32_t s = (uint32_t)live_req;
-        live_req = -1;
-        {
-            arrangement_apply(s);
-            song.rec = 0;
-            live_sec = (int8_t)s;
-            seq_reset_tracks(clk_pos);
-            live_bar = 0;
-            if (chain_n)
-                chain_bars = (uint8_t)section_bars(chain_sec[chain_i % CHAIN_MAX]);
-            if (srec == 2u)
-                srec_add(s);
-        }
-    }
-    if (srec == 1u && live_sec >= 0) {
-        srec = 2;
-        srec_n = 0;
-        srec_add((uint32_t)live_sec);
-    }
-}
-#endif
-static void seq_reset_tracks(uint32_t pos)
-{
-    uint32_t i;
-    for (i = 0; i < NTRK; i++) {
-        track_t *t = &trk[i];
-        t->seq_abs = SEQ_NONE;
-        t->seq_idx = 0;
-        t->rskip_n = 0;
-        t->rskip_lanes = 0;
-        t->rskip_abs = SEQ_NONE;
-        t->rh_n = 0;
-        t->arp_new = t->nheld != 0;
-    }
-    for (i = 0; i < NROLL; i++)
-        roll[i].last = SEQ_NONE - 1u;
-    clk_beat = 0;
-    clk_pos = pos;
-#if FELUCCA_ARRANGER
-    live_bar = 0xFFFFFFFFu;
-#endif
-    fill_last_bar = 0xFFFFFFFFu;
-    click_last = SEQ_NONE;
-    song.tick = 0;
-    song.playing = 1;
-    slicer_start(pos);
-}
-
-static void song_backup(void);
-static void song_restore(void);
-
-static void seq_start(void)
-{
-#if FELUCCA_ARRANGER
-    if (arrangement_enabled && !song.playing) {
-        rec_wait = 0;
-        song_backup();
-        chain_n = 0;
-    }
-    if (!arrangement_start()) return;
-#endif
-    seq_reset_tracks(0);
-}
-
-static void seq_release(track_t *t)
-{
-    uint32_t i;
-    for (i = 0; i < t->seq_n; i++) {
-        if (!live_has(t, t->seq_notes[i]))
-            trk_note_off(t, t->seq_notes[i]);
-        seq_out_off(t, t->seq_notes[i]);
-    }
-    if (is_drum(t))
-        seq_out_track_off(t);
-    t->seq_n = 0;
-    t->seq_hold = 0;
-    t->slide_glide = 0;
-}
-
-static void seq_stop(void)
-{
-    uint32_t i;
-#if FELUCCA_ARRANGER
-    if (song.playing)
-        srec_stop();
-    live_req = -1;
-    chain_n = 0;
-#endif
-    fill_held = 0;
-    fill_arm = 0;
-    fill_bar_on = 0;
-    song.playing = 0;
-    for (i = 0; i < NTRK; i++) {
-        seq_release(&trk[i]);
-        locks_restore(&trk[i]);
-        trk[i].rh_n = 0;
-    }
-    seq_out_all_off();
-#if FELUCCA_ARRANGER
-    if (arrangement_clock.running) {
-        arrangement_clock.running = 0;
-        song_restore();
-    }
-#endif
-}
-
-static uint32_t step_vel(const step_t *s, uint32_t i)
-{
-    uint32_t base = (s->flags & SF_ACCENT) ? 127u : (s->vel ? s->vel : 96u);
-    return lvl_vel((s->lvl >> (2u * i)) & 3u, base);
-}
 static void seq_step(track_t *t, const step_t *s, uint32_t slen, uint32_t skip)
 {
     uint32_t i, j, gate = slen * (uint32_t)t->p[P_SGATE] / 128u;
@@ -2769,7 +2214,7 @@ static void seq_step(track_t *t, const step_t *s, uint32_t slen, uint32_t skip)
         return;
     }
     if (s->flags & SF_CONT_ALL) {
-        uint8_t old;
+        uint8_t old[4];
         uint32_t no = t->seq_n > 4u ? 4u : t->seq_n, kept = 0;
         memcpy(old, t->seq_notes, no);
         for (j = 0; j < no; j++) {
@@ -2899,7 +2344,6 @@ static void seq_ratchets(track_t *t, uint32_t into, uint32_t slen)
         }
     }
 }
-
 static int32_t micro_units(const track_t *t, uint32_t abs, uint32_t slen)
 {
     int32_t m = t->micro[abs % trk_len(t) % NSTEP];
@@ -2943,7 +2387,7 @@ static void seq_tick(track_t *t, uint32_t adv)
         t->seq_abs = nabs;
         idx = nabs % len;
         t->seq_idx = (uint16_t)idx;
-        t->rat_done = t->rat_done = t->rat_done = t->rat_done = 0;
+        t->rat_done[0] = t->rat_done[1] = t->rat_done[2] = t->rat_done[3] = 0;
         t->rat_lanes = 0;
         if (!idx)
             t->pass++;
@@ -3419,7 +2863,7 @@ static void events_block(uint32_t n)
         arp_keep_req = (uint8_t)ak;
     }
     if (pr)
-        mi_pen = mi_pen = mi_pen = mi_pen = 0;
+        mi_pen[0] = mi_pen[1] = mi_pen[2] = mi_pen[3] = 0;
     if (pr == (1u << NTRK) - 1u) {
         memset(ch_bend, 0, sizeof ch_bend);
         memset(ch_sus, 0, sizeof ch_sus);
@@ -3436,14 +2880,14 @@ static void events_block(uint32_t n)
             } else {
                 trk_all_off(t);
             }
-            live_held[i] = live_held[i] = live_held[i] = live_held[i] = 0;
-            mi_trk_held[i] = mi_trk_held[i] = mi_trk_held[i] = mi_trk_held[i] = 0;
-            sus_wait[i] = sus_wait[i] = sus_wait[i] = sus_wait[i] = 0;
+            live_held[i][0] = live_held[i][1] = live_held[i][2] = live_held[i][3] = 0;
+            mi_trk_held[i][0] = mi_trk_held[i][1] = mi_trk_held[i][2] = mi_trk_held[i][3] = 0;
+            sus_wait[i][0] = sus_wait[i][1] = sus_wait[i][2] = sus_wait[i][3] = 0;
             sus_on[i] = 0;
             if (!((arp_keep_req >> i) & 1u)) {
                 t->nheld = 0;
                 t->arp_phys = 0;
-                t->arp_note = t->arp_ch = t->arp_ch = t->arp_ch = 0;
+                t->arp_note = t->arp_ch[0] = t->arp_ch[1] = t->arp_ch[2] = 0;
             }
         }
         if (i < NPART)
@@ -3555,7 +2999,7 @@ static void events_block(uint32_t n)
                 drum_input(midi_drum_lane(d1), vel_lvl(d2), 0, 1);
         } else if (st == 0x90u && d2) {
             if (t == TSEL) {
-                if (!(mi_pen | mi_pen | mi_pen | mi_pen) || pen_n >= 4u)
+                if (!(mi_pen[0] | mi_pen[1] | mi_pen[2] | mi_pen[3]) || pen_n >= 4u)
                     pen_n = 0;
                 pen_note[pen_n++] = (uint8_t)d1;
                 mi_pen[d1 >> 5] |= 1u << (d1 & 31u);
@@ -3580,7 +3024,7 @@ static void events_block(uint32_t n)
                         mi_trk_held[ti][w] &= ~(1u << b);
                         input_off(&trk[ti], w * 32u + b);
                     }
-        mi_pen = mi_pen = mi_pen = mi_pen = 0;
+        mi_pen[0] = mi_pen[1] = mi_pen[2] = mi_pen[3] = 0;
     }
     for (i = 0; i < NTRK; i++)
         seq_tick(&trk[i], adv);
