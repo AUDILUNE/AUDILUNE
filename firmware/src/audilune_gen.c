@@ -197,7 +197,6 @@ static void gen_populate_drums(const genre_dna_t *dna, int full_seed)
         dstep_t *ds = &t->dstep[s];
         if (!full_seed && gen_pct() >= 30u)
             continue;
-
         memset(ds, 0, sizeof *ds);
         lock_del(t, s, P_ED_FX);
 
@@ -238,14 +237,30 @@ static void audilune_step_fx_apply(const track_t *t)
     }
 }
 
-/* Back-Home Resolution: snaps tracks back to clean grid when ARP generative drift turns off */
-static void audilune_back_home_resolve(void)
+/* Back-Home Resolution: 1-bar recovery cycle fading parameters & snapping rhythm on bar boundary */
+static uint8_t audilune_back_home_active;
+static uint32_t audilune_back_home_start_beat;
+
+static void audilune_back_home_trigger(void)
 {
-    uint32_t i;
+    audilune_back_home_active = 1u;
+    audilune_back_home_start_beat = clk_beat;
+}
+
+static void audilune_back_home_tick(void)
+{
+    uint32_t i, elapsed;
+    if (!audilune_back_home_active)
+        return;
+
+    elapsed = clk_beat - audilune_back_home_start_beat;
     for (i = 0; i < NTRK; i++) {
-        memset(trk[i].micro, 0, sizeof trk[i].micro);
         locks_restore(&trk[i]);
+        if (elapsed >= 4u)
+            memset(trk[i].micro, 0, sizeof trk[i].micro);
     }
+       if (elapsed >= 4u)
+        audilune_back_home_active = 0u;
 }
 
 /* Main generative engine tick: called once per audio block inside events_block() */
@@ -255,10 +270,11 @@ static void audilune_gen_block(void)
     const genre_dna_t *dna = &GENRE_DNA[g];
     uint32_t i;
 
-    /* Detect Back-Home Resolution when ARP generative mode turns off */
+    /* Trigger 1-bar Back-Home Resolution when ARP generative drift turns off */
     if (audilune_gen_arp_was && !audilune_arp_drift_mask)
-        audilune_back_home_resolve();
+        audilune_back_home_trigger();
     audilune_gen_arp_was = audilune_arp_drift_mask;
+    audilune_back_home_tick();
 
     /* Handle Infinite Algorithmic Compositions Engine activation (HOME 3s hold) */
     if (audilune_infinite_on) {
