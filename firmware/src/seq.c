@@ -1564,22 +1564,14 @@ static void click_tick(void)
         last_beat = clk_beat;
         if (song.g[G_CLICK])
             click_on((clk_beat & 3u) == 0u);
-
     } else if (!song.playing) {
         last_beat = 0xFFFFFFFFu;
-    }
-    if (click_rem) {
-        if (click_rem <= CTL) {
-            click_rem = 0;
-            click_env = 0;
-        } else {
-            click_rem -= CTL;
-        }
     }
 }
 
 static void seq_reset_tracks(uint32_t phase)
 {
+
     uint32_t i;
     (void)phase;
     for (i = 0; i < NTRK; i++) {
