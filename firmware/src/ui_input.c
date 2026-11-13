@@ -2,8 +2,6 @@
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
  * Adapted for AUDILUNE Firmware (Block 3: hardware_controls) */
 
-#include <stdio.h>
-
 /* ------------------------------------------------ AUDILUNE Helpers --- */
 #define AUDILUNE_GENRE_COUNT 6
 #define AUDILUNE_THEME_COUNT 8
@@ -19,23 +17,50 @@ static const char *const AUDILUNE_THEME_NAMES[AUDILUNE_THEME_COUNT] = {
 static uint8_t audilune_genre_idx = 0;
 static uint8_t audilune_theme_idx = 0;
 static uint8_t audilune_infinite_on = 0;
-static uint8_t audilune_pit_latch = 0; /* 1 = SELECT+PIT bend, 2 = EDIT+PIT transpose */
 
-/* Safe HUD popup wrapper for Block 2 bottom status bar (1.5s linger) */
+/* Bare-metal HUD popup formatter (no stdio.h needed) for 1.5s status bar linger */
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit)
 {
-    char buf[40];
-    if (unit && unit[0])
-        snprintf(buf, sizeof(buf), "%s: %ld%s", label, (long)val, unit);
-    else
-        snprintf(buf, sizeof(buf), "%s: %ld", label, (long)val);
+    char buf[36], num[14];
+    uint32_t p = 0, n = 0;
+    int32_t v = val;
+    while (label && label[p] && p < 18u) {
+        buf[p] = label[p];
+        p++;
+    }
+    buf[p++] = ':';
+    buf[p++] = ' ';
+    if (v < 0) {
+        buf[p++] = '-';
+        v = -v;
+    }
+    if (v == 0) {
+        num[n++] = '0';
+    } else {
+        while (v > 0 && n < 12u) {
+            num[n++] = (char)('0' + (v % 10));
+            v /= 10;
+        }
+    }
+    while (n > 0)
+        buf[p++] = num[--n];
+    while (unit && *unit && p < 34u)
+        buf[p++] = *unit++;
+    buf[p] = 0;
     ui_message(buf);
 }
 
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value)
 {
-    char buf[40];
-    snprintf(buf, sizeof(buf), "%s: %s", prefix, value);
+    char buf[36];
+    uint32_t p = 0;
+    while (prefix && *prefix && p < 16u)
+        buf[p++] = *prefix++;
+    buf[p++] = ':';
+    buf[p++] = ' ';
+    while (value && *value && p < 35u)
+        buf[p++] = *value++;
+    buf[p] = 0;
     ui_message(buf);
 }
 
@@ -477,7 +502,7 @@ UI_SMALL static void step_edit(uint32_t slot, int32_t steps)
         note_mark();
         if (!step_on(st)) {
             memset(st, 0, sizeof *st);
-            st->note = last_note;
+            st->note[0] = last_note;
             st->n = 1;
             st->time = ST_NOTE;
             ui.note_k = 0;
@@ -537,8 +562,8 @@ UI_SMALL static void project_new(void)
             sound_change(t);
         track_defaults(t);
         if (i < NPART) {
-            set_engine_of(t, TRK_DEF[i]);
-            apply_preset_to(t, TRK_DEF[i]);
+            set_engine_of(t, TRK_DEF[i][0]);
+            apply_preset_to(t, TRK_DEF[i][1]);
         }
         fm1_irq_on();
     }
@@ -586,7 +611,7 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     if (pg->graph == GR_USER) {
-        static const char *const UP_GO = {"LOAD", "ERASE", "SAVE"};
+        static const char *const UP_GO[3] = {"LOAD", "ERASE", "SAVE"};
         if (slot == 0u) {
             ui.uslot = (uint8_t)clamp((int32_t)ui.uslot + steps, 0, UP_SLOTS - 1);
             ui.arm = 0;
@@ -681,9 +706,9 @@ UI_SMALL static void edit_param(uint32_t slot, int32_t steps)
     }
 }
 
-static uint32_t mi_held;
+static uint32_t mi_held[4];
 static uint8_t mi_ok;
-UI_SMALL static uint32_t midi_held(void) { return mi_held | mi_held | mi_held | mi_held; }
+UI_SMALL static uint32_t midi_held(void) { return mi_held[0] | mi_held[1] | mi_held[2] | mi_held[3]; }
 UI_SMALL static void midi_entry(void)
 {
     {
@@ -707,7 +732,7 @@ UI_SMALL static void midi_entry(void)
     if (step_in_lost) {
         step_in_lost = 0;
         step_in_r = step_in_w;
-        mi_held = mi_held = mi_held = mi_held = 0;
+        mi_held[0] = mi_held[1] = mi_held[2] = mi_held[3] = 0;
     }
     while (step_in_r != step_in_w) {
         uint32_t ev = step_in_q[step_in_r % STEP_IN_Q], note = ev & 127u, tr = (ev >> 8) % NTRK;
@@ -719,7 +744,7 @@ UI_SMALL static void midi_entry(void)
         }
         if (!on_page) {
             if (rh_st == 1u && tr != rec_trk) {
-                char b = {(char)('1' + tr), 0};
+                char b[2] = {(char)('1' + tr), 0};
                 ui_say("MIDI PLAYS TRACK ", b);
                 rh_st = 2;
             } else if (rec_arm && tr == rec_trk) {
@@ -729,7 +754,7 @@ UI_SMALL static void midi_entry(void)
         }
         if (&trk[tr] != t) {
             if (!song.playing) {
-                char b = {(char)('1' + tr), 0};
+                char b[2] = {(char)('1' + tr), 0};
                 ui_say("MIDI PLAYS TRACK ", b);
             }
             continue;
@@ -744,14 +769,14 @@ UI_SMALL static void midi_entry(void)
             st->time = ST_NOTE;
         }
         if (t->p[P_VOICE]) {
-            st->note = (uint8_t)note;
+            st->note[0] = (uint8_t)note;
             st->n = 1;
         } else if (st->n < 4u) {
             st->note[st->n++] = (uint8_t)note;
         }
     }
     if (!on_page)
-        mi_held = mi_held = mi_held = mi_held = 0;
+        mi_held[0] = mi_held[1] = mi_held[2] = mi_held[3] = 0;
 }
 UI_SMALL static void seq_entry(uint32_t pressed)
 {
@@ -777,7 +802,7 @@ UI_SMALL static void seq_entry(uint32_t pressed)
             st->time = ST_NOTE;
         }
         if (t->p[P_CHORD] && !t->p[P_VOICE]) {
-            uint8_t c;
+            uint8_t c[4];
             uint32_t m, j;
             if (kb_kind[k] == KS_NOTE && kb_n[k] && kb_root[k] == note) {
                 m = kb_n[k] > 4u ? 4u : kb_n[k];
@@ -788,7 +813,7 @@ UI_SMALL static void seq_entry(uint32_t pressed)
             for (j = 0; j < m && st->n < 4u; j++)
                 st->note[st->n++] = c[j];
         } else if (t->p[P_VOICE]) {
-            st->note = (uint8_t)note;
+            st->note[0] = (uint8_t)note;
             st->n = 1;
         } else if (st->n < 4u) {
             st->note[st->n++] = (uint8_t)note;
@@ -829,7 +854,6 @@ UI_SMALL static void layer_tap(uint32_t layer)
         ui_message("FX PAGE");
         break;
     case LY_ERASE:
-        /* EDIT Button Tap: Toggles cleanly between Play Screen and Edit Screen */
         if (!ui.home && (cur_page()->scope == SC_STEP || cur_page()->scope == SC_DRUM)) {
             vis_on = 0;
             go_home();
@@ -1024,7 +1048,7 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
 }
 UI_SMALL static void rec_knobs(void)
 {
-    static const uint8_t LENS = {16u, 32u, 64u};
+    static const uint8_t LENS[3] = {16u, 32u, 64u};
     int32_t s;
     uint32_t empty = (uint32_t)project_empty(), tempo = !empty || rec_tempo;
     if ((s = panel_enc(EN_K1)) != 0 && empty) {
@@ -1055,9 +1079,6 @@ UI_SMALL static void rec_knobs(void)
     }
 }
 
-/* AUDILUNE RECORD Button:
- * Tap: Arms/disarms live real-time parameter automation & note recording.
- * Hold (1.5s): Context-aware erase (clears active track on Play Screen, or wipes highlighted step on Edit Screen). */
 #define AUDILUNE_HOLD_CLEAR_MS 1500u
 
 UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
@@ -1100,12 +1121,12 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
             fm1_irq_on();
             ui_message("STEP CLEARED");
         } else {
-            char b = "1 CLEARED";
+            char b[12] = "1 CLEARED";
             track_defaults_steps(t);
             t->nheld = 0;
             t->arp_phys = 0;
             fm1_irq_on();
-            b = (char)('1' + ui.hold_trk);
+            b[0] = (char)('1' + ui.hold_trk);
             ui_say("TRACK ", b);
         }
         ui.hold_kind = 0;
@@ -1153,7 +1174,6 @@ UI_SMALL static void remote_poll(void)
 UI_SMALL static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
-    /* AUDILUNE Block 3: HOME Hold (3000 ms) triggers Infinite Algorithmic Compositions Engine */
     uint32_t home = btn_hold_ms(&ui.home_t0, B_HOME, now, 1, 3000u);
     int32_t s;
     int layered;
@@ -1172,7 +1192,6 @@ UI_SMALL static void ui_input(void)
         if (ui.menu) {
             menu_close();
         } else if ((fm1_in.buttons >> panel.btn[B_GLO]) & 1u) {
-            /* HOME + GLO hold still opens hardware system calibration / settings menu */
             layer_unlock();
             ui.menu = 1;
             ui.menu_sel = 0;
@@ -1208,13 +1227,11 @@ UI_SMALL static void ui_input(void)
     pressed &= ~((on_song_page() ? 0u : 1u << panel.btn[B_REC]) | (1u << panel.btn[B_SAVE]));
 
     if (layered || ui.hold_kind) {
-        /* SELECT + GLO button cycles the 8 AUDILUNE Color Themes */
         if (((fm1_in.buttons >> panel.btn[B_GLO]) & 1u) && (s = panel_enc(EN_SELECT)) != 0) {
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : AUDILUNE_THEME_COUNT - 1u)) % AUDILUNE_THEME_COUNT);
             audilune_hud_text("THEME", AUDILUNE_THEME_NAMES[audilune_theme_idx]);
             ui.force = 1;
         } else if (!punch.hold && (s = panel_enc(EN_SELECT)) != 0) {
-            /* Live Pitch Bend when SELECT + PIT key (C#3 / key 1) is held */
             if (fm1_in.notes & (1u << 1)) {
                 int32_t bend = clamp((int32_t)song.octave + (s > 0 ? 1 : -1), -3, 3);
                 song.octave = (int8_t)bend;
@@ -1307,7 +1324,6 @@ UI_SMALL static void ui_input(void)
         case B_OCTDN:
         case B_OCTUP: {
             uint32_t both = (1u << panel.btn[B_OCTDN]) | (1u << panel.btn[B_OCTUP]);
-            /* AUDILUNE Block 3: OCT- / OCT+ navigates steps horizontally on Edit Screen, shifts octave on Play Screen */
             if (!ui.home && cur_page()->scope == SC_STEP) {
                 int32_t len = (int32_t)trk_len(TSEL);
                 int32_t dir = (b == B_OCTUP) ? 1 : -1;
@@ -1340,7 +1356,6 @@ UI_SMALL static void ui_input(void)
     if (song.seq_mode && cur_page()->scope == SC_STEP && !ui.sheet)
         seq_entry(notes);
 
-    /* AUDILUNE Block 3: PRESETS Encoder cycles sequential preset wheel (Perc -> Bass -> Melody -> Drones -> User -> Poly) */
     if ((s = panel_enc(EN_PRESET)) != 0) {
         if (is_drum(TSEL)) {
             TDRUM->p[P_E0] = (int16_t)clamp(TDRUM->p[P_E0] + s, 0, DRUM_KITS - 1);
@@ -1355,14 +1370,12 @@ UI_SMALL static void ui_input(void)
         }
     }
 
-    /* AUDILUNE Block 3: ALGORITHM Encoder sweeps smoothly across the 6 Macro-Genre frameworks */
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
         audilune_genre_idx = (uint8_t)((audilune_genre_idx + (s > 0 ? 1u : AUDILUNE_GENRE_COUNT - 1u)) % AUDILUNE_GENRE_COUNT);
         audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[audilune_genre_idx]);
         ui.force = 1;
     }
 
-    /* AUDILUNE Block 3: SELECT Encoder cycles 4 Visualizer styles on Visualizer Screen, or Tracks 1-6 on Play/Edit */
     if (vis_shown() && !rec_wait && !ft_on) {
         if ((s = panel_enc(EN_SELECT)) != 0)
             vis_select(s);
@@ -1376,7 +1389,6 @@ UI_SMALL static void ui_input(void)
         audilune_hud_popup("TRACK", (int32_t)(next_trk + 1u), "");
     }
 
-    /* Knobs 1-4: Main Layer Knobs on Play Screen (ui.home), Context/Edit Knobs on Edit & Parameter Pages */
     for (k = 0; k < 4u; k++) {
         const page_t *pg = cur_page();
         int16_t *hv;
