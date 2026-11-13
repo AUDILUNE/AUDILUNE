@@ -1642,7 +1642,7 @@ static void seq_start(void)
     fill_bar_on = 0;
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
-        t->seq_abs = SEQ_NONE;
+          t->seq_abs = SEQ_NONE;
         t->seq_idx = 0;
         t->seq_off = 0;
         t->seq_hold = 0;
@@ -1653,9 +1653,10 @@ static void seq_start(void)
         locks_restore(t);
     }
 #if FELUCCA_ARRANGER
-    if (arrangement_enabled && arrangement.len) {
-        arr_start(&arrangement_clock, &arrangement);
-        arrangement_apply((uint32_t)arrangement.entries[0].scene);
+    if (arrangement_enabled) {
+        if (!arrangement_start())
+            return;
+        live_sec = -1;
     } else {
         arrangement_clock.running = 0;
         live_sec = (int8_t)((int32_t)song.g[G_SLOT] - 1);
@@ -1668,6 +1669,7 @@ static void seq_start(void)
 
 static int arp_step(track_t *t)
 {
+
     uint32_t list[60 + 5], cnt, len = arp_list(t, list, &cnt), i, o, top = 0;
     if (!len)
         return 0;
