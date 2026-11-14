@@ -35,16 +35,14 @@ static uint32_t pow2_q16(int32_t d16)
     return oct >= 16u ? r << (oct - 16u) : r >> (16u - oct);
 }
 
-/* ---- user sample slots (loaded from the web editor into flash, see web/EDITOR_PROTOCOL.md)
- * 4 slots of 80 KiB: 3 at flash 0xA0000.., USR4 at 0xE7000 (Felucca data regions), read through the plain XIP
- * window. Slot = header (magic, count, name, data length, CRC32) + up to 16 zones in the
- * smp_zone_t layout (off relative to the slot's data at +512) + IMA ADPCM data. */
+/* ---- user sample slots (AUDILUNE Block 5: 6-Slot Dynamic Sample Pool)
+ * 6 floating slots of 40 KiB (0xA000) across 0xA0000..0xDBFFF (6 x 40 KiB = 240 KiB),
+ * assignable across any of the 6 polymorphic tracks and freeing 0xE7000+ for Flash Vaults. */
 #include "../hal/fm1_xip.h"   /* relative: hostsim includes this file too */
-#define SMP_USER_SLOTS 4
-#define SMP_USER_BASE 0xA0000u                      /* USR1..USR3: 0xA0000..0xDBFFF */
-#define SMP_USER4_BASE 0xE7000u                     /* USR4 (2.4): the free flash after the FM6 bank, 0xE7000..0xFAFFF */
-#define SMP_USER_SIZE 0x14000u
-#define SMP_USER_OFF(k) ((k) < 3u ? SMP_USER_BASE + (k) * SMP_USER_SIZE : SMP_USER4_BASE)
+#define SMP_USER_SLOTS 6
+#define SMP_USER_BASE 0xA0000u                      /* USR1..USR6: 0xA0000..0xDBFFF */
+#define SMP_USER_SIZE 0xA000u                       /* 40 KiB per slot (6 x 0xA000 = 0x3C000) */
+#define SMP_USER_OFF(k) (SMP_USER_BASE + (uint32_t)(k) * SMP_USER_SIZE)
 #define SMP_USER_DATA 512u
 #define SMP_USER_MAGIC 0x504D5346u                  /* "FSMP" */
 #define SMP_NALL (SMP_NSETS + SMP_USER_SLOTS)
@@ -58,7 +56,7 @@ typedef struct {
 } smp_user_hdr_t;                                   /* 32 + 16 x 28 = 480 B, data at +512 */
 static smp_zone_t usr_zone[SMP_USER_SLOTS][16];     /* RAM copy, off rebased onto SMP_DATA */
 static uint8_t usr_nz[SMP_USER_SLOTS];
-static const char *const SMP_ALL_NAMES[SMP_NALL] = {SMP_SET_NAMES_INIT, "USR1", "USR2", "USR3", "USR4"};
+static const char *const SMP_ALL_NAMES[SMP_NALL] = {SMP_SET_NAMES_INIT, "USR1", "USR2", "USR3", "USR4", "USR5", "USR6"};
 
 #ifndef SMP_USER_XIP                                /* host tests: a RAM image of the slots */
 #define SMP_USER_XIP(k) fm1_xip_ptr(SMP_USER_OFF((uint32_t)(k)))
