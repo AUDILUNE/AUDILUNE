@@ -221,12 +221,13 @@ _Static_assert(sizeof(project_t) <= 3840u, "AUDILUNE 6-track x 128-step format f
 #define AUDILUNE_NOINIT_CACHE 2u
 project_t proj_slot[AUDILUNE_NOINIT_CACHE] __attribute__((section(".noinit")));
 static project_t proj_ext[AUDILUNE_VAULT_SLOTS - AUDILUNE_NOINIT_CACHE];
-static inline project_t *proj_ptr(uint32_t s)
-{
+static inline project_t *proj_ptr(uint32_t s) {
     s %= AUDILUNE_VAULT_SLOTS;
     return s < AUDILUNE_NOINIT_CACHE ? &proj_slot[s] : &proj_ext[s - AUDILUNE_NOINIT_CACHE];
 }
+static inline uint32_t proj_obj(uint32_t s) { s %= AUDILUNE_VAULT_SLOTS; return s < 4u ? (OBJ_PROJECT0 + s) : (OBJ_PROJECT4 + (s - 4u)); }
 UI_SMALL static uint32_t proj_hash(const void *p, uint32_t n)
+
 {
     const uint8_t *b = (const uint8_t *)p;
     uint32_t i, s = 0x811C9DC5u;
@@ -706,7 +707,7 @@ UI_SMALL static void proj_fetch(uint32_t slot)
 {
     uint32_t s = slot % AUDILUNE_VAULT_SLOTS;
     project_t *q = proj_ptr(s);
-    int n = st_load(OBJ_PROJECT0 + s, &proj_tmp, sizeof proj_tmp);
+    int n = st_load(proj_obj(s), &proj_tmp, sizeof proj_tmp);
     if (!proj_import(q, &proj_tmp, n))
         q->magic = 0;
 }
@@ -727,7 +728,7 @@ UI_SMALL static void project_save(uint32_t slot)
     proj_capture(p);
 #if FELUCCA_FLASH
     if (flash_ok) {
-        if (st_save(OBJ_PROJECT0 + s, p, sizeof *p))
+        if (st_save(proj_obj(s), p, sizeof *p))
             ui_message("SAVE ERROR");
         else
             ui_say("SAVED SONG ", SEC_NAME[s]);
@@ -735,6 +736,7 @@ UI_SMALL static void project_save(uint32_t slot)
     }
 #endif
     ui_say("SAVED SONG ", SEC_NAME[s]);
+
 }
 
 UI_SMALL static void project_erase(uint32_t slot)
@@ -752,7 +754,7 @@ UI_SMALL static void project_erase(uint32_t slot)
         return;
     }
 #if FELUCCA_FLASH
-    if (flash_ok && st_save(OBJ_PROJECT0 + s, p, 0)) {
+    if (flash_ok && st_save(proj_obj(s), p, 0)) {
         ui_message("ERASE ERROR");
         return;
     }
@@ -981,7 +983,7 @@ UI_SMALL static void persist_boot(void)
             if (!proj_ok(q)) {
                 proj_fetch(i);
             } else {
-                int n = st_load(OBJ_PROJECT0 + i, &proj_tmp, sizeof proj_tmp);
+                int n = st_load(proj_obj(i), &proj_tmp, sizeof proj_tmp);
                 if (n != (int)sizeof *q || memcmp(&proj_tmp.aud1, q, sizeof *q))
                     sec_dirty |= (uint8_t)(1u << i);
 
@@ -1208,7 +1210,7 @@ UI_SMALL static uint32_t project_restore(uint32_t slot, const void *raw, uint32_
     if (song.playing || transport_req)
         return 3;
     if (slot < AUDILUNE_VAULT_SLOTS && !n) {
-        if (!flash_ok || st_save(OBJ_PROJECT0 + slot, raw, 0))
+        if (!flash_ok || st_save(proj_obj(slot), raw, 0))
             return 4;
         memset(dst, 0, sizeof *dst);
         sec_dirty &= (uint8_t)~(1u << slot);
@@ -1220,7 +1222,7 @@ UI_SMALL static uint32_t project_restore(uint32_t slot, const void *raw, uint32_
         project_apply(&autosave_buf);
         return 0;
     }
-    if (!flash_ok || st_save(OBJ_PROJECT0 + slot, &autosave_buf, sizeof autosave_buf))
+    if (!flash_ok || st_save(proj_obj(slot), &autosave_buf, sizeof autosave_buf))
         return 4;
     memcpy(dst, &autosave_buf, sizeof *dst);
     sec_dirty &= (uint8_t)~(1u << slot);
@@ -1241,6 +1243,7 @@ UI_SMALL static void arrangement_save(void)
         ui_message(memcmp(&persist_saved.arrangement, &arrangement, sizeof arrangement) ? "SAVE ERROR" : "SONG SAVED");
         return;
     }
+
 #endif
     ui_message("SONG IN RAM ONLY");
 }
@@ -1270,7 +1273,7 @@ UI_SMALL static void sections_write(void)
     if (flash_ok)
         for (i = 0; i < AUDILUNE_VAULT_SLOTS; i++) {
             project_t *p = proj_ptr(i);
-            if (((sec_dirty >> i) & 1u) && st_save(OBJ_PROJECT0 + i, p, sizeof *p) == 0)
+            if (((sec_dirty >> i) & 1u) && st_save(proj_obj(i), p, sizeof *p) == 0)
                 sec_dirty &= (uint8_t)~(1u << i);
         }
     if (!flash_ok)
@@ -1280,6 +1283,7 @@ UI_SMALL static void sections_write(void)
 
     if (song_dirty || fav_dirty) {
         song_dirty = 0;
+
         settings_save();
     }
 }
