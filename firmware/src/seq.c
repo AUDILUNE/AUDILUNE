@@ -2601,7 +2601,7 @@ static void seq_tick(track_t *t, uint32_t adv)
 static track_t *midi_own(uint32_t ch)
 {
     uint32_t i;
-    if (song.g[G_DRCH] && ch + 1u == (uint32_t)song.g[G_DRCH])
+    if ((song.g[G_DRCH] && ch + 1u == (uint32_t)song.g[G_DRCH]) || ch + 1u == 6u)
         return TDRUM;
     for (i = 0; i < NPART; i++)
         if (ch + 1u == (uint32_t)song.g[G_CH1 + i])
@@ -2613,6 +2613,7 @@ static track_t *midi_track(uint32_t ch)
     track_t *t = midi_own(ch);
     return t ? t : song.g[G_CHOTH] ? 0 : TSEL;
 }
+
 
 static uint8_t midi_sel_on[16][64];
 static inline uint32_t midi_sel_get(uint32_t ch, uint32_t note)
@@ -3077,6 +3078,7 @@ static void events_block(uint32_t n)
         track_t *t;
         mi_r++;
         if ((pkt & 15u) == 0xFu) {
+            if (song.g[G_CLKOUT]) midi_out_event(0x0Fu | (pkt & 0xFF00u));
             mclk_event((pkt >> 8) & 0xFFu, ((pkt >> 4) & 15u) ? 2u : 1u);
             continue;
         }
@@ -3102,6 +3104,7 @@ static void events_block(uint32_t n)
                     midi_pedal(ch, TSEL, d2);
                 midi_cc(TSEL, d1, d2);
                 continue;
+
             }
             if (st == 0xE0u) {
                 if (!is_drum(TSEL))
@@ -3158,23 +3161,22 @@ static void events_block(uint32_t n)
                 continue;
         }
         if (is_drum(t)) {
-            if (st == 0x90u && d2)
-                drum_input(midi_drum_lane(d1), vel_lvl(d2), 0, 1);
-        } else if (st == 0x90u && d2) {
-            if (t == TSEL) {
-                if (!(mi_pen[0] | mi_pen[1] | mi_pen[2] | mi_pen[3]) || pen_n >= 4u)
-                    pen_n = 0;
-                pen_note[pen_n++] = (uint8_t)d1;
-                mi_pen[d1 >> 5] |= 1u << (d1 & 31u);
-            }
-            step_in_push(d1 | 0x80u | trk_index(t) << 8);
-            mi_trk_held[trk_index(t) % NTRK][d1 >> 5] |= 1u << (d1 & 31u);
-            input_on(t, d1, d2);
+            uint32_t ln = midi_drum_lane(d1);
+            if (st == 0x90u && d2) { drum_input(ln, vel_lvl(d2), 0, 1); seq_out_on(t, LANE_NOTE[ln], d2); }
+            else seq_out_off(t, LANE_NOTE[ln]);
         } else {
-            mi_pen[d1 >> 5] &= ~(1u << (d1 & 31u));
-            step_in_push(d1 | trk_index(t) << 8);
-            mi_trk_held[trk_index(t) % NTRK][d1 >> 5] &= ~(1u << (d1 & 31u));
-            input_off(t, d1);
+            int32_t mn = clamp((int32_t)d1 + t->p[P_TRANS], 0, 127);
+            if (t->p[P_QUANT] || t->p[P_SCALE]) { uint32_t msk = scale_mask(t), g = 12; while (g-- && !((msk >> (uint32_t)((mn - t->p[P_ROOT] + 120) % 12)) & 1u)) mn--; mn = clamp(mn, 0, 127); }
+            uint32_t qn = (uint32_t)mn;
+            if (st == 0x90u && d2) {
+                if (t == TSEL) { if (!(mi_pen[0] | mi_pen[1] | mi_pen[2] | mi_pen[3]) || pen_n >= 4u) pen_n = 0; pen_note[pen_n++] = (uint8_t)qn; mi_pen[qn >> 5] |= 1u << (qn & 31u); }
+                step_in_push(qn | 0x80u | trk_index(t) << 8); mi_trk_held[trk_index(t) % NTRK][qn >> 5] |= 1u << (qn & 31u);
+                input_on(t, qn, d2); seq_out_on(t, qn, d2);
+            } else {
+                mi_pen[qn >> 5] &= ~(1u << (qn & 31u)); step_in_push(qn | trk_index(t) << 8); mi_trk_held[trk_index(t) % NTRK][qn >> 5] &= ~(1u << (qn & 31u));
+                input_off(t, qn); seq_out_off(t, qn);
+            }
+
         }
     }
     if (midi_in_lost) {
