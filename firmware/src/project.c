@@ -706,13 +706,9 @@ UI_SMALL static void proj_fetch(uint32_t slot)
 {
     uint32_t s = slot % AUDILUNE_VAULT_SLOTS;
     project_t *q = proj_ptr(s);
-    if (s < 4u) {
-        int n = st_load(OBJ_PROJECT0 + s, &proj_tmp, sizeof proj_tmp);
-        if (!proj_import(q, &proj_tmp, n))
-            q->magic = 0;
-    } else if (!proj_ok(q)) {
+    int n = st_load(OBJ_PROJECT0 + s, &proj_tmp, sizeof proj_tmp);
+    if (!proj_import(q, &proj_tmp, n))
         q->magic = 0;
-    }
 }
 #include "fm6_bank.c"
 #endif
@@ -731,7 +727,7 @@ UI_SMALL static void project_save(uint32_t slot)
 #endif
     proj_capture(p);
 #if FELUCCA_FLASH
-    if (flash_ok && s < 4u) {
+    if (flash_ok) {
         if (st_save(OBJ_PROJECT0 + s, p, sizeof *p))
             ui_message("SAVE ERROR");
         else
@@ -757,12 +753,13 @@ UI_SMALL static void project_erase(uint32_t slot)
         return;
     }
 #if FELUCCA_FLASH
-    if (flash_ok && s < 4u && st_save(OBJ_PROJECT0 + s, p, 0)) {
+    if (flash_ok && st_save(OBJ_PROJECT0 + s, p, 0)) {
         ui_message("ERASE ERROR");
         return;
     }
 #endif
     fm1_irq_off();
+
     memset(p, 0, sizeof *p);
     sec_dirty &= (uint8_t)~(1u << s);
     if (live_sec == (int8_t)s)
@@ -956,7 +953,7 @@ UI_SMALL static void persist_boot(void)
             if (p.magic == PERSIST_MAGIC && arr_valid(&p.arrangement, 15u))
                 arrangement = p.arrangement;
             else
-                p.arrangement = arrangement;
+                 p.arrangement = arrangement;
 #endif
             persist_saved = p;
             {
@@ -982,10 +979,11 @@ UI_SMALL static void persist_boot(void)
             project_t *q = proj_ptr(i);
             if (!proj_ok(q)) {
                 proj_fetch(i);
-            } else if (i < 4u) {
+            } else {
                 int n = st_load(OBJ_PROJECT0 + i, &proj_tmp, sizeof proj_tmp);
                 if (n != (int)sizeof *q || memcmp(&proj_tmp.aud1, q, sizeof *q))
                     sec_dirty |= (uint8_t)(1u << i);
+
             }
         }
     }
@@ -1208,7 +1206,7 @@ UI_SMALL static uint32_t project_restore(uint32_t slot, const void *raw, uint32_
     project_t *dst = proj_ptr(slot);
     if (song.playing || transport_req)
         return 3;
-    if (slot < 4u && !n) {
+    if (slot < AUDILUNE_VAULT_SLOTS && !n) {
         if (!flash_ok || st_save(OBJ_PROJECT0 + slot, raw, 0))
             return 4;
         memset(dst, 0, sizeof *dst);
@@ -1217,7 +1215,7 @@ UI_SMALL static uint32_t project_restore(uint32_t slot, const void *raw, uint32_
     }
     if (!proj_import(&autosave_buf, raw, (int)n))
         return 2;
-    if (slot == 4u) {
+    if (slot == AUDILUNE_VAULT_SLOTS) {
         project_apply(&autosave_buf);
         return 0;
     }
@@ -1254,8 +1252,7 @@ UI_SMALL static void section_store(uint32_t s)
     proj_capture(dst);
     live_sec = (int8_t)s;
     fm1_irq_on();
-    if (s < 4u)
-        sec_dirty |= (uint8_t)(1u << s);
+    sec_dirty |= (uint8_t)(1u << s);
 }
 
 UI_SMALL static void section_load(uint32_t s)
@@ -1270,7 +1267,7 @@ UI_SMALL static void sections_write(void)
     uint32_t i;
 #if FELUCCA_FLASH
     if (flash_ok)
-        for (i = 0; i < 4u; i++) {
+        for (i = 0; i < AUDILUNE_VAULT_SLOTS; i++) {
             project_t *p = proj_ptr(i);
             if (((sec_dirty >> i) & 1u) && st_save(OBJ_PROJECT0 + i, p, sizeof *p) == 0)
                 sec_dirty &= (uint8_t)~(1u << i);
@@ -1279,6 +1276,7 @@ UI_SMALL static void sections_write(void)
 #endif
         sec_dirty = 0;
     (void)i;
+
     if (song_dirty || fav_dirty) {
         song_dirty = 0;
         settings_save();
