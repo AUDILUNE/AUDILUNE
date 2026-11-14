@@ -764,11 +764,26 @@ static const struct { uint8_t kind, e; const char *name; } BANK[] = {
 #endif
 };
 #define NBANK (sizeof BANK / sizeof BANK[0])
+#define WHEEL_USMP_N 6u
 static uint8_t bank_pi[NBANK];                       /* the preset index of each entry in its engine */
+static uint8_t wheel_idx[NBANK];                     /* AUDILUNE sequential wheel order: PERC -> BASS -> MELD -> DRON */
 static uint8_t bank_ready;
+
+UI_SMALL static uint8_t audilune_wheel_stage(uint32_t i)
+{
+    uint8_t k = BANK[i].kind;
+    if (k == BK_FX)
+        return 0u; /* Stage 0: Percussion */
+    if (k == BK_BASS)
+        return 1u; /* Stage 1: Bass */
+    if (k == BK_PAD)
+        return 3u; /* Stage 3: Drones */
+    return 2u;     /* Stage 2: Melody (KEYS, ORGAN, LEAD, PLUCK, STAB) */
+}
+
 UI_SMALL static void bank_resolve(void)
 {
-    uint32_t i, k;
+    uint32_t i, k, st, w = 0;
     for (i = 0; i < NBANK; i++) {
         const engine_t *e = ENGINES[BANK[i].e % NENGINES];
         bank_pi[i] = 0xFF;
@@ -776,35 +791,62 @@ UI_SMALL static void bank_resolve(void)
             if (str_eq(e->presets[k].name, BANK[i].name))
                 bank_pi[i] = (uint8_t)k;
     }
+    for (st = 0; st < 4u; st++)
+        for (i = 0; i < NBANK; i++)
+            if (audilune_wheel_stage(i) == st)
+                wheel_idx[w++] = (uint8_t)i;
     bank_ready = 1;
 }
-UI_SMALL static uint32_t base_pos(uint32_t *total)            /* list index of the selected track's preset (no favourites) */
+
+UI_SMALL static uint32_t base_pos(uint32_t *total)            /* Sequential Preset Wheel index (Perc -> Bass -> Melody -> Drones -> User Samples -> Poly-Wavetable) */
 {
     uint32_t i, cur = 0;
     if (!bank_ready)
         bank_resolve();
-    for (i = 0; i < NBANK; i++)
-        if (BANK[i].e == TSEL->eng_req && bank_pi[i] == TSEL->preset)
+    for (i = 0; i < NBANK; i++) {
+        uint32_t bi = wheel_idx[i];
+        if (BANK[bi].e == TSEL->eng_req && bank_pi[bi] == TSEL->preset)
             cur = i;
+    }
+    if (TSEL->eng_req == 4u && TSEL->preset >= (uint8_t)SMP_NSETS && TSEL->preset < (uint8_t)(SMP_NSETS + WHEEL_USMP_N))
+        cur = NBANK + (uint32_t)(TSEL->preset - (uint8_t)SMP_NSETS);
     if (user_of(TSEL) < UP_SLOTS)
-        cur = NBANK + up_rank(user_of(TSEL));
-    *total = NBANK + up_count();
+        cur = NBANK + WHEEL_USMP_N + up_rank(user_of(TSEL));
+    *total = NBANK + WHEEL_USMP_N + up_count();
     return cur;
 }
 
-/* list index n (< total) -> engine, *k its preset; NENGINES = user preset, *k its slot (no favourites) */
+/* list index n (< total) -> engine, *k its preset; NENGINES = Poly-Wavetable / user preset, *k its slot */
 UI_SMALL static uint32_t base_at(uint32_t n, uint32_t *k)
 {
     if (!bank_ready)
         bank_resolve();
-    if (n >= NBANK) {
-        *k = up_nth(n - NBANK);
+    if (n >= NBANK + WHEEL_USMP_N) {
+        *k = up_nth(n - NBANK - WHEEL_USMP_N);
         return NENGINES;
     }
-    *k = bank_pi[n] == 0xFF ? 0u : bank_pi[n];
-    return BANK[n].e;
+    if (n >= NBANK) {
+        *k = (uint32_t)SMP_NSETS + (n - NBANK);
+        return 4u; /* ENG_SAMPLE floating user sample slot USR1..USR6 */
+    }
+    {
+        uint32_t bi = wheel_idx[n];
+        *k = bank_pi[bi] == 0xFF ? 0u : bank_pi[bi];
+        return BANK[bi].e;
+    }
 }
-UI_SMALL static const char *base_kind(uint32_t n) { return n < NBANK ? BANK_KIND[BANK[n].kind] : "USER"; }
+
+UI_SMALL static const char *base_kind(uint32_t n)
+{
+    if (n >= NBANK + WHEEL_USMP_N)
+        return "WVTB";
+    if (n >= NBANK)
+        return "USMP";
+    {
+        static const char *const WHEEL_NAMES[4] = {"PERC", "BASS", "MELD", "DRON"};
+        return WHEEL_NAMES[audilune_wheel_stage(wheel_idx[n])];
+    }
+}
 
 /* SLOOP 2.7: favourites (PRESETS page, KNOB 4): up to 16 sounds at the top of the PRESETS list, kept in the FM-1's
  * settings (project.c, the settings' side record). An entry: a factory sound, its BANK index; a user preset, FAV_USER |
@@ -813,6 +855,7 @@ UI_SMALL static const char *base_kind(uint32_t n) { return n < NBANK ? BANK_KIND
 #define FAV_NONE 0xFFFFu
 #define FAV_USER 0x8000u
 static uint16_t fav[FAV_N] = {FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE,
+
                               FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE, FAV_NONE};
 static uint8_t fav_dirty;                            /* changed since the settings were written */
 static int8_t fav_at = -1;                           /* the favourite the selected track's sound was loaded from */
