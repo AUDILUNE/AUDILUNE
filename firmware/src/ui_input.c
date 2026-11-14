@@ -1145,8 +1145,9 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
 }
 
 UI_SMALL static void remote_poll(void)
-
+{
     static int16_t ch_was = -1;
+
     static uint8_t usb_was;
     uint32_t l, m = 0;
     int drop = !song.g[G_RMCH] || (ch_was > 0 && song.g[G_RMCH] != ch_was) || (usb_was && !usb.config);
