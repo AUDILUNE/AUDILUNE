@@ -712,8 +712,7 @@ UI_SMALL static void proj_fetch(uint32_t slot)
 }
 #include "fm6_bank.c"
 #endif
-
-static const char *const SEC_NAME[AUDILUNE_VAULT_SLOTS] = {"A", "B", "C", "D", "E", "F"};
+static const char *const SEC_NAME[AUDILUNE_VAULT_SLOTS] = {"1", "2", "3", "4", "5", "6"};
 
 UI_SMALL static void project_save(uint32_t slot)
 {
@@ -731,11 +730,11 @@ UI_SMALL static void project_save(uint32_t slot)
         if (st_save(OBJ_PROJECT0 + s, p, sizeof *p))
             ui_message("SAVE ERROR");
         else
-            ui_say("SAVED BLOCK ", SEC_NAME[s]);
+            ui_say("SAVED SONG ", SEC_NAME[s]);
         return;
     }
 #endif
-    ui_say("SAVED BLOCK ", SEC_NAME[s]);
+    ui_say("SAVED SONG ", SEC_NAME[s]);
 }
 
 UI_SMALL static void project_erase(uint32_t slot)
@@ -749,7 +748,7 @@ UI_SMALL static void project_erase(uint32_t slot)
     }
 #endif
     if (!proj_ok(p)) {
-        ui_say("EMPTY BLOCK ", SEC_NAME[s]);
+        ui_say("EMPTY SONG ", SEC_NAME[s]);
         return;
     }
 #if FELUCCA_FLASH
@@ -768,8 +767,9 @@ UI_SMALL static void project_erase(uint32_t slot)
     if (s < 4u && arr_drop_scene(&arrangement, s))
         song_dirty = 1;
 #endif
+
     fm1_irq_on();
-    ui_say("ERASED BLOCK ", SEC_NAME[s]);
+    ui_say("ERASED SONG ", SEC_NAME[s]);
 }
 UI_SMALL static void proj_foreign_parts(const project_t *p)
 {
@@ -818,11 +818,12 @@ UI_SMALL static void project_load(uint32_t slot)
         proj_fetch(s);
 #endif
     if (!proj_ok(p)) {
-        ui_say("EMPTY BLOCK ", SEC_NAME[s]);
+        ui_say("EMPTY SONG ", SEC_NAME[s]);
         return;
     }
     project_apply(p);
-    ui_say("LOADED BLOCK ", SEC_NAME[s]);
+    ui_say("LOADED SONG ", SEC_NAME[s]);
+
 }
 
 #define AUTOSAVE_IDLE 2500u
