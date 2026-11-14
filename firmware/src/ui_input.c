@@ -12,10 +12,12 @@ static const char *const AUDILUNE_THEME_NAMES[AUDILUNE_THEME_COUNT] = {
 
 static uint8_t audilune_genre_idx = 0;
 static uint8_t audilune_theme_idx = 0;
+static uint8_t audilune_save_latch = 0, audilune_pit_latch = 0;
 
 /* Bare-metal HUD popup formatter (no stdio.h needed) for 1.5s status bar linger */
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit)
 {
+
     char buf[30 + 6], num[10 + 4];
     uint32_t p = 0, n = 0;
 
@@ -268,10 +270,9 @@ UI_SMALL static void ui_leds(void)
     }
     led_put(nl, panel.btn[ui.layer != LY_PLAY ? LAYER_BTN[ui.layer] : cur_btn()],
             ly_lock == LY_PLAY || ((fm1_ms / 300u) & 1u) != 0u || (fm1_in.buttons & ly_bit[ly_lock % LY_COUNT]) != 0u);
-    led_put(nl, panel.btn[B_PLAY], play_led() || (song.playing && !song.rec && ft_on) ||
-                                      (ci_on && ci_u % BEAT_U < BEAT_U / 4u));
-    led_put(nl, panel.btn[B_REC], song.rec != 0u || ft_on || (rec_wait && ((fm1_ms / 125u) & 1u)) ||
-                                     (ui.hold_kind == 1u && ((fm1_ms / 60u) & 1u)));
+    led_put(nl, panel.btn[B_PLAY], play_led() || (song.playing && !song.rec && ft_on) || (ci_on && ci_u % BEAT_U < BEAT_U / 4u));
+    led_put(nl, panel.btn[B_REC], song.rec != 0u || ft_on || (rec_wait && ((fm1_ms / 125u) & 1u)) || (ui.hold_kind == 1u && ((fm1_ms / 60u) & 1u)));
+    led_put(nl, panel.btn[B_SAVE], audilune_save_latch == 1u || ((audilune_save_latch == 2u || ui.hold_kind == 2u) && ((fm1_ms / 125u) & 1u)));
     if (ui.layer == LY_FX) {
         led_put(nl, panel.btn[B_OCTDN], ((thr_req | thr_ed) & 1u) != 0u);
         led_put(nl, panel.btn[B_OCTUP], ((thr_req | thr_ed) & 2u) != 0u);
@@ -281,6 +282,7 @@ UI_SMALL static void ui_leds(void)
     } else {
         led_put(nl, panel.btn[B_OCTDN], song.octave < 0);
         led_put(nl, panel.btn[B_OCTUP], song.octave > 0);
+
     }
     keys = keys_lit();
     guide = (keys_guide() | keys_notes_dim()) & ~keys;
@@ -936,7 +938,7 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
         }
     }
     for (l = LY_FX; l < LY_COUNT; l++) {
-        uint32_t d = (fm1_in.buttons & ly_bit[l]) != 0u;
+        uint32_t d = l == LY_SONG ? 0u : ((fm1_in.buttons & ly_bit[l]) != 0u);
         if (d && !down[l]) {
             t0[l] = now;
             used[l] = (uint8_t)((eat & ly_bit[l]) != 0u);
@@ -951,6 +953,7 @@ UI_SMALL static int layers_input(uint32_t note_edges, uint32_t *pressed, uint32_
         if (d && held == LY_PLAY)
             held = l;
     }
+
     if (held != LY_PLAY && home == BT_TAP && !home_eat) {
         ly_lock = (uint8_t)held;
         used[held] = 1;
@@ -1093,10 +1096,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
         rec_t0 = now_ms;
         rec_on = 1;
         rec_toggle();
-        if (song.rec || rec_wait)
-            ui_message("AUTOMATION ARMED");
-        else
-            ui_message("AUTOMATION OFF");
+        ui_message((song.rec || rec_wait) ? "AUTOMATION ARMED" : "AUTOMATION OFF");
     }
     if (rec_down && rec_on && !eaten && !ui.hold_kind && now_ms - rec_t0 >= 650u) {
         song.rec = prev_rec;
@@ -1130,16 +1130,22 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
         ui.force = 1;
     }
     if (!rec_down) {
-        if (ui.hold_kind == 1u) {
-            ui.hold_kind = 0;
-            ui.force = 1;
-        }
+        if (ui.hold_kind == 1u) { ui.hold_kind = 0; ui.force = 1; }
         rec_on = 0;
+    }
+    {
+        static uint8_t sv_on, sv_held;
+        static uint32_t sv_t0;
+        uint32_t sb = 1u << panel.btn[B_SAVE], sv_down = (fm1_in.buttons & sb) != 0u;
+        if (pressed & sb) { sv_t0 = now_ms; sv_on = 1; sv_held = 0; }
+        if (sv_down && sv_on && !sv_held && now_ms - sv_t0 >= 3000u) { sv_held = 1; ui.hold_kind = 0; audilune_save_latch = 2u; ui_message("LOAD: TAP OP1-6"); ui.force = 1; }
+        else if (sv_down && sv_on && !sv_held && now_ms - sv_t0 >= 650u && !ui.hold_kind) { ui.hold_kind = 2u; ui.force = 1; }
+        if (!sv_down && sv_on) { if (ui.hold_kind == 2u) ui.hold_kind = 0; if (!sv_held) { audilune_save_latch = audilune_save_latch ? 0u : 1u; ui_message(audilune_save_latch ? "SAVE: TAP OP1-6" : "SAVE CANCELLED"); } sv_on = 0; ui.force = 1; }
     }
 }
 
 UI_SMALL static void remote_poll(void)
-{
+
     static int16_t ch_was = -1;
     static uint8_t usb_was;
     uint32_t l, m = 0;
@@ -1211,14 +1217,16 @@ UI_SMALL static void ui_input(void)
     }
     if (!on_notes_page() && !on_drum_page())
         ui.sheet = 0;
-    layered = layers_input(notes, &pressed, home);
-    if (home_eat && !((fm1_in.buttons >> panel.btn[B_HOME]) & 1u)) {
-        if (home == BT_TAP)
-            home = BT_NONE;
-        home_eat = 0;
+    if (pressed && audilune_pit_latch) { audilune_pit_latch = 0; ui.force = 1; }
+    if (audilune_save_latch && notes) {
+        for (k = 0; k < 6u; k++) if ((notes >> key_of_white(k)) & 1u) { if (audilune_save_latch == 1u) project_save(k); else project_load(k); audilune_save_latch = 0; ui.force = 1; break; }
+        notes = 0;
+    } else if ((ly_lock == LY_MIX || ((fm1_in.buttons >> panel.btn[B_GLO]) & 1u)) && (notes & (1u << key_of_white(1)))) {
+        audilune_pit_latch = 1u; layer_unlock(); notes = 0; ui_message("LIVE PITCH: ON"); ui.force = 1;
     }
-    pressed &= ~(ly_bit[LY_FX] | ly_bit[LY_ERASE] | ly_bit[LY_ROLL] | ly_bit[LY_STEP] | ly_bit[LY_SCALE] | ly_bit[LY_MIX] |
-                 ly_bit[LY_SONG]);
+    layered = layers_input(notes, &pressed, home);
+    if (home_eat && !((fm1_in.buttons >> panel.btn[B_HOME]) & 1u)) { if (home == BT_TAP) home = BT_NONE; home_eat = 0; }
+    pressed &= ~(ly_bit[LY_FX] | ly_bit[LY_ERASE] | ly_bit[LY_ROLL] | ly_bit[LY_STEP] | ly_bit[LY_SCALE] | ly_bit[LY_MIX] | ly_bit[LY_SONG]);
     holds_input(pressed, fm1_ms);
     pressed &= ~((on_song_page() ? 0u : 1u << panel.btn[B_REC]) | (1u << panel.btn[B_SAVE]));
 
@@ -1227,6 +1235,7 @@ UI_SMALL static void ui_input(void)
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : AUDILUNE_THEME_COUNT - 1u)) % AUDILUNE_THEME_COUNT);
             audilune_hud_text("THEME", AUDILUNE_THEME_NAMES[audilune_theme_idx]);
             ui.force = 1;
+
         } else if (!punch.hold && (s = panel_enc(EN_SELECT)) != 0) {
             if (fm1_in.notes & (1u << 1)) {
                 int32_t bend = clamp((int32_t)song.octave + (s > 0 ? 1 : -1), -3, 3);
@@ -1380,7 +1389,9 @@ UI_SMALL static void ui_input(void)
         return;
     }
     if ((s = panel_enc(EN_SELECT)) != 0 && !rec_wait && !ft_on) {
+        if (audilune_pit_latch) { int32_t p = clamp((int32_t)TSEL->p[P_TRANS] + s, -24, 24); TSEL->p[P_TRANS] = (int16_t)p; audilune_hud_popup("LIVE PITCH", p, " ST"); return; }
         uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
+
         track_select(next_trk);
         audilune_hud_popup("TRACK", (int32_t)(next_trk + 1u), "");
     }
