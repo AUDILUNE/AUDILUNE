@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
-/* Felucca user interface. Four columns map to KNOB 1..4. Rendering is lazy:
+/* AUDILUNE user interface. Four columns map to KNOB 1..4. Rendering is lazy:
  * every element remembers what it last drew and is redrawn only on change. */
 #ifndef FELUCCA_VERSION
-#define FELUCCA_VERSION "SLOOP 2.8.5"  /* the beat machine firmware for the FM-1 (based on Felucca) */
+#define FELUCCA_VERSION "AUDILUNE 1.0"  /* AUDILUNE firmware for the M-VAVE FM-1 */
 #endif
 static void project_save(uint32_t slot);
 static void arrangement_save(void);
@@ -13,6 +13,7 @@ static void project_erase(uint32_t slot);        /* SAVE > PROJECT > ERASE (2.6)
 static int project_used(uint32_t slot);
 static int up_used(uint32_t k);              /* user presets: upreset.c */
 static int up_arp_of(uint32_t k, int16_t *a);   /* (2.7.1) user preset k's arp, MODE … ORDER: upreset.c */
+
 static int up_load(uint32_t k);
 static int up_load_to(track_t *t, uint32_t k);
 static uint32_t up_count(void);
