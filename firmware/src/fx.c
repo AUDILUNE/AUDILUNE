@@ -857,7 +857,7 @@ static uint32_t units_split(void)
         const engine_t *e = ENGINES[t->engine];
         uint32_t fade = t->xf_on && t->xf, inc;
         const int16_t *p = fade && t->pold ? t->p_old : t->p;
-        if (!(mask & (1u << k)))
+          if (!(mask & (1u << k)))
             continue;
         inc = p[P_LSYNC] ? lfo_sync_inc(p) : LFO_INC[p[P_LRATE] & 127];
         if (t->lfo_ph + inc < t->lfo_ph || (e == &ENG_PHYS && phys_render_draws(t, fade ? t->pe_old[0] : p[P_E0])) ||
@@ -867,9 +867,10 @@ static uint32_t units_split(void)
     return mask;
 }
 static int32_t master_cur = -1;
-enum { TX_OFF, TX_VINYL, TX_TAPE, TX_RAIN, TX_WIND, TX_RADIO, TX_ROOM, TX_USR1, TX_N = TX_USR1 + 4 };
+enum { TX_OFF, TX_VINYL, TX_TAPE, TX_RAIN, TX_WIND, TX_RADIO, TX_ROOM, TX_USR1, TX_N = TX_USR1 + 6 };
 static struct {
     int32_t rnd;
+
     int32_t g;
     uint8_t src, play;
     uint32_t ph;
