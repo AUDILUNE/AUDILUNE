@@ -65,6 +65,27 @@ static void track_lfo_tick(track_t *t)
     }
 }
 
+/* AUDILUNE Smart Automatic Voice Allocation: assigns Polyphonic voicing to pads,
+ * chords, environmental soundscapes, and melodic synths, while applying tight Smart
+ * Mono/Legato voicing to sub-basses, gliding leads, and self-choking percussion. */
+static inline uint32_t smart_voice_mode(const track_t *t)
+{
+    uint32_t m = (uint32_t)t->p[P_VOICE];
+    if (m == V_UNISON)
+        return V_UNISON;
+    if (m == V_MONO || m == V_LEGATO)
+        return (t->p[P_GLIDE] > 0 || t->slide_glide) ? V_LEGATO : m;
+    if (t->p[P_CHORD] > 0)
+        return V_POLY;
+    if (t->p[P_GLIDE] > 0 || t->slide_glide)
+        return V_LEGATO;
+    if (t->p[P_TRANS] <= -12 && t->p[P_SUS] > 0 && t->p[P_ATK] < 25)
+        return V_MONO;
+    if (ENGINES[t->engine] == &ENG_NOISE && t->p[P_SUS] == 0 && t->p[P_DEC] < 50)
+        return V_MONO;
+    return V_POLY;
+}
+
 /* voices the engine may use (POLY and UNISON): its cap, else all of them */
 static uint32_t trk_nvoice(const track_t *t)
 {
@@ -73,6 +94,7 @@ static uint32_t trk_nvoice(const track_t *t)
 }
 
 /* ------------------------------------------------- the shared voice budget --- */
+
 static uint32_t voices_busy(void)                       /* sounding voices of all parts (not the fading ones) */
 {
     uint32_t p, i, n = 0;
