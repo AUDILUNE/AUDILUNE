@@ -167,9 +167,9 @@ static const param_desc_t GP[G_COUNT] = {
     [G_RDAMP] = PD("DAMP", F_PCT, 0, 127, 60),
     [G_CRATE] = PD("CRT", F_LFOHZ, 0, 127, 40),
     [G_CDEPTH] = PD("CDP", F_PCT, 0, 127, 60),
-    [G_MIDI] = PE("OUT", N_MOUT, 0),            /* MIDI OUT: the keys, or the sequencer too (a setting of the FM-1) */
+    [G_MIDI] = PE("OUT", N_MOUT, 1),            /* AUDILUNE: MIDI OUT defaults to SEQ + keys pass-through */
     [G_SYNC] = PE("SYNC", N_SYNC, 0),           /* a setting of the FM-1, not of a project (panel.c lights_sync) */
-    [G_ROUTE] = PE("IN", N_MIN, 0),             /* MIDI IN: NOTES (and the clock), CLOCK only, or CH n: that channel only (a setting of the FM-1) */
+    [G_ROUTE] = PE("IN", N_MIN, 0),             /* MIDI IN: NOTES (and the clock), CLOCK only, or CH n: that channel only */
     [G_INFO] = PD("CPU", F_INT, 0, 0, 0),
     [G_SLOT] = {"SECT", F_INT, 1, 4, 1, N_SECT, 0},     /* (2.7: A..D, the song's sections; "SLOT" 1..4 before) */
     [G_NAME] = PE("NAME", N_DASH, 0),
@@ -179,7 +179,7 @@ static const param_desc_t GP[G_COUNT] = {
     [G_ENGGO] = PE("SET", N_GO, 0),
     [G_CLRSEQ] = PE("CLRSQ", N_GO, 0),
     [G_INITSND] = PE("INIT", N_GO, 0),
-    [G_DRCH] = PE("CH4", N_MCH, 10),                  /* GM drum part (track 4) MIDI channel, 0 = OFF (2.6: as GLO > MIDI's CH1..3) */
+    [G_DRCH] = PE("CH6", N_MCH, 10),                  /* AUDILUNE: Track 6 (drum) MIDI channel, default GM Ch 10 */
     [G_DRLVL] = PD("LVL", F_INT, 0, 127, 100),
     [G_DRREV] = PD("REV", F_INT, 0, 127, 16),
     [G_DUST] = PD("DUST", F_PCT, 0, 127, 0),
@@ -188,9 +188,11 @@ static const param_desc_t GP[G_COUNT] = {
     [G_ROLL] = PE("ROLL", N_ROLL, 1),
     [G_NEWPRJ] = PE("NEW", N_GO, 0),
     [G_DRDLY] = PD("DLY", F_INT, 0, 127, 0),
-    [G_CH1] = PE("CH1", N_MCH, 1),                /* 2.6, GLO > MIDI: synth track 1's channel, in and out (OFF: */
-    [G_CH2] = PE("CH2", N_MCH, 2),                /* no MIDI in; out on its old one) */
+    [G_CH1] = PE("CH1", N_MCH, 1),                /* AUDILUNE 6-track 1-to-1 MIDI channels 1..5 */
+    [G_CH2] = PE("CH2", N_MCH, 2),
     [G_CH3] = PE("CH3", N_MCH, 3),
+    [G_CH4] = PE("CH4", N_MCH, 4),
+    [G_CH5] = PE("CH5", N_MCH, 5),
     [G_CHOTH] = PE("OTHER", N_MOTH, 0),           /* the channels no track has: SEL the selected track, OFF none */
     [G_TXSRC] = PE("SRC", N_TXSRC, 0),            /* 2.6, GLO > TEXTURE: the bed under the mix (OFF: none) */
     [G_TXLVL] = PD("LEVEL", F_PCT, 0, 127, 64),
@@ -201,9 +203,10 @@ static const param_desc_t GP[G_COUNT] = {
     [G_TXDUCK] = PE("DUCK", N_ONOFF, 0),          /* ON: the kick pumps it too (GLO > MASTER > DUCK) */
     [G_FXCH] = PE("FX CH", N_MCH, 0),
     [G_DRMAP] = PE("DR MAP", N_DRMAP, 0),
-    [G_CLKOUT] = PE("CLOCK", N_CLKOUT, 0),       /* 2.7, GLO > MIDI 3: MIDI clock and START / STOP out on USB (seq.c) */
-    [G_RMCH] = PE("REMOTE", N_MCH, 0),           /* 2.7, GLO > MIDI 3: the buttons over MIDI (CC 102..115, seq.c remote_cc) */        /* 2.7, GLO > MIDI 3: MIDI notes -> drum sounds (seq.c midi_drum_lane) */            /* 2.7, GLO > MIDI 3: the punch-in FX's channel (seq.c midi_fx) */
+    [G_CLKOUT] = PE("CLOCK", N_CLKOUT, 1),       /* AUDILUNE: MIDI clock and START / STOP out on USB by default */
+    [G_RMCH] = PE("REMOTE", N_MCH, 0),           /* 2.7, GLO > MIDI 3: the buttons over MIDI (CC 102..115, seq.c remote_cc) */
     [G_BEND] = PD("BEND", F_SEMI, 1, 12, 2),      /* 2.6, GLO > MIDI 2: MIDI pitch bend's range (a setting of the FM-1) */
+
     [G_FXFADE] = PD("FADE", F_INT, 0, 15, 0),     /* 2.7.2: the punch-in FX fade (FX layer SELECT), 0 off .. 15 (punch.c) */
 };
 
@@ -421,12 +424,14 @@ static const page_t PAGES[] = {
     {"MASTER", FAM_GLO, SC_GLOBAL, GR_NONE, {G_DUST, G_DUCK, G_FILT, G_ROLL}},
     {"SYSTEM", FAM_GLO, SC_GLOBAL, GR_NONE, {G_MIDI, G_SYNC, G_ROUTE, G_INFO}},
     {"DRUMS", FAM_GLO, SC_GLOBAL, GR_NONE, {G_DRCH, G_DRLVL, G_DRREV, G_DRDLY}},   /* GM kit on MIDI ch 10 */
-    {"MIDI", FAM_GLO, SC_GLOBAL, GR_NONE, {G_CH1, G_CH2, G_CH3, G_DRCH}},   /* 2.6: each track's channel, the drums' too */
-    {"MIDI 2", FAM_GLO, SC_GLOBAL, GR_NONE, {G_ROUTE, G_CHOTH, G_MIDI, G_BEND}},   /* 2.6: IN, OTHER, OUT, BEND: every MIDI
+    {"MIDI", FAM_GLO, SC_GLOBAL, GR_NONE, {G_CH1, G_CH2, G_CH3, G_CH4}},   /* AUDILUNE: tracks 1..4 MIDI channels */
+    {"MIDI 2", FAM_GLO, SC_GLOBAL, GR_NONE, {G_CH5, G_DRCH, G_ROUTE, G_MIDI}},   /* AUDILUNE: track 5, drum ch, IN, OUT
                                                                            * setting in these two pages (IN and OUT on
                                                                            * SYSTEM too, the drums' channel on DRUMS) */
-    {"MIDI 3", FAM_GLO, SC_GLOBAL, GR_NONE, {G_FXCH, G_DRMAP, G_RMCH, G_CLKOUT}},   /* 2.7: the punch-in FX over MIDI */
+
+    {"MIDI 3", FAM_GLO, SC_GLOBAL, GR_NONE, {G_CHOTH, G_BEND, G_RMCH, G_CLKOUT}},   /* AUDILUNE: OTHER, BEND, REMOTE, CLOCK */
     {"TEXTURE", FAM_GLO, SC_GLOBAL, GR_NONE, {G_TXSRC, G_TXLVL, G_TXTONE, G_TXMOVE}},   /* 2.6: the bed under the mix */
+
     {"TEXTURE 2", FAM_GLO, SC_GLOBAL, GR_NONE, {G_TXRATE, G_TXWHEN, G_TXDUCK, 0xFF}},
     {"PRESETS", FAM_SAVE, SC_GLOBAL, GR_BROWSE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* browser: PRESETS knob / KNOB 1 */
     {"USER", FAM_SAVE, SC_GLOBAL, GR_USER, {0xFF, 0xFF, 0xFF, 0xFF}},       /* user presets: SLOT LOAD ERASE SAVE */
