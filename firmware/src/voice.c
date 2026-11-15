@@ -469,7 +469,6 @@ static void mono_remove(track_t *t, uint32_t note)
             t->mono_stack[k++] = t->mono_stack[j];
     t->nmono = (uint8_t)k;
 }
-
 /* the notes each synth part started since the UI last looked (menu NOTES: a short note lights its key
  * for a few frames, as a drum hit does; ui_studio.c pads_tick). Set here (mostly the audio ISR), taken
  * by the UI with the IRQ off */
@@ -479,10 +478,12 @@ static volatile uint8_t vis_hit, vis_kick_hit, vis_note[NTRK];
 
 static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
 {
-    uint32_t any = 0, i, mode = (uint32_t)t->p[P_VOICE];
+    uint32_t any = 0, i, ti = (uint32_t)(t - trk) % NTRK, mode = smart_voice_mode(t);
     if (trk_silent(t))
         return;                                         /* MUTE, or another track soloed */
-    vis_hit |= (uint8_t)(1u << ((uint32_t)(t - trk) & 3u));
+    vis_hit |= (uint8_t)(1u << ti);
+    vis_note[ti] = (uint8_t)note;
+
     vis_note[(uint32_t)(t - trk) & 3u] = (uint8_t)note;
     if (is_drum(t)) {                                   /* the drum track: GM drums (drums.c) */
         if (note == 35u || note == 36u)
