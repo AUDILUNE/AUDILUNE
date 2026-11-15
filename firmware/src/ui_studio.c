@@ -369,24 +369,20 @@ UI_SMALL static void studio_tracks_draw(void)
             if (has_trk && song.playing && p == pos)
                 cv_rect(32 + (int32_t)j * 10, row_h - 3, 8, 2, C_WHITE);
         }
-        cv_rect(198, row_h - 10, 38, 5, TE_G1);         /* lightweight audio level meter */
-        if (!silent)
-            cv_rect(198, row_h - 10, (int32_t)level * 38 / 127, 5, selected ? C_WHITE : acc);
+        {   /* AUDILUNE Block 1: Stippled textured audio level meter with cosmological ticks */
+            int32_t mw = silent ? 0 : (int32_t)level * 38 / 127, mx;
+            cv_rect(198, row_h - 10, 38, 5, TE_G1);
+            cv_rect(198, row_h - 12, 1, 2, TE_G3);
+            cv_rect(217, row_h - 12, 1, 2, TE_G3);
+            cv_rect(235, row_h - 12, 1, 2, TE_G3);
+            for (mx = 0; mx < mw; mx += 2)
+                cv_rect(198 + mx, row_h - 10, 1, 5, selected ? C_WHITE : acc);
+        }
         cv_blit(0, 41u + i * (uint32_t)row_h);
     }
-    {   /* AUDILUNE Block 2: Persistent Bottom Info Bar (HUD Footer) with 1.5s live parameter popups */
-        track_t *t = TSEL;
-        static char v[4][8];
-        static const char *const lab[4] = {"tempo", "filter", "level", "click"};
-        const char *val[4] = {v[0], v[1], v[2], v[3]};
-        uint32_t lvl = is_drum(t) ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL];
-        swing_str(v[0], song.g[G_SWING]);
-        fmt_int(v[1], t->p[P_MUTE] ? 0 : (int32_t)lvl * 100 / 127);
-        fmt_int(v[2], t->p[P_SLEN]);
-        fmt_int(v[3], t->p[P_PAN]);
-        audilune_hud_bar(lab, val, sect, &footer);
-    }
+    (void)footer;
 }
+
 /* ---------------------------------------------------------------- DRUMS --- */
 static const char *const LV_NAME[4] = {"norm", "ghost", "soft", "hard"};
 UI_SMALL static uint32_t lvl_rank(uint32_t lvl);                 /* (below) ghost 0, soft 1, norm 2, hard 3 */
