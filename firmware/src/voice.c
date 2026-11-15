@@ -548,8 +548,9 @@ static void strum_cancel(const track_t *t, uint32_t note, int all)
 }
 static void trk_note_off(track_t *t, uint32_t note)
 {
-    uint32_t i, k = 0, mode = (uint32_t)t->p[P_VOICE];
+    uint32_t i, k = 0, mode = smart_voice_mode(t);
     if (is_drum(t))
+
         return;                                         /* one-shots */
     strum_cancel(t, note, 0);
     for (i = 0; i < t->xp_n; i++)                       /* not sounding yet (engine switch): forget it */
