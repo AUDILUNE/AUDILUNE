@@ -202,11 +202,14 @@ static uint32_t delay_samples(void)
 static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t *rev_in, int32_t *wet_l,
                      int32_t *wet_r, uint32_t n)
 {
-    uint32_t i, k, ti, dl = delay_samples();
-    int32_t max_dly_send = 0;
-    for (ti = 0; ti < NTRK; ti++)
+     uint32_t i, k, ti, dl = delay_samples();
+    int32_t max_dly_send = 0, max_rev_send = 0;
+    for (ti = 0; ti < NTRK; ti++) {
         if (trk[ti].p[P_DLY] > max_dly_send)
             max_dly_send = trk[ti].p[P_DLY];
+        if (trk[ti].p[P_REV] > max_rev_send)
+            max_rev_send = trk[ti].p[P_REV];
+    }
     int32_t fb = song.g[G_DFDBK] * 230, col = 2000 + song.g[G_DCOLOR] * 240;
     if (thr_dly && fb < 89 * 230)                       /* ECHO THROW: FDBK at least 70 %, gliding with it (2.6) */
         fb += ((89 * 230 - fb) * thr_dly) >> 15;
@@ -217,10 +220,17 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
     }
     int32_t dmix = song.g[G_DMIX] * 258;
     int32_t g = 17000 + song.g[G_RSIZE] * 104, lpk = 32767 - song.g[G_RDAMP] * 200;   /* loop gain (RT60 ~0.4..4 s), damping */
+    if (max_rev_send > 127) {                           /* 101%..110% shimmer bloom: lush feedback & bright harmonics */
+        int32_t shim_g = 30208 + (max_rev_send - 127) * 180;
+        if (g < shim_g)
+            g = shim_g > 32600 ? 32600 : shim_g;
+        lpk += ((32767 - lpk) * (max_rev_send - 127)) / 13;
+    }
     int32_t frnd = rev_frz ? 128 : 0;                  /* FREEZE: what is in the lines stays there (below: no
                                                          * loss, rounded to nearest; 0: as always, bit for bit) */
 
     int32_t cdepth = song.g[G_CDEPTH] * 6;
+
     int32_t ca0, ca1, cb0, cb1, ma, mb, dca, dcb;
     const uint32_t L0 = REV_LINE[0] + REV_MOD + 2u, B1 = L0, B2 = B1 + REV_LINE[1], B3 = B2 + REV_LINE[2];
     {   /* the chorus' two read points (Q8 samples back) and line 0's extra length, at both ends of the block */
