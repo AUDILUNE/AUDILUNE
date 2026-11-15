@@ -109,7 +109,7 @@ UI_SMALL static void draw_head(void)
             cv_rect(bx + 2 + k * 5, 6, 3, 5, lvl == 1 && batt_level() <= 1 ? C_WHITE : C_HI);
         if (usb.config && !usb.suspended)
             cv_text(bx - 28, 1, &FONT_S, "USB", C_DIM);
-    }
+       }
     cv_blit(0, Y_HEAD);
 }
 UI_SMALL static void draw_frame(void)
@@ -122,7 +122,21 @@ UI_SMALL static void draw_frame(void)
         lcd_fill(i * 60u, Y_LABEL, 4, Y_SEP_END - Y_LABEL, C_BLACK);
     lcd_fill(0, H_HEAD, 240, 1, C_LINE);
     lcd_fill(0, Y_FOOT - 2, 240, 1, C_LINE);
-    for (i = 1; i < 4u; i++)
+    for (i = 1; i < 4u; i++) {
+        uint32_t cx = i * 60u - 1u;
+        lcd_fill(cx, H_HEAD + 4, 1, Y_SEP_END - H_HEAD - 4, C_LINE);
+        lcd_fill(cx - 2u, H_HEAD, 5, 1, C_ACCENT);
+        lcd_fill(cx, H_HEAD - 2u, 1, 5, C_ACCENT);
+        lcd_fill(cx - 2u, Y_SEP_END + 1u, 5, 1, C_DIM);
+        lcd_fill(cx, Y_SEP_END - 1u, 1, 5, C_DIM);
+    }
+    lcd_fill(0, H_HEAD, 6, 1, C_ACCENT);
+    lcd_fill(0, H_HEAD, 1, 6, C_ACCENT);
+    lcd_fill(234, H_HEAD, 6, 1, C_ACCENT);
+    lcd_fill(239, H_HEAD, 1, 6, C_ACCENT);
+    lcd_fill(0, Y_FOOT - 6, 1, 5, C_ACCENT);
+    lcd_fill(239, Y_FOOT - 6, 1, 5, C_ACCENT);
+
         lcd_fill(i * 60u - 1u, H_HEAD + 4, 1, Y_SEP_END - H_HEAD - 4, C_LINE);
 }
 #define LABEL_X (FELUCCA_ICONS ? ICON_CELL + ICON_GAP : 0)
@@ -613,9 +627,14 @@ UI_SMALL static void draw_tracks(void)
             } else {
                 cv_rect(0, TS_H - 2, 7, 2, C_DIM);
             }
-            if (ts.meter[ c ])
-                cv_rect(9, TS_H - ts.meter[ c ], 3, ts.meter[ c ], C_ACCENT);
+            if (ts.meter[ c ]) {
+                int32_t my, mtop = TS_H - ts.meter[ c ];
+                for (my = TS_H - 1; my >= mtop; my -= 2)
+                    cv_rect(9, my, 3, 1, C_ACCENT);
+                cv_rect(9, mtop, 3, 1, C_WHITE);
+            }
             cv_blit(x0, TS_Y);
+
         }
         sig = steps_hash(t) * 31u + len * 7u + sel;
         if (ui.force || sig != ts.ov[ c ]) {
@@ -806,7 +825,7 @@ UI_SMALL static void draw_foot(void)
         fmt_int(b, (int32_t)song.sel + 1);
         str_cpy(line + str_len(line), b, sizeof line - str_len(line));
         str_cpy(line + str_len(line), " | PAT ", sizeof line - str_len(line));
-        b[ I0 ] = (char)('A' + ((sect < 0 ? 0 : sect) & 3));
+        b[ I0 ] = (char)('A' + ((uint32_t)(sect < 0 ? 0 : sect) % 6u));
         b[ I1 ] = 0;
         str_cpy(line + str_len(line), b, sizeof line - str_len(line));
         str_cpy(line + str_len(line), " | ", sizeof line - str_len(line));
@@ -815,6 +834,7 @@ UI_SMALL static void draw_foot(void)
         str_cpy(line + str_len(line), " BPM | ", sizeof line - str_len(line));
         str_cpy(line + str_len(line), ename, sizeof line - str_len(line));
     }
+
 
     sig = str_hash(0x9E3779B9u, line) + (uint32_t)C_ACCENT * 31u + (popup_on ? 7919u : 0u);
     if (!ui.force && sig == ui.foot_sig)
