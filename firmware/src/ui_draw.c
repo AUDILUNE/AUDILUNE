@@ -319,6 +319,15 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
         xb = x0 + ((int32_t)(i + n) - (int32_t)v0) * w / (int32_t)nv - 1;
         xa = xa < x0 ? x0 : xa;
         xb = xb > x0 + w ? x0 + w : xb;
+        {   /* AUDILUNE Block 1: Step FX lock badge indicator at top of locked step column */
+            uint32_t lk, has_fx = 0;
+            for (lk = 0; lk < NLOCK; lk++)
+                if (t->lock[ lk ].step == i && t->lock[ lk ].param != P_COUNT) { has_fx = 1; break; }
+            if (has_fx) {
+                cv_rect(xa, top + 1, xb - xa > 3 ? xb - xa : 3, 2, C_WHITE);
+                cv_rect(xa, top + 4, 2, 2, c);
+            }
+        }
         for (j = 0; j < st->n; j++) {
             if (st->note[ j ] < lo || st->note[ j ] > hi)
                 continue;
@@ -356,8 +365,20 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
         fmt_int(nu, t->micro[ ui.cursor ]);
         if (t->micro[ ui.cursor ] > 0) { nu[ I0 ] = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
         sheet_bar(H_GRAPH - 16, SHEET_N, val, ui.sheet - 1u, C_ACCENT);
+    } else {
+        uint32_t lk, has_fx = 0;
+        for (lk = 0; lk < NLOCK; lk++)
+            if (t->lock[ lk ].step == ui.cursor && t->lock[ lk ].param != P_COUNT) { has_fx = 1; break; }
+        if (has_fx)
+            cv_text(74, 0, &FONT_S, "FX:LOCK", C_WHITE);
+        if (t->micro[ ui.cursor ]) {
+            str_cpy(b, "uT:", sizeof b);
+            fmt_int(b + 3, t->micro[ ui.cursor ]);
+            cv_text(132, 0, &FONT_S, b, C_GRAY);
+        }
     }
 }
+
 
 UI_SMALL static void graph_scale(const track_t *t, uint16_t c)
 {
