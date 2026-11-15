@@ -118,9 +118,9 @@ static uint32_t lowest_held(const track_t *t)           /* index of the lowest h
 static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
 {
     uint32_t p, i, best = NVOICE, cat = 4;
-    for (p = 0; p < NPART; p++) {
+        for (p = 0; p < NPART; p++) {
         track_t *t = &trk[p];
-        uint32_t mode = (uint32_t)t->p[P_VOICE], nu = mode == V_UNISON ? trk_nvoice(t) : 1u;
+        uint32_t mode = smart_voice_mode(t), nu = mode == V_UNISON ? trk_nvoice(t) : 1u;
         uint32_t low = mode == V_POLY ? lowest_held(t) : NVOICE;
         if (soft && t == self)
             continue;
@@ -130,6 +130,7 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
             if (!v->active || v->stage == 4u)
                 continue;
             if (!v->gate)
+
                 c = 1;                                  /* released */
             else if (mode == V_UNISON && i > 0 && i < nu)
                 c = 2;                                  /* an extra UNISON voice */
