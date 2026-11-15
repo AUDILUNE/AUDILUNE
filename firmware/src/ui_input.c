@@ -1342,7 +1342,7 @@ UI_SMALL static void ui_input(void)
                 break;
             if ((fm1_in.buttons & both) == both) {
                 song.octave = 0;
-                audilune_hud_popup("OCTAVE", 0, "");
+                      audilune_hud_popup("OCTAVE", 0, "");
             } else {
                 song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
                 audilune_hud_popup("OCTAVE", song.octave, "");
@@ -1363,6 +1363,7 @@ UI_SMALL static void ui_input(void)
         seq_entry(notes);
 
     if ((s = panel_enc(EN_PRESET)) != 0) {
+        ui_input_ms = fm1_ms;
         if (is_drum(TSEL)) {
             TDRUM->p[P_E0] = (int16_t)clamp(TDRUM->p[P_E0] + s, 0, DRUM_KITS - 1);
             audilune_hud_popup("DRUM KIT", TDRUM->p[P_E0] + 1, "");
@@ -1377,19 +1378,34 @@ UI_SMALL static void ui_input(void)
     }
 
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
+        ui_input_ms = fm1_ms;
         audilune_genre_idx = (uint8_t)((audilune_genre_idx + (s > 0 ? 1u : AUDILUNE_GENRE_COUNT - 1u)) % AUDILUNE_GENRE_COUNT);
         audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[audilune_genre_idx]);
         ui.force = 1;
     }
 
     if (vis_shown() && !rec_wait && !ft_on) {
-        if ((s = panel_enc(EN_SELECT)) != 0)
+        int32_t k_moved = 0;
+        if ((s = panel_enc(EN_SELECT)) != 0) {
+            ui_input_ms = fm1_ms;
             vis_select(s);
+        }
         for (k = 0; k < 4u; k++)
-            panel_enc(EN_K1 + k);
+            if (panel_enc(EN_K1 + k) != 0)
+                k_moved = 1;
+        if (pressed || notes || k_moved) {
+            ui_input_ms = fm1_ms;
+            vis_on = 0;
+            go_home();
+        }
+        return;
+    } else if (!vis_on && !ui.home && !ui.menu && cur_page()->scope == SC_TRK && !rec_wait && !ft_on && !song.rec &&
+               (fm1_ms - ui_input_ms) >= 60000u) {
+        vis_open();
         return;
     }
     if ((s = panel_enc(EN_SELECT)) != 0 && !rec_wait && !ft_on) {
+        ui_input_ms = fm1_ms;
         if (audilune_pit_latch) { int32_t p = clamp((int32_t)TSEL->p[P_TRANS] + s, -24, 24); TSEL->p[P_TRANS] = (int16_t)p; audilune_hud_popup("LIVE PITCH", p, " ST"); return; }
         uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
 
