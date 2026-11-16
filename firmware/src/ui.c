@@ -1044,8 +1044,8 @@ UI_SMALL static void pc_poll(void)
 UI_SMALL static void preset_go(uint32_t n)                    /* load list index n into the selected track */
 {
     uint32_t k, e = preset_at(n, &k), b[FAV_N];
-    if (is_drum(TSEL))
-        return;                                      /* one GM kit: nothing to browse */
+    if (TSEL == TDRUM && !TSEL->synth_mode)
+        TSEL->synth_mode = 1;                        /* unlock Track 6 into unrestricted synth/sample mode */
     fav_at = (int8_t)(n < fav_list(b) ? (int32_t)n : -1);
     if (e == NENGINES) {
         up_load(k);
@@ -1053,6 +1053,7 @@ UI_SMALL static void preset_go(uint32_t n)                    /* load list index
     }
     if (e != TSEL->eng_req)
         select_engine(e);
+
     apply_preset(k);
     ui.force = 1;
 }
