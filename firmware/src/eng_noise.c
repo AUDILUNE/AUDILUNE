@@ -238,7 +238,7 @@ static void noise_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
                 ph = 1u + (uint32_t)crsh / 8u;
                 reg = (uint32_t)(y >> (crsh / 11) << (crsh / 11));
             }
-            y = (int32_t)reg;
+             y = (int32_t)reg;
         }
         out[i] += voice_amp(y, m, i);
     }
@@ -270,9 +270,18 @@ static const preset_t NOISE_PRESETS[] = {
     {"NZ SNARE", {NZ_ANLG, 20, 90, 30, 64, 0, 0, 0}, {0, 60, 0, 44}, 0, 0, FX(0, 0, 0, 25)},
     {"BITCRUSH", {NZ_ANLG, 40, 90, 40, 64, 0, 0, 100}, {0, 70, 110, 40}, 0, 0, FX(0, 0, 20, 30)},
     {"RADIO", {NZ_LFSR, 20, 70, 90, 64, 0, 60, 48}, {10, 70, 120, 50}, 0, 0, FX(0, 10, 30, 40)},
+    /* AUDILUNE Block 4: Environmental, Natural & Animal Soundscapes & Foley */
+    {"STORM WIND", {NZ_ANLG, 84, 58, 112, 96, 0, 115, 0}, {85, 95, 115, 95}, 0, 0, FX(0, 45, 35, 90)},
+    {"THUNDER", {NZ_ANLG, 127, 26, 35, 0, 12, 95, 0}, {65, 110, 80, 115}, 0, 0, FX(20, 40, 25, 105)},
+    {"CREEK", {NZ_DUST, 45, 92, 74, 32, 122, 88, 0}, {25, 90, 127, 80}, 0, 0, FX(0, 25, 15, 75)},
+    {"BIRDSONG", {NZ_META, 20, 104, 114, 127, 64, 92, 24}, {12, 48, 30, 55}, 0, 0, FX(0, 35, 25, 85)},
+    {"CICADAS", {NZ_LFSR, 12, 108, 86, 64, 48, 68, 60}, {40, 85, 110, 75}, 0, 0, FX(0, 30, 10, 65)},
+    {"WHALE SONG", {NZ_META, 96, 44, 108, 127, 16, 104, 0}, {95, 100, 105, 105}, 0, 0, FX(0, 50, 40, 110)},
+    {"FOLEY CRK", {NZ_DUST, 36, 82, 62, 64, 54, 35, 0}, {5, 55, 90, 45}, 0, 0, FX(0, 15, 0, 45)},
 };
 
 /* (after Clipper 1.2) UNISON (voice.c unison_spread): the phase moved by r (Q32) and the noise from its own
+
  * seed (the note's: every voice the same noise at DTUNE 0) */
 static void noise_spread(track_t *t, voice_t *v, uint32_t r)
 {
