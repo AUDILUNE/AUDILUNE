@@ -758,7 +758,9 @@ static const struct { uint8_t kind, e; const char *name; } BANK[] = {
     {BK_FX, ENGI_PHYS, "TABLA"}, {BK_FX, ENGI_PHYS, "CONGA"}, {BK_FX, ENGI_PHYS, "TIMPANI"},
     {BK_FX, ENGI_NOISE, "VINYL"}, {BK_FX, ENGI_NOISE, "HISS"}, {BK_FX, ENGI_NOISE, "RISER"},
     {BK_FX, ENGI_NOISE, "NZ SNARE"}, {BK_FX, ENGI_NOISE, "BITCRUSH"}, {BK_FX, ENGI_NOISE, "RADIO"},
-    {BK_FX, 3, "CHIP NOISE"},
+    {BK_FX, ENGI_NOISE, "STORM WIND"}, {BK_FX, ENGI_NOISE, "THUNDER"}, {BK_FX, ENGI_NOISE, "CREEK"},
+    {BK_FX, ENGI_NOISE, "BIRDSONG"}, {BK_FX, ENGI_NOISE, "CICADAS"}, {BK_FX, ENGI_NOISE, "WHALE SONG"},
+    {BK_FX, ENGI_NOISE, "FOLEY CRK"}, {BK_FX, 3, "CHIP NOISE"},
 #if FELUCCA_SLICE
     {BK_FX, ENGI_SLICE, "BREAK 16"}, {BK_FX, ENGI_SLICE, "CHOP 8"}, {BK_FX, ENGI_SLICE, "REVERSE"},
     {BK_FX, ENGI_SLICE, "USR SLICE"},
@@ -773,6 +775,7 @@ static uint8_t bank_ready;
 UI_SMALL static uint8_t audilune_wheel_stage(uint32_t i)
 {
     uint8_t k = BANK[i].kind;
+
     if (k == BK_FX)
         return 0u; /* Stage 0: Percussion */
     if (k == BK_BASS)
