@@ -8277,8 +8277,7 @@ function kitUse(k) {
     if (drumGrid() && dev.dstepsOk) renderDrumBar();
     sayK("kitUsing", kitDest(k));
   });
-}
-function kitZip() {
+}function kitZip() {
   const files = kitZones(kitDraft.pads).map((z) => ({ name: `${kitDraft.name || "KIT"}/${String(z.lane + 1).padStart(2, "0")} ${DRUM_LANES[z.lane][1]}.wav`, data: wavFile(z.s) }));
   if (!files.length) return;
   downloadBytes(`${fileSlug(kitDraft.name || "kit")}-drumkit.zip`, zipStore(files));
@@ -8288,7 +8287,7 @@ async function smpInfo() { dev.smp = parse[CMD.SMP_INFO](await rq(req.smpInfo())
 
 async function smpUpload(k, prog, ask = true, d = smpDraft[k]) {   /* (d: the DRUM KIT page's own, not the Samples draft) */
   let built, done = false;
-  try { built = buildSlot(d.name, d.files.map((f) => ({ s: withGain(f.s, f.gain), root: f.root, lo: f.lo, hi: f.hi,
+  try { built = buildSlot(d.name, d.files.map((f) => ({ s: withGain(f.s, f.gain), sr: f.sr, root: f.root, lo: f.lo, hi: f.hi,
     loop: f.loop || 0, ls: f.ls, le: f.le }))); }
   catch (e) { sayK("smpFail", e.message); return false; }
   if (ask && !confirm(t("confirmUpload").replace("{n}", k + 1))) return false;
@@ -8318,6 +8317,7 @@ async function smpUpload(k, prog, ask = true, d = smpDraft[k]) {   /* (d: the DR
   } catch (e) {
     if (e.message !== "closed") sayK("smpFail", e.message);
   } finally {
+
     try { if (dev) await smpInfo(); } catch (e) { /* shown by the next action */ }
     smpBusy = false;
     busy--;
