@@ -6,12 +6,13 @@
 Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Leo Kuroshita / Hügelton Instruments and Sloop.</p>
 
 <p align="center">
-<a href="docs/MANUAL.md"><b>User Manual</b></a> ·
+<a href="MANUAL.md"><b>User Manual</b></a> ·
 <a href="../../releases"><b>Download Releases (.fwsc)</b></a> ·
 <a href="https://github.io"><b>FM-1 Browser Emulator</b></a> ·
 <a href="https://thefirmwarehub.com"><b>The Firmware Hub</b></a> ·
 <a href="../../issues"><b>Report an Issue</b></a>
 </p>
+
 
 ---
 
