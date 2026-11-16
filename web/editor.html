@@ -7910,12 +7910,13 @@ function renderSamples() {
   u.meter.value = Math.min(bytes, SMP.MAX_DATA);
   u.meterBox.classList.toggle("over", bytes > SMP.MAX_DATA);
   u.meterTxt.textContent = (bytes > SMP.MAX_DATA ? t("smpTooBig") + " · " : "") +
-    t("kitUsed").replace("{s}", (d.files.reduce((a, f) => a + f.s.length, 0) / SMP.RATE).toFixed(1)).replace("{t}", (SMP.MAX_DATA * 2 / SMP.RATE).toFixed(1));
+    t("kitUsed").replace("{s}", d.files.reduce((a, f) => a + f.s.length / (f.sr || SMP.RATE), 0).toFixed(1)).replace("{t}", "5.0");
   u.keymap.hidden = u.list.hidden = !d.files.length;
   u.match.disabled = d.files.length < 2;
   u.list.replaceChildren(...(d.files.length ? [el("div", { class: "frow fhead" }, el("span"), el("span", { text: t("file") }), el("span", { text: t("smpNote") }),
     el("span", { text: t("keys") }), el("span", { text: t("length") }), el("span", { text: t("smpLoop") }), el("span", { text: t("kitGain") }), el("span"))] : []),
     ...d.files.map((f, i) => {
+      const fsr = f.sr || SMP.RATE;
       const root = el("input", { type: "text", class: "root", value: noteName(f.root), spellcheck: "false", title: t("smpNoteHelp") });
       root.addEventListener("change", () => {
         const nn = parseNote(root.value.trim());
@@ -7926,7 +7927,7 @@ function renderSamples() {
       const gi = el("input", { type: "range", min: LEVEL_MIN, max: 0, step: 1, value: String(f.gain || 0), title: t("smpGainHelp") });
       const gv = el("span", { class: "val", text: `${f.gain || 0} dB` });
       gi.addEventListener("input", () => { f.gain = +gi.value; gv.textContent = `${f.gain} dB`; barFill(gi); });
-      gi.addEventListener("change", () => playInt16(withGain(f.s, f.gain)));
+      gi.addEventListener("change", () => playInt16(withGain(f.s, f.gain), null, fsr));
       requestAnimationFrame(() => barFill(gi));
       /* 2.7: ONE SHOT, LOOP (the whole file while held), LOOP+TAIL (its points below) */
       const lsel = el("select", { title: t("smpLoopHelp"), "aria-label": t("smpLoop") },
@@ -7938,26 +7939,27 @@ function renderSamples() {
         renderSamples();
       });
       const play = el("button", { type: "button", title: t(f.loop ? "smpHoldPlay" : "kitPlay") }, "▶");
-      if (f.loop) holdToPlay(play, () => { const [a, b] = LOOP.range(f); playLoop(withGain(f.s, f.gain), a, b); });
-      else play.addEventListener("click", () => playInt16(withGain(f.s, f.gain)));
+      if (f.loop) holdToPlay(play, () => { const [a, b] = LOOP.range(f); playLoop(withGain(f.s, f.gain), a, b, fsr); });
+      else play.addEventListener("click", () => playInt16(withGain(f.s, f.gain), null, fsr));
       const row = el("div", { class: "frow", style: `--c:${TCOL[i % 4]}` },
         play,
         el("span", { class: "fn", text: f.fname, title: f.fname }), root,
         el("span", { text: `${noteName(keys[i][0])}–${noteName(keys[i][1])}` }),
-        el("span", { class: "dim", text: `${(f.s.length / SMP.RATE).toFixed(2)} s` }),
+        el("span", { class: "dim", text: `${(f.s.length / fsr).toFixed(2)} s` }),
         lsel,
         el("div", { class: "gain" }, gi, gv),
         el("button", { type: "button", class: "warn", title: t("remove"), disabled: smpBusy, onclick: () => { d.files.splice(i, 1); renderSamples(); } }, "×"));
       if (f.loop !== 2) return row;
       /* LOOP+TAIL: where the loop starts and ends, snapped to a zero crossing when let go */
       const cv = el("canvas", { class: "loopwave" }), n = f.s.length;
-      const ms = (x) => `${Math.round(x / SMP.RATE * 1000)} ms`;
+      const ms = (x) => `${Math.round(x / fsr * 1000)} ms`;
       const mk = (key, idx) => {
         const r = el("input", { type: "range", min: 0, max: n - 1, step: 1, value: String(LOOP.range(f)[idx]), "aria-label": t(key) });
         const v = el("span", { class: "val", text: ms(LOOP.range(f)[idx]) });
         r.addEventListener("input", () => {
           if (idx) f.le = Math.max(+r.value, (f.ls ?? 0) + LOOP.MIN - 1); else f.ls = Math.min(+r.value, (f.le ?? n - 1) - LOOP.MIN + 1);
           v.textContent = ms(LOOP.range(f)[idx]);
+
           drawLoopWave(cv, f);
         });
         r.addEventListener("change", () => {
