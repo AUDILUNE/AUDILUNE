@@ -121,6 +121,14 @@ Every modifier button (`SELECT`, `EDIT`, `ARP`, `SAVE`, `SEQUENCE`, `FX`) uses *
 
 ## Credits & Licence
 
-* **AUDILUNE v1.0** — Design, one-handed UI/UX, cosmological visuals, generative anchor, and 6-track architecture.
-* **Upstream Foundation** — Built upon [Felucca](https://github.com) by Leo Kuroshita (`@kurogedelic` / Hügelton Instruments) and [Sloop](https://github.com) (`@isod89`), with dual-core DSP and community contributions from `@andrerezemini`, `@charlesvestal`, `@keremimo`, and `@renebohne`.
-* **Licence:** Released under **GPL-3.0-only** (see [LICENSE](LICENSE)).
+* **AUDILUNE v1.0 Concept, UI/UX & Direction** — Created by **AUDILUNE** (`@AUDILUNE`), designed around a cosmological `#000000` aesthetic, one-handed tap-to-latch ergonomics, and an unrestricted 6-track workflow.
+* **AI Pair-Programming & Code Assistance** — Developed with step-by-step firmware engineering, DSP calibration, and documentation assistance from **Google Gemini**.
+* **Platform, Tooling & Hardware Ecosystem:**
+  * **GitHub & GitHub Actions** — Source hosting, version control, and automated cloud firmware builds.
+  * **M-VAVE (Sinco Intelligent Technology)** — Hardware platform for the **M-VAVE FM-1** pocket synthesizer and groovebox.
+  * **Community Tools** — Browser emulation via [fm1-emu](https://github.com) (`@joakimeriksson`) and community firmware distribution via [The Firmware Hub](https://thefirmwarehub.com).
+* **Upstream Open-Source Firmware Foundation:**
+  * **[Felucca](https://github.com)** by **Leo Kuroshita (`@kurogedelic` / Hügelton Instruments)** — Core DSP synthesis engines, sequencer clock, USB-C audio/MIDI stack, and hardware abstraction layer.
+  * **[Sloop](https://github.com)** by **`@isod89`** — Extended FM-1 firmware architecture, web editor protocol, and UI framework.
+  * **Community Contributors** — Dual-core audio processing, boot-guard safety, and MIDI enhancements by `@andrerezemini` (`sloop-lab`), `@charlesvestal` (`X0X`), `@keremimo` (`Melodee`), `@renebohne`, `@juanjiant-bit` (`JIANT FM`), and `@ordenador`.
+* **Licence:** Released under **GPL-3.0-only** (see [LICENSE](LICENSE)). M-VAVE and FM-1 are trademarks of their respective owners; AUDILUNE is an independent open-source project.
