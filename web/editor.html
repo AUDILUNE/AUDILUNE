@@ -2027,7 +2027,7 @@ function buildSlot(name, zonesIn) {
       pred: e.pred, idx: e.idx });
     parts.push(e.data);
     len += e.data.length;
-  }
+   }
   const data = new Uint8Array(len);
   let o = 0;
   for (const p of parts) { data.set(p, o); o += p.length; }
@@ -2048,9 +2048,9 @@ function buildSlot(name, zonesIn) {
   for (let i = 0; i < nm.length; i++) hdr[8 + i] = nm.charCodeAt(i);
   v.setUint32(16, len, true);
   v.setUint32(20, crc32(data), true);
-  const rate = pyRound(SMP.RATE / 44100 * 65536);
   zones.forEach((z, j) => {
     const b = 32 + j * 28;
+    const rate = pyRound((z.sr || SMP.RATE) / 44100 * 65536);
     [z.off, z.n, z.ls, z.le, rate].forEach((x, k) => v.setUint32(b + k * 4, x >>> 0, true));
     v.setInt16(b + 20, z.root * 16, true);
     v.setInt16(b + 22, z.pred, true);
@@ -2083,6 +2083,7 @@ function chopNovelty(x) {
     nov[f] = L[f] > -3.5 ? Math.max(0, L[f] - before) : 0;              /* (under -35 dB: no hit) */
   }
   nov.level = P;                                                         /* (log10 power, 0 = the loudest frame) */
+
   return nov;
 }
 
