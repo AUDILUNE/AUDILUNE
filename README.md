@@ -2,22 +2,23 @@
 
 <h1 align="center">AUDILUNE v1.0</h1>
 
-<p align="center"><b>A cosmological, one-handed 6-track groovebox &amp; synthesizer firmware for the M-VAVE FM-1.</b><br>
+<p align="center"><b>Turn the M-VAVE FM-1 into an unrestricted 6-track synthesizer, sampler, and generative groovebox.</b><br>
 Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Leo Kuroshita / Hügelton Instruments and Sloop.</p>
 
 <p align="center">
 <a href="docs/MANUAL.md"><b>User Manual</b></a> ·
 <a href="../../releases"><b>Download Releases (.fwsc)</b></a> ·
-<a href="https://github.com"><b>FM-1 Browser Emulator</b></a> ·
+<a href="https://github.io"><b>FM-1 Browser Emulator</b></a> ·
 <a href="https://thefirmwarehub.com"><b>The Firmware Hub</b></a> ·
 <a href="../../issues"><b>Report an Issue</b></a>
 </p>
 
 ---
 
-**AUDILUNE** transforms the **M-VAVE FM-1** into an unrestricted **6-track × 128-step** standalone synthesizer, sampler, and generative groovebox. Designed around a pure `#000000` black astronomical interface with zero auto-dimming, **zero two-button holds**, and **Smart Automatic Voice Allocation**, every track can run any synthesis engine, classic synth emulator, environmental soundscape, user sample slot (`USR1`–`USR6`), poly-wavetable, or 16-lane drum kit.
+**AUDILUNE** unlocks the **M-VAVE FM-1** as a fast, one-handed **6-track × 128-step** standalone studio and live performance instrument. Every track has full, unrestricted access to all **13 synthesis engines**, classic analog and FM synth emulators, atmospheric drones, natural & animal soundscapes, **6 floating user sample slots** (`USR1`–`USR6`), poly-wavetables, and 16-lane drum kits—with **zero track-role locks**, **zero two-button holds**, real-time macro-genre morphing, and **Smart Automatic Voice Allocation** that keeps sub-basses tight while letting chords and shimmer delays bloom wide.
 
 ---
+
 
 ## Contents
 
