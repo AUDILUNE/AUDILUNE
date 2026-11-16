@@ -143,12 +143,22 @@ static void sample_note_on(track_t *t, voice_t *v)
             if (v->note >= SMP_ZONES[set->z0 + i].lo && v->note <= SMP_ZONES[set->z0 + i].hi)
                 zi = set->z0 + i;
         v->s[4] = (int32_t)(zi == 0xFFFFu ? set->z0 : zi);
-    } else {                                        /* user slot: silent if empty */
+    } else {                                        /* user slot: built-in starter sound when slot is empty */
         uint32_t k = si - SMP_NSETS;
-        for (i = 0; i < usr_nz[k]; i++)
-            if (v->note >= usr_zone[k][i].lo && v->note <= usr_zone[k][i].hi)
-                zi = 0x8000u | k << 5 | i;
-        v->s[4] = (int32_t)(zi == 0xFFFFu ? 0 : zi);
+        if (usr_nz[k]) {
+            for (i = 0; i < usr_nz[k]; i++)
+                if (v->note >= usr_zone[k][i].lo && v->note <= usr_zone[k][i].hi)
+                    zi = 0x8000u | k << 5 | i;
+            v->s[4] = (int32_t)(zi == 0xFFFFu ? 0 : zi);
+        } else if (SMP_NSETS > 0u) {
+            const smp_set_t *set = &SMP_SETS[(k * SMP_NSETS) / SMP_USER_SLOTS];
+            for (i = 0; i < set->nz; i++)
+                if (v->note >= SMP_ZONES[set->z0 + i].lo && v->note <= SMP_ZONES[set->z0 + i].hi)
+                    zi = set->z0 + i;
+            v->s[4] = (int32_t)(zi == 0xFFFFu ? set->z0 : zi);
+        } else {
+            v->s[4] = 0;
+        }
     }
     v->ph[0] = 0;
     v->ph[1] = 0;
@@ -173,6 +183,7 @@ static void sample_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
     uint32_t lim = (pow2_q16(576) >> 8) * (z->rate >> 8);   /* the decode load bounded: 3 octaves up, or SMP_STEP_MAX
                                                          * source samples an output sample if that is more (a 16 kHz
                                                          * set, one zone: its pitch went flat 3 octaves over its root) */
+
     int32_t bits = p[P_E2], lp = 4000 + ((clamp((p[P_E4] << 8) + m->cutoff, 0, 127 << 8) * 28767) >> 15);
     int32_t drv = p[P_E6], sh = bits / 10;
     vmod_t m0;
