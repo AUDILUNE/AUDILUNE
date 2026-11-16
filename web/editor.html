@@ -2012,24 +2012,25 @@ const LOOP = {
     const n = s.length, a = Math.max(0, Math.min(n - LOOP.MIN - 1, LOOP.snap(s, ls)));
     let b = LOOP.snap(s, le + 1) - 1;
     if (b < a + LOOP.MIN - 1 || b > n - 1) b = Math.max(a + LOOP.MIN - 1, Math.min(n - 1, le));
-    return [a, b];
+     return [a, b];
   },
 };
 
-/* zones: [{s: Int16Array (22050 Hz), root, lo?, hi?, loop?, ls?, le?}] -> {hdr (480 B), data, zones} (sampleio.user_slot) */
+/* zones: [{s: Int16Array, sr?, root, lo?, hi?, loop?, ls?, le?}] -> {hdr (480 B), data, zones} (sampleio.user_slot) */
 function buildSlot(name, zonesIn) {
   const zones = [], parts = [];
   let len = 0;
   for (const z of zonesIn) {
     const [ls, le] = z.loop ? LOOP.range(z) : [0, z.s.length - 1];
     const e = imaEncode(z.s, ls);                   /* (the decoder's state at the loop start) */
-    zones.push({ off: len, n: z.s.length, ls, le, looped: z.loop ? 2 : 0, root: z.root, lo: z.lo ?? null, hi: z.hi ?? null,
+    zones.push({ off: len, n: z.s.length, ls, le, sr: z.sr || SMP.RATE, looped: z.loop ? 2 : 0, root: z.root, lo: z.lo ?? null, hi: z.hi ?? null,
       pred: e.pred, idx: e.idx });
     parts.push(e.data);
     len += e.data.length;
-   }
+  }
   const data = new Uint8Array(len);
   let o = 0;
+
   for (const p of parts) { data.set(p, o); o += p.length; }
   if (len > SMP.MAX_DATA) throw new Error(`too long: ${len} B (max ${SMP.MAX_DATA} B)`);
   if (!zones.length || zones.length > SMP.MAX_ZONES) throw new Error("1..16 files per slot");
@@ -7676,7 +7677,6 @@ const smpDraft = [0, 1, 2, 3].map(() => ({ name: "", files: [] }));   /* USR1..U
 let smpBusy = false;
 const SMP_RC = { 1: "size", 2: "header", 3: "data CRC", 4: "flash", 5: "zones" };
 const kib = (n) => (n / 1024).toFixed(1);
-
 /* auto key split, as in buildSlot (for the preview) */
 function splitKeys(files) {
   const z = files.map((f, i) => ({ i, root: f.root })).sort((a, b) => a.root - b.root);
@@ -7692,20 +7692,41 @@ const draftBytes = (d) => d.files.reduce((a, f) => a + ((f.s.length + 1) >> 1), 
 
 async function decodeFile(f) {
   const buf = await f.arrayBuffer();
-  let x, wl = null;
+  let raw, srcSr, wl = null;
   try {
     const w = parseWav(buf);
-    x = resample(w.x, w.sr, SMP.RATE);
-    if (w.loop) wl = w.loop.map((p) => Math.round(p * SMP.RATE / w.sr));   /* (2.7) the file's own loop: LOOP+TAIL */
+    raw = w.x; srcSr = w.sr; wl = w.loop;
   } catch (e) {                                     /* not a plain WAV: let the browser decode it */
-    const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    const ab = await new Ctx(1, 1, SMP.RATE).decodeAudioData(buf.slice(0));
-    x = new Float64Array(ab.length);
-    for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < d.length; i++) x[i] += d[i] / ab.numberOfChannels; }
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const ab = await ctx.decodeAudioData(buf.slice(0));
+    try { await ctx.close(); } catch (x) { /* ignore */ }
+    srcSr = ab.sampleRate;
+    raw = new Float64Array(ab.length);
+    for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < d.length; i++) raw[i] += d[i] / ab.numberOfChannels; }
   }
-  if (!x.length) throw new Error("no audio");
-  const z = { fname: f.name, s: normalize(x), root: rootFromName(f.name.replace(/\.[^.]*$/, "")) };
-  if (wl && wl[1] > wl[0] && wl[1] - wl[0] + 1 >= LOOP.MIN && z.s.length >= 4 * LOOP.MIN) [z.loop, z.ls, z.le] = [2, ...LOOP.range({ s: z.s, loop: 2, ls: wl[0], le: wl[1] })];
+  if (!raw.length) throw new Error("no audio");
+  /* 5-Second Smart Auto-Fit: trim silence, cap at 5.0s, and fit sample rate to 40 KiB slot */
+  let a = 0, b = raw.length - 1;
+  while (a < b && Math.abs(raw[a]) < 0.001) a++;
+  while (b > a && Math.abs(raw[b]) < 0.001) b--;
+  let trimmed = raw.subarray(a, b + 1);
+  if (!trimmed.length) trimmed = raw;
+  const maxSrc = Math.round(srcSr * 5.0);
+  if (trimmed.length > maxSrc) {
+    trimmed = trimmed.slice(0, maxSrc);
+    const fo = Math.min(trimmed.length, Math.round(srcSr * 0.01));
+    for (let i = 0; i < fo; i++) trimmed[trimmed.length - 1 - i] *= i / fo;
+  }
+  const dur = trimmed.length / srcSr;
+  const maxSmp = Math.max(1024, (SMP.MAX_DATA - 512) * 2);
+  const fitSr = Math.max(11025, Math.min(44100, srcSr, Math.floor(maxSmp / Math.max(0.05, dur))));
+  const x = resample(trimmed, srcSr, fitSr);
+  const z = { fname: f.name, sr: fitSr, s: normalize(x), root: rootFromName(f.name.replace(/\.[^.]*$/, "")) };
+  if (wl) {
+    const ls = Math.round((wl[0] - a) * fitSr / srcSr), le = Math.round((wl[1] - a) * fitSr / srcSr);
+    if (le > ls && le - ls + 1 >= LOOP.MIN && z.s.length >= 4 * LOOP.MIN) [z.loop, z.ls, z.le] = [2, ...LOOP.range({ s: z.s, loop: 2, ls, le })];
+  }
   return z;
 }
 
@@ -7714,11 +7735,11 @@ async function decodeFile(f) {
    pieces), 3 send it and play it on a track. One draft for the files (smpPage.draft), whichever slot it goes to. */
 const smpPage = { slot: 0, mode: "files", draft: { name: "", files: [] }, ui: null };
 let smpAudio = null, smpSrc = null;
-function playInt16(s, onend) {                       /* a preview in the computer (22050 Hz mono) */
+function playInt16(s, onend, sr = SMP.RATE) {          /* a preview in the computer */
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!smpAudio) smpAudio = new Ctx();
   if (smpSrc) try { smpSrc.stop(); } catch (e) { /* ended */ }
-  const buf = smpAudio.createBuffer(1, s.length, SMP.RATE), ch = buf.getChannelData(0);
+  const buf = smpAudio.createBuffer(1, s.length, sr), ch = buf.getChannelData(0);
   for (let i = 0; i < s.length; i++) ch[i] = s[i] / 32768;
   smpSrc = smpAudio.createBufferSource();
   smpSrc.buffer = buf;
@@ -7727,16 +7748,17 @@ function playInt16(s, onend) {                       /* a preview in the compute
   smpSrc.start();
 }
 /* 2.7: a file with a loop, heard as the FM-1 plays it: held, the loop goes round; let go, the rest to the end */
-function playLoop(s, ls, le) {
-  playInt16(s);
+function playLoop(s, ls, le, sr = SMP.RATE) {
+  playInt16(s, null, sr);
   smpSrc.loop = true;
-  smpSrc.loopStart = ls / SMP.RATE;
-  smpSrc.loopEnd = (le + 1) / SMP.RATE;
+  smpSrc.loopStart = ls / sr;
+  smpSrc.loopEnd = (le + 1) / sr;
 }
 function releaseLoop() { if (smpSrc) smpSrc.loop = false; }
 /* the ▶ of a looped file: hold it (mouse, touch, or Enter / Space held) */
 function holdToPlay(b, start) {
   b.addEventListener("pointerdown", (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (x) { /* gone */ } start(); });
+
   for (const ev of ["pointerup", "pointercancel"]) b.addEventListener(ev, releaseLoop);
   b.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); start(); } });
   b.addEventListener("keyup", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); releaseLoop(); } });
