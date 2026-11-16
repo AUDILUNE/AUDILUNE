@@ -197,7 +197,7 @@ static void gen_populate_synth(uint32_t ti, const genre_dna_t *dna, int full_see
             if (gen_pct() < dna->ratchet_prob)
                 st->rat = (uint8_t)(1u + (rng() & 1u));
 
-            /* Micro-timing humanization / jitter */
+                /* Micro-timing humanization / jitter */
             if (dna->micro_jitter > 0) {
                 int32_t jit = (int32_t)(rng() % (uint32_t)(dna->micro_jitter * 2 + 1)) - dna->micro_jitter;
                 t->micro[s] = (int8_t)clamp(jit, MICRO_MIN, MICRO_MAX);
@@ -217,10 +217,9 @@ static void gen_populate_synth(uint32_t ti, const genre_dna_t *dna, int full_see
     t->seq_active = 1;
 }
 
-/* Generates or mutates the drum track (track 6 / TRK_DRUM) for the active Macro-Genre */
-static void gen_populate_drums(const genre_dna_t *dna, int full_seed)
+/* Generates or mutates a drum-mode track for the active Macro-Genre */
+static void gen_populate_drums(track_t *t, const genre_dna_t *dna, int full_seed)
 {
-    track_t *t = TDRUM;
     uint32_t len = full_seed ? dna->default_len : trk_len(t);
     uint32_t s;
 
@@ -252,7 +251,8 @@ static void gen_populate_drums(const genre_dna_t *dna, int full_seed)
         /* Lane 4: Hi-Hat groove with genre ratchets */
         if (gen_pct() < dna->drum_prob) {
             uint32_t rat = (gen_pct() < dna->ratchet_prob) ? (1u + (rng() & 1u)) : 0u;
-                 uint32_t lvl = (s % 2u == 0u) ? LV_NORM : LV_GHOST;
+            uint32_t lvl = (s % 2u == 0u) ? LV_NORM : LV_GHOST;
+
             dstep_set(ds, 4u, lvl, rat);
         }
 
@@ -262,6 +262,16 @@ static void gen_populate_drums(const genre_dna_t *dna, int full_seed)
     }
     t->seq_active = 1;
 }
+
+static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_seed)
+{
+    track_t *t = &trk[ti];
+    if (is_drum(t))
+        gen_populate_drums(t, dna, full_seed);
+    else
+        gen_populate_synth(ti, dna, full_seed);
+}
+
 /* Triggers step-level Punch-In FX (P_ED_FX 1..6) using the AUDILUNE OP1-OP6 matrix */
 static uint8_t audilune_step_fx_held;
 
@@ -292,7 +302,7 @@ static void audilune_back_home_trigger(void)
 static void audilune_back_home_tick(void)
 {
     uint32_t i, elapsed;
-     if (!audilune_back_home_active)
+    if (!audilune_back_home_active)
         return;
 
     elapsed = clk_beat - audilune_back_home_start_beat;
@@ -312,6 +322,7 @@ static void audilune_gen_block(void)
     const genre_dna_t *dna = &GENRE_DNA[g];
     uint32_t i;
     int genre_changed = (g != audilune_genre_was);
+    uint8_t prev_arp = audilune_gen_arp_was;
 
     if (genre_changed) {
         audilune_genre_was = (uint8_t)g;
@@ -319,12 +330,12 @@ static void audilune_gen_block(void)
     }
 
     /* Trigger 1-bar Back-Home Resolution when ARP generative drift turns off */
-    if (audilune_gen_arp_was && !audilune_arp_drift_mask)
+    if (prev_arp && !audilune_arp_drift_mask)
         audilune_back_home_trigger();
     audilune_gen_arp_was = audilune_arp_drift_mask;
     audilune_back_home_tick();
 
-    /* Handle Infinite Algorithmic Compositions Engine activation (HOME 3s hold) */
+    /* Handle Infinite Algorithmic Compositions Engine (HOME 3s hold) & ARP Scale Anchor Drift */
     if (audilune_infinite_on) {
         int just_enabled = !audilune_inf_was || genre_changed;
         audilune_inf_was = 1u;
@@ -333,26 +344,38 @@ static void audilune_gen_block(void)
             transport_req = 1u;
 
         if (just_enabled) {
-            for (i = 0; i < NPART; i++)
-                gen_populate_synth(i, dna, 1);
-            gen_populate_drums(dna, 1);
+            for (i = 0; i < NTRK; i++)
+                gen_populate_track(i, dna, 1);
             audilune_gen_bar_last = clk_beat >> 2;
         } else if (song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
             /* Evolve composition subtly on every 2nd bar boundary */
             audilune_gen_bar_last = clk_beat >> 2;
 
             if ((audilune_gen_bar_last & 1u) == 0u) {
-                for (i = 0; i < NPART; i++)
-                    gen_populate_synth(i, dna, 0);
-                gen_populate_drums(dna, 0);
+                for (i = 0; i < NTRK; i++)
+                    gen_populate_track(i, dna, 0);
             }
         }
     } else {
+        uint8_t newly_armed = (uint8_t)(audilune_arp_drift_mask & ~prev_arp);
         audilune_inf_was = 0u;
+
+        if (newly_armed) {
+            for (i = 0; i < NTRK; i++) {
+                if ((newly_armed >> i) & 1u)
+                    gen_populate_track(i, dna, track_empty(&trk[i]));
+            }
+            audilune_gen_bar_last = clk_beat >> 2;
+        } else if (audilune_arp_drift_mask && song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
+            audilune_gen_bar_last = clk_beat >> 2;
+            for (i = 0; i < NTRK; i++) {
+                if ((audilune_arp_drift_mask >> i) & 1u)
+                    gen_populate_track(i, dna, 0);
+            }
+        }
     }
 }
 
-#endif /* AUDILUNE_GEN_C */
 uint8_t audilune_gen_eval_step(uint8_t track, uint8_t step, uint8_t genre, uint8_t *out_note, uint8_t *out_vel) {
     /* Trigger probability thresholds (%) across the 6 AUDILUNE Macro-Genres:
        0: Ambient, 1: Downtempo, 2: Glitch Hop, 3: Punchy, 4: Experimental, 5: Industrial */
@@ -369,6 +392,7 @@ uint8_t audilune_gen_eval_step(uint8_t track, uint8_t step, uint8_t genre, uint8
     if ((step % 16u) == 0u) {
         threshold = (threshold + 25u > 95u) ? 95u : (uint8_t)(threshold + 25u);
     }
+
 
     if (chance >= threshold) {
         return 0; /* Rest step */
@@ -396,3 +420,6 @@ uint8_t audilune_gen_eval_step(uint8_t track, uint8_t step, uint8_t genre, uint8
 
     return 1; /* Trigger note */
 }
+
+#endif /* AUDILUNE_GEN_C */
+
