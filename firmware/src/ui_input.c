@@ -1357,7 +1357,7 @@ UI_SMALL static void ui_input(void)
             break;
         default:
             break;
-        }
+         }
     }
     if (song.seq_mode && cur_page()->scope == SC_STEP && !ui.sheet)
         seq_entry(notes);
@@ -1365,14 +1365,34 @@ UI_SMALL static void ui_input(void)
     if ((s = panel_enc(EN_PRESET)) != 0) {
         ui_input_ms = fm1_ms;
         if (is_drum(TSEL)) {
-            TDRUM->p[P_E0] = (int16_t)clamp(TDRUM->p[P_E0] + s, 0, DRUM_KITS - 1);
-            audilune_hud_popup("DRUM KIT", TDRUM->p[P_E0] + 1, "");
+            int32_t nk = (int32_t)TDRUM->p[P_E0] + s;
+            if (nk >= 0 && nk < (int32_t)DRUM_KITS) {
+                TDRUM->p[P_E0] = (int16_t)nk;
+                audilune_hud_popup("DRUM KIT", TDRUM->p[P_E0] + 1, "");
+            } else {
+                uint32_t total = 0;
+                TDRUM->synth_mode = 1;
+                preset_pos(&total);
+                if (total) {
+                    uint32_t next_p = nk < 0 ? total - 1u : 0u;
+                    preset_go(next_p);
+                    audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
+                }
+            }
         } else {
             uint32_t total, cur = preset_pos(&total);
             if (total) {
-                uint32_t next_p = (uint32_t)(((int32_t)cur + s % (int32_t)total + (int32_t)total) % (int32_t)total);
-                preset_go(next_p);
-                audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
+                int32_t raw = (int32_t)cur + s;
+                if (TSEL == TDRUM && (raw < 0 || raw >= (int32_t)total)) {
+                    TDRUM->synth_mode = 0;
+                    TDRUM->p[P_E0] = (int16_t)(raw < 0 ? DRUM_KITS - 1 : 0);
+                    ui.force = 1;
+                    audilune_hud_popup("DRUM KIT", TDRUM->p[P_E0] + 1, "");
+                } else {
+                    uint32_t next_p = (uint32_t)((raw % (int32_t)total + (int32_t)total) % (int32_t)total);
+                    preset_go(next_p);
+                    audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
+                }
             }
         }
     }
@@ -1423,6 +1443,7 @@ UI_SMALL static void ui_input(void)
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40;
         }
+
         if (ui.home) {
             audilune_main_knobs(k, s);
         } else {
