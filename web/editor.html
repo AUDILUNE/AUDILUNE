@@ -1,15 +1,16 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
      Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
-<!-- Felucca web editor. One file, no libraries. Protocol: EDITOR_PROTOCOL.md.
+<!-- AUDILUNE 1.0 web editor for M-VAVE FM-1. One file, no libraries. Protocol: EDITOR_PROTOCOL.md.
      Add ?mock=1 to the URL to use a built-in simulated device. -->
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SLOOP Editor</title>
+<title>AUDILUNE 1.0 — FM-1 Editor</title>
 <!--PWA--><link rel="manifest" href="../sloop.webmanifest"><meta name="theme-color" content="#000000"><link rel="icon" href="../icon-192.png"><!--/PWA-->
 <style>
+
    /* AUDILUNE 1.0 editor: the M-VAVE FM-1 on a big display. Pure #000000 black, unrestricted 6-track workflow,
      Terminus pixel font (tools/gen_webfont.py, inlined: the editor also runs from file://), 16 px and 32 px only
      so every pixel stays sharp. The accent (--trk) follows the active track's colour theme on the device.
