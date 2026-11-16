@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
- * Adapted for AUDILUNE Firmware (Block 4: 6 Tracks & 128-Step Sequencer) */
+ * Adapted for AUDILUNE Firmware (Block 4: 6 Unrestricted Tracks & 128-Step Sequencer) */
 #include <stdint.h>
 #define NVOICE 8                 /* voices per part, and the budget shared by all parts */
 #define NPOLY 8
-#define NPART 5                  /* AUDILUNE 6-track architecture: 5 synth parts (tracks 1..5) */
-#define NTRK 6                   /* + 1 drum track (track 6) = 6 polymorphic tracks */
+#define NPART 6                  /* AUDILUNE 6-track architecture: all 6 tracks have full DSP synth/sample arenas */
+#define NTRK 6                   /* 6 completely unrestricted polymorphic tracks */
 #define TRK_DRUM 5
 enum { V_POLY, V_MONO, V_LEGATO, V_UNISON };   /* P_VOICE */
 #define NSTEP 128                /* AUDILUNE 128-step deep sequencer array per pattern block */
@@ -14,6 +14,7 @@ enum { V_POLY, V_MONO, V_LEGATO, V_UNISON };   /* P_VOICE */
 #define FELUCCA_SLICE 0
 #endif
 #define NENGINES (12 + FELUCCA_SLICE)
+
 #define ENGI_GRAIN 8u
 #define ENGI_PHYS 10u
 #define ENGI_NOISE 11u
@@ -276,12 +277,13 @@ typedef struct track {
     uint8_t ins_run;
     int16_t armp, aholdp;
     /* engine switch */
-    uint8_t xf_on, xf;
+       uint8_t xf_on, xf;
     int16_t pe_old[8u];
     int16_t p_old[P_COUNT];
     uint8_t pold;
     uint16_t ins_res;
     uint8_t ins_xt;
+    uint8_t synth_mode;
     uint8_t xp_n, xp_note[4u], xp_vel[4u];
 } track_t;
 
@@ -340,9 +342,10 @@ static int32_t thr_rev, thr_dly;
 static inline int32_t send_thr(int32_t s, int32_t g) { return g ? s + (((127 * 258 - s) * g) >> 15) : s; }
 #define TSEL (&trk[song.sel])
 #define TDRUM (&trk[TRK_DRUM])
-static int is_drum(const track_t *t) { return t == TDRUM; }
+static int is_drum(const track_t *t) { return t == TDRUM && !t->synth_mode; }
 static int trk_silent(const track_t *t)
 {
+
     uint32_t i = (uint32_t)(t - trk);
     return t->p[P_MUTE] || (song.solo && !((song.solo >> i) & 1u));
 }
