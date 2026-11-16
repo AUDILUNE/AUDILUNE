@@ -697,12 +697,11 @@ UI_SMALL static void track_defaults(track_t *t)
         t->p[i] = TP[i].def;
     track_defaults_steps(t);
 }
-
-/* switch engine (its defaults + first preset) and say so */
+/* switch engine (its defaults + first preset) and say so; unlocks Track 6 into synth/soundscape mode */
 UI_SMALL static void select_engine(uint32_t e)
 {
-    if (is_drum(TSEL))
-        return;
+    if (TSEL == TDRUM && !TSEL->synth_mode)
+        TSEL->synth_mode = 1;
     set_engine(e);
     ui_say("ENGINE ", ENGINES[TSEL->eng_req]->name);
     ui.force = 1;
@@ -710,6 +709,7 @@ UI_SMALL static void select_engine(uint32_t e)
 
 /* the factory presets as one list by kind (basses, keys, organs, pads, leads, plucks and bells, stabs,
  * the rest), then the used user presets: the PRESETS knob and the PRESETS page browse it. By name: an
+
  * engine's preset table may change order; tests/ui_pages_test.c checks every preset is here once */
 enum { BK_BASS, BK_KEYS, BK_ORGAN, BK_PAD, BK_LEAD, BK_PLUCK, BK_STAB, BK_FX };
 static const char *const BANK_KIND[] = {"BASS", "KEYS", "ORGN", "PAD", "LEAD", "PLCK", "STAB", "FX"};
