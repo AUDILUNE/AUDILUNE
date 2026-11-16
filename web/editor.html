@@ -7875,7 +7875,7 @@ function renderSamples() {
       } });
     u.prog = el("progress", { max: 1, value: 0, hidden: true });
     u.send = el("button", { class: "pri", ic: "symbol_upload", onclick: smpSendPage });
-    u.play = el("div", { class: "seg" }, ...[0, 1, 2].map((i) => el("button", { type: "button", "data-i": i, style: `--c:${TCOL[i]}`, class: "trk",
+    u.play = el("div", { class: "seg" }, ...[0, 1, 2, 3, 4, 5].map((i) => el("button", { type: "button", "data-i": i, style: `--c:${TCOL[i % 4]}`, class: "trk",
       onclick: () => smpUseOn(i, P.slot) }, `${t("track")} ${i + 1}`)));
     u.where = el("p", { class: "dim" });
     box.replaceChildren(el("div", { class: "card" },
@@ -7895,14 +7895,13 @@ function renderSamples() {
     b.querySelector(".now").textContent = x.zones ? `${x.name || "—"} · ${x.zones} ${t("zones")}` : t("empty");
     const pg = b.querySelector("progress");
     pg.max = dev.smp.slotKiB; pg.value = x.kib;
-    b.querySelector(".cap").textContent = `${x.kib} / ${dev.smp.slotKiB} KiB` + (k === 3 ? " · 2.4" : "");
+    b.querySelector(".cap").textContent = `${x.kib} / ${dev.smp.slotKiB} KiB`;
   }
   const cur = dev.smp.slots[P.slot];
   setLabel(u.erase, t("smpEraseSlot").replace("{n}", P.slot + 1));
   u.erase.disabled = smpBusy || !cur.zones;
-  u.slotNote.textContent = (cur.zones ? t("smpReplaces").replace("{n}", P.slot + 1).replace("{x}", cur.name || "—") : t("smpSlotFree").replace("{n}", P.slot + 1))
-    + (n >= 4 && P.slot >= 2 ? " " + t("smpKitHint") : "");
-  /* 2 */
+  u.slotNote.textContent = cur.zones ? t("smpReplaces").replace("{n}", P.slot + 1).replace("{x}", cur.name || "—") : t("smpSlotFree").replace("{n}", P.slot + 1);
+ /* 2 */
   for (const b of u.modes.children) b.setAttribute("aria-selected", b.dataset.m === P.mode ? "true" : "false");
   u.filesPane.hidden = P.mode !== "files";
   u.chopPane.hidden = P.mode !== "chop";
