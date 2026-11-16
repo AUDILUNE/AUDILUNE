@@ -26,7 +26,6 @@
 ## 2. Screens & Cosmological UI
 
 Displayed on a high-contrast pure black OLED canvas with 8 selectable color themes, AUDILUNE includes three dedicated views (Play Screen, zoomed Edit Screen, and a Full-Screen Visualizer with 4 cosmological options and a 60-second screensaver) alongside a persistent bottom HUD showing live track vitals.
-
 ## 3. One-Handed Controls & Tap-to-Latch
 
 Modifier buttons utilize single-finger tap-to-latch operations for track selection, pitch bend latching, color theme cycling, view toggling, step transposing, infinite algorithmic composition control, recording management, and octave/step navigation.
