@@ -349,13 +349,13 @@ UI_SMALL static void studio_tracks_draw(void)
         if (rec) {
             cv_rect(186, 2, 50, 12, C_WHITE);
             cv_text(199, 1, &FONT_S, "REC", C_BLACK);
-        } else if (solo) {
+       } else if (solo) {
             cv_rect(186, 2, 50, 12, C_WHITE);
             cv_text(196, 1, &FONT_S, "SOLO", C_BLACK);
         } else if (silent) {
             cv_text(204, 1, &FONT_S, "MUTE", TE_G3);
         } else {
-            char pb = {(char)('A' + ((sect >= 0 ? sect : 0) % 6)), 0};
+            char pb[1 + 1] = {(char)('A' + ((sect >= 0 ? sect : 0) % 6)), 0};
             cv_rect(222, 2, 14, 12, selected ? acc : TE_G1);
             cv_text(225, 1, &FONT_S, pb, selected ? C_BLACK : C_WHITE);
         }
@@ -364,6 +364,7 @@ UI_SMALL static void studio_tracks_draw(void)
             if (!has_trk) {
                 on = 1u;
             } else if (len <= 16u) {
+
                 if (p < len) on = trk_step_on(t, p) ? 2u : 1u;
             } else {
                 uint32_t a = j * len / 16u, z = (j + 1u) * len / 16u, k;
