@@ -840,64 +840,63 @@ UI_SMALL static uint32_t btn_hold_ms(uint32_t *t0, uint32_t label, uint32_t now,
     return tap ? BT_TAP : BT_NONE;
 }
 
+UI_SMALL static void audilune_toggle_scr(uint8_t target, uint32_t fam, const char *label)
+{
+    vis_on = 0;
+    if (ui.scr == target && !ui.home) {
+        go_home();
+        ui_message("LIVE PLAY");
+        return;
+    }
+    ui.scr = target;
+    ui.list_sel = 0;
+    ui.list_top = 0;
+    open_family(fam);
+    ui_message(label);
+}
+
 UI_SMALL static void layer_tap(uint32_t layer)
 {
     switch (layer) {
     case LY_FX:
-        open_family(FAM_FX);
-        ui_message("FX PAGE");
+        audilune_toggle_scr(UI_FX, FAM_FX, "EFFECTS");
         break;
     case LY_ERASE:
-        if (!ui.home && (cur_page()->scope == SC_STEP || cur_page()->scope == SC_DRUM)) {
-            vis_on = 0;
-            go_home();
-            ui_message("PLAY SCREEN");
-        } else {
-            vis_on = 0;
-            if (is_drum(TSEL)) {
-                studio_open(SC_DRUM);
-            } else {
-                song.seq_mode = 1;
-                open_family(FAM_SEQ);
-            }
-            ui_message("EDIT SCREEN");
-        }
+        audilune_toggle_scr(UI_EDIT, FAM_SEQ, "EDIT PAGE");
         break;
     case LY_STEP:
-        if (on_drum_page()) {
-            drum_page = (uint8_t)((drum_page + 1u) % 3u);
-            ui.force = 1;
-            break;
-        }
-        if (is_drum(TSEL)) {
-            studio_open(SC_DRUM);
-            break;
-        }
-        open_family(FAM_SEQ);
+        audilune_toggle_scr(UI_SEQ, FAM_SEQ, "SEQ PAGE");
         break;
     case LY_ROLL:
-        open_family(FAM_ARP);
+        audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP PAGE");
         break;
     case LY_SCALE:
-        open_family(FAM_SCL);
+        if (ui.scr == UI_CHOP_WAVE) {
+            ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 3u);
+            ui_message(ui.chop_trim == 0u ? "TRIM: WHOLE" : ui.chop_trim == 1u ? "TRIM: START [" : "TRIM: END ]");
+        } else if (ui.scr == UI_CHOP_SRC) {
+            ui.scr = UI_CHOP_WAVE;
+            ui.list_sel = 0;
+            ui.chop_sel = 0;
+            ui.chop_trim = 0;
+            ui_message("CHOP SHOP");
+        } else {
+            ui.sel_trk_mask ^= (uint8_t)(1u << (song.sel % NTRK));
+            ui_message((ui.sel_trk_mask & (1u << (song.sel % NTRK))) ? "SEL: LOCKED" : "SEL: UNLOCKED");
+        }
+        ui.force = 1;
         break;
     case LY_MIX:
-        open_family(FAM_GLO);
+        audilune_toggle_scr(UI_GLO, FAM_GLO, "GLOBAL");
         break;
     case LY_SONG:
-        if (on_song_page())
-            arrangement_save();
-        else if (!ui.home && cur_page()->scope == SC_TRK)
-            studio_open(SC_SONG);
-        else if (on_drum_page())
-            studio_open(SC_SONG);
-        else
-            open_family(FAM_SAVE);
+        audilune_toggle_scr(UI_SAVE, FAM_SAVE, "SAVE VAULT");
         break;
     default:
         break;
     }
 }
+
 
 static uint8_t home_eat;
 UI_SMALL static void layer_unlock(void)
