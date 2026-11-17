@@ -72,7 +72,7 @@ static struct {
     /* layers (ui_layers.c): a function button held, the keys and knobs do something else */
     uint8_t layer;               /* the layer drawn (LY_*), LY_PLAY = none */
     uint8_t layer_btn;           /* its button (B_*), NB = none */
-    uint8_t layer_used;          /* a key / knob / OCT was used while it was held: no tap on release */
+        uint8_t layer_used;          /* a key / knob / OCT was used while it was held: no tap on release */
     uint32_t layer_t0;           /* its press time (ms) */
     uint8_t step_page;           /* SEQ layer: the 16 steps shown (page x 16) */
     uint16_t step_held;          /* SEQ layer: the step keys held (white key index) */
@@ -86,6 +86,23 @@ static struct {
     uint8_t tap_n;
     char msg[24];
     uint32_t enc_t[NE];
+    /* AUDILUNE v2.3 12-page & multi-selection state */
+    uint8_t scr;                 /* active screen (UI_LIVE .. UI_CHOP_WAVE) */
+    uint8_t list_sel;            /* active row index in list screens */
+    uint8_t list_top;            /* scroll top row index */
+    uint8_t sel_trk_mask;        /* SEL Button multi-locked tracks (bits 0..5) */
+    uint32_t sel_step_mask[4];   /* SEL Button multi-locked steps (0..127) */
+    uint8_t algo_genre[NTRK];    /* Algorithm Knob genre variation per track (0..5) */
+    uint8_t vis_style;           /* Visualizer style (0..3) */
+    uint8_t chop_src_type;       /* Chop Shop Stage 1: 0=Song, 1=Track, 2=Sample */
+    uint8_t chop_src_idx;        /* Chop Shop Stage 1: option index */
+    uint8_t chop_mode;           /* Chop Shop Stage 2: 0=4EQ, 1=8EQ, 2=16EQ, 3=AUTO, 4=MAN */
+    uint8_t chop_sel;            /* Chop Shop Stage 2: active chop 0..15 */
+    uint8_t chop_trim;           /* Chop Shop Stage 2: 0=Whole, 1=Start[, 2=End] */
+    uint8_t save_vault;          /* Save Page: SLOT 0..5 */
+    uint8_t save_op;             /* Save Page: 0=SAVE, 1=LOAD */
+    uint8_t chop_save_usr;       /* Chop Shop Save: 0=SKIP, 1..6=USR1..6 */
+    uint8_t chop_load_trk;       /* Chop Shop Save: 0=NONE, 1..6=TRK1..6 */
     /* drawn-state cache */
     char col[4][32];
     char focus_l[8], focus_v[8], focus_u[8];   /* the touched column, shown large */
@@ -95,7 +112,13 @@ static struct {
     uint8_t graph_top;           /* the graph strip's top G_OY rows hold something */
 } ui;
 
+enum {
+    UI_LIVE, UI_VIS, UI_FX, UI_ENV, UI_LFO, UI_EDIT,
+    UI_GLO, UI_SAVE, UI_ARP, UI_SEQ, UI_CHOP_SRC, UI_CHOP_WAVE, UI_SCREEN_COUNT
+};
+
 UI_SMALL static const page_t *cur_page(void) { return &PAGES[ui.page]; }
+
 static int32_t accel(uint32_t role, int32_t s, int32_t range);   /* ui_input.c */
 static void layer_screen_draw(void);                            /* ui_layers.c */
 static void hold_screen_draw(void);
