@@ -132,10 +132,11 @@ static uint8_t audilune_chop_chromatic = 0;
 
 static void sample_note_on(track_t *t, voice_t *v)
 {
-    static const uint8_t *const WHITE_OFF = (const uint8_t[]){0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 25, 26};
+    const uint8_t *const WHITE_OFF = (const uint8_t[]){0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 25, 26};
     uint32_t si = (uint32_t)t->p[P_E0] % SMP_NALL, i, zi = 0xFFFFu;
     if (si < SMP_NSETS) {
         const smp_set_t *set = &SMP_SETS[si];
+
         for (i = 0; i < set->nz; i++)
             if (v->note >= SMP_ZONES[set->z0 + i].lo && v->note <= SMP_ZONES[set->z0 + i].hi) zi = set->z0 + i;
         *(v->s + 4) = (int32_t)(zi == 0xFFFFu ? set->z0 : zi);
