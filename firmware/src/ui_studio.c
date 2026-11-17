@@ -238,12 +238,15 @@ UI_SMALL static void loop_pos(const track_t *t, char *b)
 /* the header of the live screens: BPM, transport, loop position, beat lights, inverted white when REC armed */
 UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, int32_t sect)
 {
-    char b[12];
+    char b[12], nb[8];
     uint32_t beat = clk_beat, k, playing = song.playing, armed = (song.rec != 0) || (rec_wait != 0);
+    uint32_t mst = (uint32_t)clamp(song.g[G_MASTER] * 100 / 127, 0, 100);
+    const char *clk_s = song.g[G_CLKSRC] == 1 ? "USB" : song.g[G_CLKSRC] == 2 ? "MIDI" : "INT";
     uint16_t bg = armed ? C_WHITE : C_BLACK;
     uint16_t fg = armed ? C_BLACK : C_WHITE;
-    uint32_t sig = studio_hash((uint32_t)song.g[G_BPM] * 7u + playing * 3u + armed * 1999u +
-                               (playing ? beat * 131u + TSEL->seq_idx * 7919u : 0u) + (uint32_t)song.g[G_CLOCK] * 77u +
+    uint16_t dim = armed ? TE_G3 : TE_G2;
+    uint32_t sig = studio_hash((uint32_t)song.g[G_BPM] * 7u + playing * 3u + armed * 1999u + mst * 53u +
+                               (playing ? beat * 131u + TSEL->seq_idx * 7919u : 0u) + (uint32_t)song.g[G_CLKSRC] * 77u +
                                arrangement_enabled * 5u + (ui.bpm_t != 0) * 104729u + song.solo * 37u, title);
     sig = sig * 31u + tc;
     sig = sig * 31u + (uint32_t)(sect + 1) * 211u;
@@ -252,37 +255,38 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     *cache = sig;
     cv_begin(240, 40, bg);
     fmt_int(b, song.g[G_BPM]);
-    cv_text(4, 4, &FONT_L, b, armed ? C_BLACK : (ui.bpm_t ? C_WHITE : TE_G4));
-    cv_text(4 + text_w(&FONT_L, b) + 4, 20, &FONT_S, "bpm", armed ? C_BLACK : TE_G3);
-    te_play_icon(104, 6, (int)playing);
-    if (playing) {                                     /* bar.beat in the selected track's loop */
-        loop_pos(TSEL, b);
-        cv_text(122, 5, &FONT_S, b, fg);
-    } else {
-        cv_text(122, 5, &FONT_S, arrangement_enabled ? "song" : "loop", armed ? C_BLACK : TE_G3);
-    }
-    for (k = 0; k < 4u; k++)                           /* the four beats of the bar */
-        cv_rect(104 + (int32_t)k * 9, 26, 7, 7,
-                playing && beat % 4u == k ? (k ? fg : TE_RED) : (armed ? TE_G3 : TE_G2));
+    cv_text(4, 3, &FONT_L, b, fg);
+    cv_text(4 + text_w(&FONT_L, b) + 3, 18, &FONT_S, "BPM", armed ? C_BLACK : TE_G3);
+    te_play_icon(88, 5, (int)playing);
     if (armed) {
-        te_disc(224, 12, 8, TE_RED);
-        cv_text(172, 4, &FONT_S, song.rec ? "REC" : "ARM", C_BLACK);
-        if (song.g[G_CLOCK] != 0)
-            cv_text(168, 22, &FONT_S, "click", C_BLACK);
+        cv_text(104, 4, &FONT_S, song.rec ? "REC" : "ARM", C_BLACK);
+    } else if (playing) {
+        loop_pos(TSEL, b);
+        cv_text(104, 4, &FONT_S, b, fg);
     } else {
-        int32_t tx = 240 - text_w(&FONT_S, title) - 4;
-        cv_text(tx, 5, &FONT_S, title, tc);
-        if (sect >= 0) {                               /* which section (A..D) is playing */
-            char sb[2] = {(char)('A' + (sect & 3)), 0};
-            int32_t bw = text_w(&FONT_S, sb) + 8, bx = tx - bw - 6;
-            cv_rect(bx, 3, bw, 14, playing ? HUD_ACCENT : TE_DIM[sect & 3]);
-            cv_text(bx + 4, 5, &FONT_S, sb, C_BLACK);
+        cv_text(104, 4, &FONT_S, "STOP", TE_G3);
+    }
+    for (k = 0; k < 4u; k++)
+        cv_rect(88 + (int32_t)k * 9, 24, 7, 7,
+                playing && beat % 4u == k ? (k ? fg : HUD_ACCENT) : dim);
+    str_cpy(b, "MST ", sizeof b);
+    fmt_int(nb, (int32_t)mst);
+    str_cpy(b + 4, nb, sizeof b - 4);
+    str_cpy(b + str_len(b), "%", sizeof b - str_len(b));
+    cv_text(236 - text_w(&FONT_S, b), 4, &FONT_S, b, fg);
+    {
+        int32_t rx = 236 - text_w(&FONT_S, clk_s);
+        cv_text(rx, 21, &FONT_S, clk_s, armed ? C_BLACK : HUD_ACCENT);
+        if (sect >= 0) {
+            char sb[2] = {(char)('A' + (sect % 6)), 0};
+            int32_t bw = text_w(&FONT_S, sb) + 6, bx = rx - bw - 5;
+            cv_rect(bx, 20, bw, 13, armed ? C_BLACK : HUD_ACCENT);
+            cv_text(bx + 3, 21, &FONT_S, sb, armed ? C_WHITE : C_BLACK);
         }
-        if (song.solo)
-            cv_text(236 - text_w(&FONT_S, "solo"), 22, &FONT_S, "solo", C_WHITE);
     }
     cv_rect(0, 39, 240, 1, armed ? C_BLACK : HUD_ACCENT);
     cv_blit(0, 0);
+
 }
 /* --------------------------------------------------------------- TRACKS --- */
 /* swing, MPC style: "62%" */
