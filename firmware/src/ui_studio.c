@@ -343,26 +343,29 @@ UI_SMALL static void studio_tracks_draw(void)
             char n[2] = {(char)('1' + i), 0};
             cv_text(10, (row_h - 14) / 2, &FONT_S, n, (selected || locked) ? C_BLACK : C_WHITE);
         }
-
         cv_text(32, 1, &FONT_S, b, selected ? C_WHITE : TE_G4);
-        if (32 + text_w(&FONT_S, b) + 6 + text_w(&FONT_S, e) < 196)
-            cv_text(32 + text_w(&FONT_S, b) + 6, 1, &FONT_S, e, selected ? acc : TE_G3);
+        if (32 + text_w(&FONT_S, b) + 4 + text_w(&FONT_S, e) < 182)
+            cv_text(32 + text_w(&FONT_S, b) + 4, 1, &FONT_S, e, selected ? acc : TE_G3);
         if (rec) {
-            cv_rect(200, 2, 36, 13, TE_RED);
-            cv_text(206, 1, &FONT_S, "rec", C_WHITE);
+            cv_rect(186, 2, 50, 12, C_WHITE);
+            cv_text(199, 1, &FONT_S, "REC", C_BLACK);
         } else if (solo) {
-            cv_rect(200, 2, 36, 13, C_WHITE);
-            cv_text(202, 1, &FONT_S, "solo", C_BLACK);
+            cv_rect(186, 2, 50, 12, C_WHITE);
+            cv_text(196, 1, &FONT_S, "SOLO", C_BLACK);
         } else if (silent) {
-            cv_text(204, 1, &FONT_S, "mute", TE_G3);
+            cv_text(204, 1, &FONT_S, "MUTE", TE_G3);
+        } else {
+            char pb = {(char)('A' + ((sect >= 0 ? sect : 0) % 6)), 0};
+            cv_rect(222, 2, 14, 12, selected ? acc : TE_G1);
+            cv_text(225, 1, &FONT_S, pb, selected ? C_BLACK : C_WHITE);
         }
-        for (j = 0; j < 16u; j++) {                    /* the 16 steps in view */
+        for (j = 0; j < 16u; j++) {
             uint32_t p = bank * 16u + j, on = 0;
             if (!has_trk) {
                 on = 1u;
             } else if (len <= 16u) {
                 if (p < len) on = trk_step_on(t, p) ? 2u : 1u;
-            } else {                                    /* > 16 and stopped: the whole pattern, folded */
+            } else {
                 uint32_t a = j * len / 16u, z = (j + 1u) * len / 16u, k;
                 if (song.playing) {
                     if (p < len) on = trk_step_on(t, p) ? 2u : 1u;
@@ -376,7 +379,7 @@ UI_SMALL static void studio_tracks_draw(void)
             if (has_trk && song.playing && p == pos)
                 cv_rect(32 + (int32_t)j * 10, row_h - 3, 8, 2, C_WHITE);
         }
-        {   /* AUDILUNE Block 1: Stippled textured audio level meter with cosmological ticks */
+        {
             int32_t mw = silent ? 0 : (int32_t)level * 38 / 127, mx;
             cv_rect(198, row_h - 10, 38, 5, TE_G1);
             cv_rect(198, row_h - 12, 1, 2, TE_G3);
@@ -387,7 +390,11 @@ UI_SMALL static void studio_tracks_draw(void)
         }
         cv_blit(0, 41u + i * (uint32_t)row_h);
     }
-    (void)footer;
+    {
+        static const char *const HUD_L = {"BPM", "CLICK", "VAL", "OPT"};
+        static const char *const HUD_V = {"", "", "", ""};
+        audilune_hud_bar(HUD_L, HUD_V, sect, &footer);
+    }
 }
 
 /* ---------------------------------------------------------------- DRUMS --- */
