@@ -1005,6 +1005,7 @@ UI_SMALL static void ui_timers(void)
 
 static void vis_draw(void);
 static int vis_shown(void);
+static void audilune_page_draw(void);
 static uint8_t vis_on, vis_shown_last, vis_name_t;
 UI_SMALL static void ui_draw(void)
 {
@@ -1012,6 +1013,7 @@ UI_SMALL static void ui_draw(void)
     pads_tick();
     if (rec_go) {
         rec_go = 0;
+
         ui_message("RECORDING");
     }
     if (ft_bars) {
