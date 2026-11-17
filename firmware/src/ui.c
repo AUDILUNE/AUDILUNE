@@ -588,6 +588,7 @@ UI_SMALL static void page_fix(void)
 
 UI_SMALL static void go_home(void)
 {
+    ui.scr = UI_LIVE;
 #if FELUCCA_ARRANGER
     ui.home = 0;
     ui.page = (uint8_t)page_first(FAM_TRK);
@@ -604,8 +605,8 @@ UI_SMALL static void go_home(void)
 /* LIVE: no factory sequence patterns. Loading a sound (factory or user preset) never
  * writes the sequencer: every pattern is the one the player records or enters. */
 
-/* the parts' sounds at power-on (engine, preset): bass, pad, lead */
-static const uint8_t TRK_DEF[NPART][2] = {{0, 0}, {1, 0}, {4, 5}};   /* ANALOG 808 BOOM, DIGITAL RHODES, SAMPLE LOFI FLUTE */
+/* AUDILUNE 6 unrestricted tracks at power-on (engine, preset) */
+static const uint8_t TRK_DEF[NPART][2] = {{0, 0}, {1, 0}, {4, 5}, {6, 0}, {8, 0}, {0, 1}};
 UI_SMALL static uint32_t trk_def_engine(uint32_t i) { return i < NPART ? TRK_DEF[i][0] : 0u; }
 
 UI_SMALL static int seq_is_empty(const track_t *t) { return track_empty(t); }
