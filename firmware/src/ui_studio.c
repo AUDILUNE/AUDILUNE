@@ -996,28 +996,40 @@ static const char *const AL_SCALE_NAMES[22] = {
     "HIRAJOSHI", "IN-SEN", "PHRYG DOM", "DBL HARM", "WHOLE TONE", "DIM H-W",
     "PROMETHEUS", "ENIGMATIC", "TRITONE HEX", "LUNAR ECLPS"
 };
-static const uint16_t AL_SCALE_MASKS[22] = {
-    0x0FFF, 0x0AB5, 0x05AD, 0x09AD, 0x0AAD, 0x06AD,
-    0x05AB, 0x0AD5, 0x06B5, 0x0295, 0x04A9, 0x04E9,
-    0x0193, 0x04A3, 0x05B3, 0x09B3, 0x0555, 0x096D,
-    0x0655, 0x09D3, 0x04D3, 0x0463
-};
-static const char *const AL_EDIT_ROWS[16] = {
+static const char *const AL_EDIT_ROWS[14 + 2] = {
     "COPY", "PASTE", "DUPLICATE", "CLEAR", "QUANTIZE", "HUMANIZE",
     "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY", "RATCHET",
     "REVERSE", "ROOT NOTE", "SCALE TYPE", "CHOP MODE"
 };
-static const char *const AL_ENV_ROWS[4] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
-static const char *const AL_LFO_ROWS[4] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
-static const char *const AL_GLO_ROWS[6] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "SCALE LOCK"};
-static const char *const AL_NOTE_NAMES[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-static const char *const AL_CHOP_MODES[5] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
-static uint8_t al_fx_sub[10], al_fx_val[10], al_chop_chrom;
-UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
-UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
+static const char *const AL_ENV_ROWS[2 + 2] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
+static const char *const AL_LFO_ROWS[2 + 2] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
+static const char *const AL_GLO_ROWS[3 + 3] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "SCALE LOCK"};
+static const char *const AL_NOTE_NAMES[6 + 6] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+static const char *const AL_CHOP_MODES[3 + 2] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
+static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
+UI_SMALL static void audilune_hud_text(const char *prefix, const char *value)
+{
+    char b[36];
+    uint32_t p;
+    str_cpy(b, prefix, sizeof b);
+    p = str_len(b);
+    if (p + 2u < sizeof b) { b[p++] = ':'; b[p++] = ' '; b[p] = 0; }
+    str_cpy(b + p, value, sizeof b - p);
+    ui_message(b);
+}
+UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit)
+{
+    char vb[16];
+    uint32_t p;
+    fmt_int(vb, val);
+    p = str_len(vb);
+    str_cpy(vb + p, unit, sizeof vb - p);
+    audilune_hud_text(label, vb);
+}
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
+
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
     if (scr == UI_EDIT) return 16u;
     if (scr == UI_GLO || scr == UI_SAVE || scr == UI_ARP || scr == UI_SEQ) return 6u;
