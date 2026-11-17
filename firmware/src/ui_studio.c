@@ -1012,8 +1012,6 @@ static const char *const AL_GLO_ROWS[6] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE
 static const char *const AL_NOTE_NAMES[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[5] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub, al_fx_val, al_chop_chrom;
-
-
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
@@ -1023,4 +1021,48 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_CHOP_SRC) return 3u;
     if (scr == UI_CHOP_WAVE) return 17u;
     return 0u;
+}
+
+UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
+{
+    uint32_t rows = audilune_page_rows(ui.scr);
+    uint32_t row = rows ? (uint32_t)ui.list_sel % rows : 0u;
+    track_t *t = TSEL;
+    if (k < 2u || !rows)
+        return;
+    ui.hot_col = (uint8_t)k;
+    ui.hot_t = 40;
+    if (ui.scr == UI_FX) {
+        if (k == 3u) {
+            *(al_fx_sub + row) = (uint8_t)((*(al_fx_sub + row) + (s > 0 ? 1u : 7u)) & 7u);
+            audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
+        } else {
+            int32_t nv = clamp((int32_t)(*(al_fx_val + row)) + s * 4, 0, 110);
+            *(al_fx_val + row) = (uint8_t)nv;
+            audilune_hud_popup(*(AL_FX_ROWS + row), nv, "%");
+        }
+    } else if (ui.scr == UI_ENV && k == 2u) {
+        uint32_t pid = P_ATK + row;
+        *(t->p + pid) = (int16_t)clamp(*(t->p + pid) + s * 3, 0, 127);
+        audilune_hud_popup(*(AL_ENV_ROWS + row), *(t->p + pid) * 100 / 127, "%");
+    } else if (ui.scr == UI_LFO) {
+        static const uint32_t LFO_P[4] = {P_LWAVE, P_LRATE, P_LDEPTH, P_LDEST};
+        uint32_t pid = *(LFO_P + row);
+        *(t->p + pid) = (int16_t)clamp(*(t->p + pid) + s * (k == 2u ? 3 : 1), 0, 127);
+        audilune_hud_popup(*(AL_LFO_ROWS + row), *(t->p + pid), "");
+    } else if (ui.scr == UI_EDIT) {
+        if (row == 13u) {
+            int32_t nr = (*(t->p + P_ROOT) + (s > 0 ? 1 : 11)) % 12;
+            *(t->p + P_ROOT) = (int16_t)nr;
+            audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
+        } else if (row == 14u) {
+            int32_t ns = (*(t->p + P_SCALE) + (s > 0 ? 1 : 21)) % 22;
+            *(t->p + P_SCALE) = (int16_t)ns;
+            audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
+        } else if (row == 15u) {
+            al_chop_chrom = (uint8_t)(!al_chop_chrom);
+            audilune_hud_text("CHOP MODE", al_chop_chrom ? "CHROMATIC" : "KIT");
+        }
+    }
+    ui.force = 1;
 }
