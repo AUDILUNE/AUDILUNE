@@ -300,6 +300,7 @@ UI_SMALL static void swing_str(char *b, int32_t v)            /* 0 straight .. 1
 UI_SMALL static void studio_tracks_draw(void)
 {
     static uint32_t head, rows[6], footer;
+    static const char *const GEN_SHORT[6] = {"AMBIENT", "DOWNTMP", "GLITCH", "PUNCHY", "EXPERIM", "INDUST"};
     uint32_t i, j, disp_trks = NTRK < 6u ? 6u : NTRK;
     int32_t row_h = (int32_t)(172u / disp_trks);
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
@@ -309,40 +310,40 @@ UI_SMALL static void studio_tracks_draw(void)
         track_t *t = has_trk ? &trk[i] : &trk[0];
         char b[24], e[16];
         uint32_t selected = song.sel == i;
-        uint32_t len = has_trk ? (uint32_t)clamp(t->p[P_SLEN], 1, 64) : 16u;
-        uint32_t level = !has_trk ? 0u : (i == TRK_DRUM ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
+        uint32_t locked = (ui.sel_trk_mask >> i) & 1u;
+        uint32_t len = has_trk ? (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP) : 16u;
+        uint32_t level = !has_trk ? 0u : (i == TRK_DRUM && !t->synth_mode ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
         uint32_t silent = !has_trk || trk_silent(t) || !level;
         uint32_t pos = has_trk ? (t->seq_idx % len) : 0u;
         uint32_t rec = has_trk ? ((song.rec >> i) & 1u) : 0u;
         uint32_t solo = has_trk ? ((song.solo >> i) & 1u) : 0u;
         uint32_t bank = song.playing ? pos / 16u : 0u, h;
+        uint8_t gidx = ui.algo_genre[i] % 6u;
         uint16_t acc = HUD_ACCENT;
         if (!has_trk) {
-            str_cpy(b, "SLOT ", sizeof b);
-            b[5] = (char)('1' + i);
-            b[6] = 0;
-            str_cpy(e, "open", sizeof e);
-        } else if (i == TRK_DRUM) {
+            str_cpy(b, "OPEN", sizeof b);
+            str_cpy(e, "AMBIENT", sizeof e);
+        } else if (i == TRK_DRUM && !t->synth_mode) {
             str_cpy(b, DRUM_KIT_NAMES[drum_kit()], sizeof b);
-            te_lower(e, "drums", sizeof e);
+            str_cpy(e, GEN_SHORT[gidx], sizeof e);
         } else {
             trk_short_name(i, b);
-            te_lower(e, ENGINES[t->eng_req % NENGINES]->name, sizeof e);
+            str_cpy(e, GEN_SHORT[gidx], sizeof e);
         }
-        b[13] = 0;
-        h = studio_hash(selected + level * 7u + silent * 997u + rec * 1999u + solo * 4999u + len * 37u +
-                        song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b);
+        b[11] = 0;
+        h = studio_hash(selected + locked * 31u + gidx * 17u + level * 7u + silent * 997u + rec * 1999u +
+                        solo * 4999u + len * 37u + song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b);
         if (has_trk)
             for (j = 0; j < len; j++) h = h * 31u + (uint32_t)trk_step_on(t, j);
         if (!ui.force && h == rows[i]) continue;
         rows[i] = h;
         cv_begin(240, (uint32_t)row_h, C_BLACK);
-        /* AUDILUNE Block 1 & 2: inverted white box with black text when selected; track numbers 1..6 */
-        cv_rect(2, 2, 24, row_h - 4, selected ? C_WHITE : TE_G1);
+        cv_rect(2, 2, 24, row_h - 4, (selected || locked) ? C_WHITE : TE_G1);
         {
             char n[2] = {(char)('1' + i), 0};
-            cv_text(10, (row_h - 14) / 2, &FONT_S, n, selected ? C_BLACK : C_WHITE);
+            cv_text(10, (row_h - 14) / 2, &FONT_S, n, (selected || locked) ? C_BLACK : C_WHITE);
         }
+
         cv_text(32, 1, &FONT_S, b, selected ? C_WHITE : TE_G4);
         if (32 + text_w(&FONT_S, b) + 6 + text_w(&FONT_S, e) < 196)
             cv_text(32 + text_w(&FONT_S, b) + 6, 1, &FONT_S, e, selected ? acc : TE_G3);
