@@ -1442,7 +1442,7 @@ UI_SMALL static void ui_input(void)
             go_home();
         }
         return;
-    } else if (!vis_on && !ui.home && !ui.menu && cur_page()->scope == SC_TRK && !rec_wait && !ft_on && !song.rec &&
+    } else if (!vis_on && ui.scr == UI_LIVE && !ui.menu && !rec_wait && !ft_on && !song.rec &&
                (fm1_ms - ui_input_ms) >= 60000u) {
         vis_open();
         return;
@@ -1450,10 +1450,18 @@ UI_SMALL static void ui_input(void)
     if ((s = panel_enc(EN_SELECT)) != 0 && !rec_wait && !ft_on) {
         ui_input_ms = fm1_ms;
         if (audilune_pit_latch) { int32_t p = clamp((int32_t)TSEL->p[P_TRANS] + s, -24, 24); TSEL->p[P_TRANS] = (int16_t)p; audilune_hud_popup("LIVE PITCH", p, " ST"); return; }
-        uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
-
-        track_select(next_trk);
-        audilune_hud_popup("TRACK", (int32_t)(next_trk + 1u), "");
+        if (ui.scr >= UI_FX) {
+            int32_t next_row = (int32_t)ui.list_sel + (s > 0 ? 1 : -1);
+            if (next_row < 0) next_row = 0;
+            ui.list_sel = (uint8_t)next_row;
+            if (ui.scr == UI_CHOP_WAVE)
+                ui.chop_sel = (uint8_t)(ui.list_sel > 0 ? (ui.list_sel - 1u) & 15u : 0u);
+            ui.force = 1;
+        } else {
+            uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
+            track_select(next_trk);
+            audilune_hud_popup("TRACK", (int32_t)(next_trk + 1u), "");
+        }
     }
 
     for (k = 0; k < 4u; k++) {
@@ -1467,7 +1475,8 @@ UI_SMALL static void ui_input(void)
             ui.hot_t = 40;
         }
 
-        if (ui.home) {
+        if (ui.home || k < 2u) {
+
             audilune_main_knobs(k, s);
         } else {
             edit_param(k, s);
