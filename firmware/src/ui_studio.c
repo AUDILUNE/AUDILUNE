@@ -1144,11 +1144,50 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         if (scr == UI_ARP) str_cpy(val, ((ui.sel_trk_mask >> row) & 1u) ? "MORPH" : "ANCHOR", 14);
         else { fmt_int(val, *(trk[row].p + P_SLEN)); str_cpy(val + str_len(val), " ST", 5); }
     } else if (scr == UI_CHOP_SRC) {
-        static const char *const SRC_L[3] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
+        static const char *const SRC_L = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
         str_cpy(lbl, *(SRC_L + row), 18);
         fmt_int(val, (int32_t)ui.chop_src_idx + 1);
     } else if (scr == UI_CHOP_WAVE) {
         if (row == 0u) { str_cpy(lbl, "MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
         else { str_cpy(lbl, "CHOP ", 18); fmt_int(lbl + 5, (int32_t)row); str_cpy(val, ui.chop_trim == 1u ? "[" : ui.chop_trim == 2u ? "]" : "SLICE", 14); }
+    }
+}
+
+UI_SMALL static void audilune_page_draw(void)
+{
+    static uint32_t head, footer;
+    static const char *const TITLES = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP"};
+    uint32_t rows = audilune_page_rows(ui.scr);
+    uint32_t sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
+    int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
+    uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = (212u - y0) / 22u, top = sel >= vis ? sel - vis + 1u : 0u, i;
+    te_header(ui.scr >= UI_FX && ui.scr <= UI_CHOP_WAVE ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
+    if (ui.scr == UI_CHOP_WAVE) {
+        cv_begin(240, 52, C_BLACK);
+        cv_rect(2, 2, 236, 48, HUD_ACCENT);
+        cv_rect(3, 3, 234, 46, C_BLACK);
+        for (i = 0; i < 58u; i++) {
+            int32_t x = 6 + (int32_t)i * 4, h = 6 + (int32_t)(((i * 19u + 7u) % 17u) * 2u);
+            uint32_t sl = i * 16u / 58u;
+            cv_rect(x, 26 - h / 2, 2, h, sl == (ui.chop_sel & 15u) ? HUD_ACCENT : C_WHITE);
+            if ((i % 4u) == 0u) cv_rect(x, 4, 1, 44, TE_G2);
+        }
+        cv_blit(0, 42);
+    }
+    cv_begin(240, 212u - y0, C_BLACK);
+    for (i = 0; i < vis && (top + i) < rows; i++) {
+        uint32_t r = top + i;
+        int32_t y = (int32_t)i * 22;
+        char lbl, val;
+        audilune_row_text(ui.scr, r, lbl, val);
+        if (r == sel) cv_rect(2, y + 1, 236, 20, C_WHITE);
+        cv_text(8, y + 3, &FONT_S, lbl, r == sel ? C_BLACK : C_WHITE);
+        if (val) cv_text(232 - text_w(&FONT_S, val), y + 3, &FONT_S, val, r == sel ? C_BLACK : HUD_ACCENT);
+    }
+    cv_blit(0, y0);
+    {
+        static const char *const HUD_L = {"BPM", "CLICK", "VAL", "OPT"};
+        static const char *const HUD_V = {"", "", "", ""};
+        audilune_hud_bar(HUD_L, HUD_V, sect, &footer);
     }
 }
