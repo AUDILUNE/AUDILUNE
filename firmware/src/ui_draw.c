@@ -1091,28 +1091,9 @@ UI_SMALL static void ui_draw(void)
         ui.force = 0;
         return;
     }
-    if (ui.home || cur_page()->scope == SC_TRK) {
-        studio_tracks_draw();
-        draw_foot();
-        ui_timers();
-        ui.force = 0;
-        return;
-    }
-    if (on_drum_page()) {
-        drum_screen_draw();
-        ui_timers();
-        ui.force = 0;
-        return;
-    }
-    cursor_fix();
-    if (ui.force)
-        draw_frame();
-    felucca_dbg.stage = 3;
-    draw_head();
-    felucca_dbg.stage = 4;
-    draw_columns();
-    felucca_dbg.stage = 5;
-    draw_graph();
+    studio_tracks_draw();
+    draw_foot();
+
     ui_timers();
     felucca_dbg.stage = 6;
     draw_foot();
