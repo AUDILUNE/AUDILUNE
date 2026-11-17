@@ -323,11 +323,11 @@ UI_SMALL static int32_t accel(uint32_t role, int32_t s, int32_t range)
     return s * (int32_t)m;
 }
 
-/* AUDILUNE Main Layer Knobs (Play & Edit base layer):
- * KNOB 1: Global Tempo (BPM)
- * KNOB 2: Active Track DJ Filter (LP <- OFF -> HP)
- * KNOB 3: Active Track Volume (0% = MUTE)
- * KNOB 4: Global Metronome / Click Volume (0% = OFF) */
+/* AUDILUNE v2.3 Main Layer Knobs (Live Play Page):
+ * Knob 1: Global Tempo (BPM)
+ * Knob 2: Metronome Volume (0% mute to 100% full)
+ * Knob 3: Active Track Volume (0% mute to 100% full)
+ * Knob 4: Pattern A-F navigation */
 UI_SMALL static void audilune_main_knobs(uint32_t slot, int32_t steps)
 {
     track_t *t = TSEL;
@@ -339,14 +339,12 @@ UI_SMALL static void audilune_main_knobs(uint32_t slot, int32_t steps)
         break;
     }
     case 1: {
-        int32_t v = clamp((int32_t)t->p[P_FILT] + accel(EN_K2, steps, 100), -50, 50);
-        t->p[P_FILT] = (int16_t)v;
+        int32_t v = clamp((int32_t)song.g[G_CLICK] + accel(EN_K2, steps, 100), 0, 100);
+        song.g[G_CLICK] = (int16_t)v;
         if (v == 0)
-            audilune_hud_text("DJ FILTER", "OFF");
-        else if (v < 0)
-            audilune_hud_popup("LP FILTER", -v * 2, "%");
+            audilune_hud_text("METRONOME", "MUTE");
         else
-            audilune_hud_popup("HP FILTER", v * 2, "%");
+            audilune_hud_popup("METRONOME", v, "%");
         break;
     }
     case 2: {
@@ -356,9 +354,9 @@ UI_SMALL static void audilune_main_knobs(uint32_t slot, int32_t steps)
             int32_t v = clamp((int32_t)song.g[G_DRLVL] + accel(EN_K3, steps, 100), 0, 100);
             song.g[G_DRLVL] = (int16_t)v;
             if (v == 0)
-                audilune_hud_text("DRUM VOL", "MUTE");
+                audilune_hud_text("TRK VOL", "MUTE");
             else
-                audilune_hud_popup("DRUM VOL", v, "%");
+                audilune_hud_popup("TRK VOL", v, "%");
         } else {
             int32_t v = clamp((int32_t)t->p[P_LEVEL] + accel(EN_K3, steps, 100), 0, 100);
             t->p[P_LEVEL] = (int16_t)v;
@@ -371,18 +369,16 @@ UI_SMALL static void audilune_main_knobs(uint32_t slot, int32_t steps)
         break;
     }
     default: {
-        int32_t v = clamp((int32_t)song.g[G_CLICK] + accel(EN_K4, steps, 100), 0, 100);
-        song.g[G_CLICK] = (int16_t)v;
-        if (v == 0)
-            audilune_hud_text("CLICK", "OFF");
-        else
-            audilune_hud_popup("CLICK", v, "%");
+        char pat[2] = {(char)('A' + ((song.g[G_SLOT] - 1 + (steps > 0 ? 1 : 5)) % 6)), 0};
+        song.g[G_SLOT] = (int16_t)(((song.g[G_SLOT] - 1 + (steps > 0 ? 1 : 5)) % 6) + 1);
+        audilune_hud_text("PATTERN", pat);
         break;
     }
     }
 }
 
 UI_SMALL static void tracks_edit(uint32_t slot, int32_t steps)
+
 {
     audilune_main_knobs(slot, steps);
 }
