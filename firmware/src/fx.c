@@ -202,9 +202,11 @@ static uint32_t delay_samples(void)
 static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t *rev_in, int32_t *wet_l,
                      int32_t *wet_r, uint32_t n)
 {
-     uint32_t i, k, ti, dl = delay_samples();
-    int32_t max_dly_send = 0, max_rev_send = 0;
+    uint32_t i, k, ti, dl = delay_samples();
+    int32_t max_cho_send = 0, max_dly_send = 0, max_rev_send = 0;
     for (ti = 0; ti < NTRK; ti++) {
+        if (trk[ti].p[P_CHOR] > max_cho_send)
+            max_cho_send = trk[ti].p[P_CHOR];
         if (trk[ti].p[P_DLY] > max_dly_send)
             max_dly_send = trk[ti].p[P_DLY];
         if (trk[ti].p[P_REV] > max_rev_send)
@@ -228,9 +230,7 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
     }
     int32_t frnd = rev_frz ? 128 : 0;                  /* FREEZE: what is in the lines stays there (below: no
                                                          * loss, rounded to nearest; 0: as always, bit for bit) */
-
-    int32_t cdepth = song.g[G_CDEPTH] * 6;
-
+    int32_t cdepth = song.g[G_CDEPTH] * 6 + (max_cho_send > 127 ? (max_cho_send - 127) * 28 : 0);
     int32_t ca0, ca1, cb0, cb1, ma, mb, dca, dcb;
     const uint32_t L0 = REV_LINE[0] + REV_MOD + 2u, B1 = L0, B2 = B1 + REV_LINE[1], B3 = B2 + REV_LINE[2];
     {   /* the chorus' two read points (Q8 samples back) and line 0's extra length, at both ends of the block */
@@ -249,10 +249,11 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         /* chorus: two modulated short delays, 5..15 ms, the LFO half a turn apart: left and right move apart */
         cho_buf[fx.cho_w & (CHO_LEN - 1u)] = (int16_t)clamp(cho_in[i] >> 1, -32768, 32767);
         {
-              int32_t r0 = ca0 + dca * (int32_t)i, r1 = cb0 + dcb * (int32_t)i;
+            int32_t r0 = ca0 + dca * (int32_t)i, r1 = cb0 + dcb * (int32_t)i;
             uint32_t i0 = (uint32_t)r0 >> 8, i1 = (uint32_t)r1 >> 8;
             int32_t c0 = cho_buf[(fx.cho_w - i0) & (CHO_LEN - 1u)], c1 = cho_buf[(fx.cho_w - i0 - 1u) & (CHO_LEN - 1u)];
             int32_t d0 = cho_buf[(fx.cho_w - i1) & (CHO_LEN - 1u)], d1 = cho_buf[(fx.cho_w - i1 - 1u) & (CHO_LEN - 1u)];
+
             yl = (c0 + (((c1 - c0) * (r0 & 255)) >> 8)) << 1;
             yr = (d0 + (((d1 - d0) * (r1 & 255)) >> 8)) << 1;
         }
