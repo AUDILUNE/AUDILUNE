@@ -1187,8 +1187,8 @@ UI_SMALL static void audilune_page_draw(void)
     }
     cv_blit(0, y0);
     {
-        static const char *const HUD_L = {"BPM", "CLICK", "VAL", "OPT"};
-        static const char *const HUD_V = {"", "", "", ""};
+        static const char *const HUD_L[4] = {"BPM", "CLICK", "VAL", "OPT"};
+        static const char *const HUD_V[4] = {"", "", "", ""};
         audilune_hud_bar(HUD_L, HUD_V, sect, &footer);
     }
 }
