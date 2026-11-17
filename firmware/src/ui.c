@@ -170,10 +170,10 @@ UI_SMALL static void page_entered(void)
  * turned, and says whose it was. Every frame (ui_input) */
 UI_SMALL static void midi_chan_fix(void)
 {
-    static const uint8_t ID[4] = {G_CH1, G_CH2, G_CH3, G_DRCH};
-    static int16_t was[4] = {-1, -1, -1, -1};
+    static const uint8_t ID[NTRK] = {G_CH1, G_CH2, G_CH3, G_CH4, G_CH5, G_DRCH};
+    static int16_t was[NTRK] = {-1, -1, -1, -1, -1, -1};
     uint32_t k, j;
-    for (k = 0; k < 4u; k++) {
+    for (k = 0; k < NTRK; k++) {
         int32_t v = song.g[ID[k]], dir, owner = -1;
         if (was[k] < 0 || v == was[k] || !v) {
             was[k] = (int16_t)v;
@@ -182,7 +182,7 @@ UI_SMALL static void midi_chan_fix(void)
         dir = v > was[k] ? 1 : -1;
         for (;;) {
             int32_t o = -1;
-            for (j = 0; j < 4u; j++)
+            for (j = 0; j < NTRK; j++)
                 if (j != k && song.g[ID[j]] == v)
                     o = (int32_t)j;
             if (o < 0)
@@ -200,10 +200,12 @@ UI_SMALL static void midi_chan_fix(void)
             }
         }
         if (owner >= 0) {
-            char b[8];
+            char b[8], tmsg[12];
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, song.g[ID[k]]);
-            ui_say(b, owner == 3 ? " = DRUMS" : owner == 0 ? " = TRACK 1" : owner == 1 ? " = TRACK 2" : " = TRACK 3");
+            str_cpy(tmsg, " = TRACK 1", sizeof tmsg);
+            tmsg[9] = (char)('1' + owner);
+            ui_say(b, tmsg);
             song.g[ID[k]] = (int16_t)v;
         }
         was[k] = (int16_t)v;
@@ -212,7 +214,8 @@ UI_SMALL static void midi_chan_fix(void)
 
 UI_SMALL static int step_on(const step_t *st) { return st->time == ST_NOTE && st->n; }
 /* LEN (SLOOP 2.6, after Felucca 1.5 by Leo Kuroshita, Discussions #178, #173): a NOTE step's length is the step and
- * the TIE steps after it (inside LEN, no wrap); SEQ > STEP's KNOB 3 on a note sets it (ui_input.c step_edit). Longer:
+ * the TIE steps after it (inside LEN, no wrap); SEQ > STEP's KNOB 3 on a note sets it (ui_input.c step_edit). Longer: */
+
  * the steps after it become clean TIEs (a REST or an empty step; it stops at the next step holding notes, which stays,
  * and at LEN); shorter: its last TIEs become RESTs (one holding notes keeps them). The steps' locks and nudges stay;
  * the turns on one step are one undo (ui_input.c). Returns the length it got */
