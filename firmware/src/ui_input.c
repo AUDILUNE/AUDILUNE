@@ -1447,12 +1447,26 @@ UI_SMALL static void ui_input(void)
         ui.algo_genre[song.sel] = g;
         audilune_genre_idx = g;
         audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[g]);
-        ui.force = 1;
+          ui.force = 1;
     }
 
     if (vis_shown() && !rec_wait && !ft_on) {
         int32_t k_moved = 0;
-     } else if (!vis_on && ui.scr == UI_LIVE && !ui.menu && !rec_wait && !ft_on && !song.rec &&
+        if ((s = panel_enc(EN_SELECT)) != 0) {
+            ui_input_ms = fm1_ms;
+            ui.vis_style = (uint8_t)((ui.vis_style + (s > 0 ? 1u : 3u)) % 4u);
+            vis_select(s);
+        }
+        for (k = 0; k < 4u; k++)
+            if (panel_enc(EN_K1 + k) != 0)
+                k_moved = 1;
+        if (pressed || notes || k_moved) {
+            ui_input_ms = fm1_ms;
+            vis_on = 0;
+            go_home();
+        }
+        return;
+    } else if (!vis_on && ui.scr == UI_LIVE && !ui.menu && !rec_wait && !ft_on && !song.rec &&
                (fm1_ms - ui_input_ms) >= 60000u) {
         vis_open();
         return;
@@ -1515,7 +1529,37 @@ UI_SMALL static void panel_setup(void)
         draw_text_box(0, 80, 240, &FONT_S, "PRESS", C_GRAY, 1);
         draw_text_box(0, 100, 240, &FONT_L, B_NAME[i], C_WHITE, 1);
         t0 = fm1_ms;
-
+        while (!(p & ~used)) {
+            fm1_wdt_feed();
+            p |= fm1_input_edges(0);
+            if (fm1_ms - t0 > SETUP_IDLE_MS)
+                goto timeout;
+        }
+        for (id = 0; id < 14u; id++)
+            if (((p & ~used) >> id) & 1u)
+                break;
+        panel.btn[i] = (uint8_t)id;
+        used |= 1u << id;
+    }
+    used = 0;
+    for (i = 0; i < NE; i++) {
+        uint32_t e;
+        int32_t st = 0;
+        draw_text_box(0, 80, 240, &FONT_S, "TURN RIGHT", C_GRAY, 1);
+        draw_text_box(0, 100, 240, &FONT_L, E_NAME[i], C_WHITE, 1);
+        for (e = 0; e < 7u; e++)
+            fm1_enc_take(e);
+        t0 = fm1_ms;
+        for (;;) {
+            fm1_wdt_feed();
+            if (fm1_ms - t0 > SETUP_IDLE_MS)
+                goto timeout;
+            for (e = 0; e < 7u; e++)
+                if (!((used >> e) & 1u) && (st = fm1_enc_take(e)) != 0)
+                    break;
+            if (e < 7u)
+                break;
+        }
         panel.enc[i] = (uint8_t)e;
         panel.dir[i] = (int8_t)(st > 0 ? 1 : -1);
         used |= 1u << e;
