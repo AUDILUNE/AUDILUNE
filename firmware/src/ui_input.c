@@ -1452,62 +1452,70 @@ UI_SMALL static void ui_input(void)
 
     if (vis_shown() && !rec_wait && !ft_on) {
         int32_t k_moved = 0;
-        if ((s = panel_enc(EN_SELECT)) != 0) {
-            ui_input_ms = fm1_ms;
-            ui.vis_style = (uint8_t)((ui.vis_style + (s > 0 ? 1u : 3u)) % 4u);
-            vis_select(s);
-        }
-        for (k = 0; k < 4u; k++)
-            if (panel_enc(EN_K1 + k) != 0)
-                k_moved = 1;
-        if (pressed || notes || k_moved) {
-
-            ui_input_ms = fm1_ms;
-            vis_on = 0;
-            go_home();
-        }
+     } else if (!vis_on && ui.scr == UI_LIVE && !ui.menu && !rec_wait && !ft_on && !song.rec &&
+               (fm1_ms - ui_input_ms) >= 60000u) {
+        vis_open();
         return;
-    } else if (!vis_on && ui.scr == UI_LIVE && !ui.menu && !rec_wait && !ft_on && !song.rec &&
-         if (ui.home || k < 2u) {
+    }
+    if ((s = panel_enc(EN_SELECT)) != 0 && !rec_wait && !ft_on) {
+        ui_input_ms = fm1_ms;
+        if (audilune_pit_latch) { int32_t p = clamp((int32_t)TSEL->p[P_TRANS] + s, -24, 24); TSEL->p[P_TRANS] = (int16_t)p; audilune_hud_popup("LIVE PITCH", p, " ST"); return; }
+        if (ui.scr >= UI_FX) {
+            int32_t next_row = (int32_t)ui.list_sel + (s > 0 ? 1 : -1);
+            if (next_row < 0) next_row = 0;
+            ui.list_sel = (uint8_t)next_row;
+            if (ui.scr == UI_CHOP_WAVE)
+                ui.chop_sel = (uint8_t)(ui.list_sel > 0 ? (ui.list_sel - 1u) & 15u : 0u);
+            ui.force = 1;
+        } else {
+            uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
+            track_select(next_trk);
+            audilune_hud_popup("TRACK", (int32_t)(next_trk + 1u), "");
+        }
+    }
+
+    for (k = 0; k < 4u; k++) {
+        const page_t *pg = cur_page();
+        int16_t *hv;
+        if ((s = panel_enc(EN_K1 + k)) == 0)
+            continue;
+        if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
+            (pg->graph == GR_USER && k == 0u)) {
+            ui.hot_col = (uint8_t)k;
+            ui.hot_t = 40;
+        }
+
+        if (ui.home || k < 2u) {
             audilune_main_knobs(k, s);
         } else if (ui.scr >= UI_FX) {
             audilune_list_knob(k, s);
         } else {
             edit_param(k, s);
         }
-
-        t0 = fm1_ms;
-        while (!(p & ~used)) {
-            fm1_wdt_feed();
-            p |= fm1_input_edges(0);
-            if (fm1_ms - t0 > SETUP_IDLE_MS)
-                goto timeout;
-        }
-        for (id = 0; id < 14u; id++)
-            if (((p & ~used) >> id) & 1u)
-                break;
-        panel.btn[i] = (uint8_t)id;
-        used |= 1u << id;
     }
-    used = 0;
-    for (i = 0; i < NE; i++) {
-        uint32_t e;
-        int32_t st = 0;
-        draw_text_box(0, 80, 240, &FONT_S, "TURN RIGHT", C_GRAY, 1);
-        draw_text_box(0, 100, 240, &FONT_L, E_NAME[i], C_WHITE, 1);
-        for (e = 0; e < 7u; e++)
-            fm1_enc_take(e);
+}
+
+/* ---------------------------------------------------- panel setup --- */
+#define SETUP_IDLE_MS 30000u
+UI_SMALL static void panel_setup(void)
+{
+    uint32_t i, used = 0, t0 = fm1_ms;
+    const panel_t old = panel;
+    lcd_fill(0, 0, 240, 240, C_BLACK);
+    draw_text_box(0, 10, 240, &FONT_S, "HARDWARE CALIBRATION", C_WHITE, 1);
+    draw_text_box(0, 30, 240, &FONT_S, "TEACH EACH BUTTON AND KNOB", C_GRAY, 1);
+    while (fm1_in.buttons) {
+        fm1_wdt_feed();
+        if (fm1_ms - t0 > SETUP_IDLE_MS)
+            goto timeout;
+    }
+    fm1_input_edges(0);
+    for (i = 0; i < NB; i++) {
+        uint32_t p = 0, id;
+        draw_text_box(0, 80, 240, &FONT_S, "PRESS", C_GRAY, 1);
+        draw_text_box(0, 100, 240, &FONT_L, B_NAME[i], C_WHITE, 1);
         t0 = fm1_ms;
-        for (;;) {
-            fm1_wdt_feed();
-            if (fm1_ms - t0 > SETUP_IDLE_MS)
-                goto timeout;
-            for (e = 0; e < 7u; e++)
-                if (!((used >> e) & 1u) && (st = fm1_enc_take(e)) != 0)
-                    break;
-            if (e < 7u)
-                break;
-        }
+
         panel.enc[i] = (uint8_t)e;
         panel.dir[i] = (int8_t)(st > 0 ? 1 : -1);
         used |= 1u << e;
