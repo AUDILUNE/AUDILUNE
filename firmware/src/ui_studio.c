@@ -1066,9 +1066,10 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("CHOP MODE", al_chop_chrom ? "CHROMATIC" : "KIT");
         }
     } else if (ui.scr == UI_GLO) {
+        static uint8_t audilune_theme_idx;
         if (row == 0u) {
-            ui.theme = (uint8_t)((ui.theme + (s > 0 ? 1u : 7u)) & 7u);
-            audilune_hud_popup("THEME", (int32_t)ui.theme + 1, "");
+            audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
+            audilune_hud_popup("THEME", (int32_t)audilune_theme_idx + 1, "");
         } else if (row == 3u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
@@ -1076,6 +1077,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     } else if (ui.scr == UI_SAVE) {
         if (ui.chop_mode != 0xFF && ui.list_top == 1u) {
             if (row == 0u) {
+
                 ui.chop_save_usr = (uint8_t)((ui.chop_save_usr + (s > 0 ? 1u : 6u)) % 7u);
                 audilune_hud_popup("VAULT USR", (int32_t)ui.chop_save_usr, "");
             } else {
