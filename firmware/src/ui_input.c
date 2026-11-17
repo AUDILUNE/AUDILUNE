@@ -1299,20 +1299,45 @@ UI_SMALL static void ui_input(void)
         return;
     }
 #endif
-    if (home == BT_TAP) {
-        if (ui.scr != UI_LIVE || vis_on) {
+     {
+        static uint8_t home_cyc = 0;
+        if (pressed && home != BT_TAP)
+            home_cyc = 0;
+        if (home == BT_TAP) {
+            static const uint8_t CYCLE[] = {
+                UI_LIVE, UI_VIS, UI_FX, UI_ENV, UI_LFO, UI_EDIT,
+                UI_GLO, UI_SAVE, UI_ARP, UI_SEQ, UI_CHOP_SRC, UI_CHOP_WAVE
+            };
+            static const char *const NAMES[] = {
+                "LIVE PLAY", "VISUALIZER", "EFFECTS", "ENVELOPE", "LFO", "EDIT PAGE",
+                "GLOBAL", "SAVE VAULT", "ARP PAGE", "SEQ PAGE", "CHOP SOURCE", "CHOP SHOP"
+            };
+            uint32_t idx = 0, i;
+            if (ui.scr != UI_LIVE && !home_cyc) {
+                idx = 0;
+                home_cyc = 1;
+            } else {
+                for (i = 0; i < 12u; i++) {
+                    if (CYCLE[i] == ui.scr) { idx = (i + 1u) % 12u; break; }
+                }
+                home_cyc = 1;
+            }
             vis_on = 0;
-            go_home();
-            ui_message("LIVE PLAY");
-        } else {
-            ui.scr = UI_VIS;
-            vis_open();
-            ui_message("VISUALIZER");
+            if (idx == 0u) {
+                go_home();
+            } else if (idx == 1u) {
+                ui.scr = UI_VIS;
+                vis_open();
+            } else {
+                ui.scr = CYCLE[idx];
+            }
+            ui_message(NAMES[idx]);
+            ui.list_sel = 0;
+            ui.list_top = 0;
+            ui.force = 1;
         }
-        ui.list_sel = 0;
-        ui.list_top = 0;
-        ui.force = 1;
     }
+
     cursor_fix();
     if (on_notes_page()) {
         uint32_t ev, ob = 1u << panel.btn[B_OCTDN];
