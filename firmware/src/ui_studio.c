@@ -1056,14 +1056,53 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         if (row == 13u) {
             int32_t nr = (t->p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
             t->p[P_ROOT] = (int16_t)nr;
-            audilune_hud_text("ROOT", AL_NOTE_NAMES[nr]);
+            audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
         } else if (row == 14u) {
             int32_t ns = (t->p[P_SCALE] + (s > 0 ? 1 : 21)) % 22;
             t->p[P_SCALE] = (int16_t)ns;
-            audilune_hud_text("SCALE", AL_SCALE_NAMES[ns]);
+            audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
         } else if (row == 15u) {
             al_chop_chrom = (uint8_t)(!al_chop_chrom);
             audilune_hud_text("CHOP MODE", al_chop_chrom ? "CHROMATIC" : "KIT");
+        }
+    } else if (ui.scr == UI_GLO) {
+        if (row == 0u) {
+            ui.theme = (uint8_t)((ui.theme + (s > 0 ? 1u : 7u)) & 7u);
+            audilune_hud_popup("THEME", (int32_t)ui.theme + 1, "");
+        } else if (row == 3u) {
+            song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
+            audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
+        }
+    } else if (ui.scr == UI_SAVE) {
+        if (ui.chop_mode != 0xFF && ui.list_top == 1u) {
+            if (row == 0u) {
+                ui.chop_save_usr = (uint8_t)((ui.chop_save_usr + (s > 0 ? 1u : 6u)) % 7u);
+                audilune_hud_popup("VAULT USR", (int32_t)ui.chop_save_usr, "");
+            } else {
+                ui.chop_load_trk = (uint8_t)((ui.chop_load_trk + (s > 0 ? 1u : 6u)) % 7u);
+                audilune_hud_popup("LOAD TRK", (int32_t)ui.chop_load_trk, "");
+            }
+        } else {
+            ui.save_vault = (uint8_t)(row % 6u);
+            if (k == 3u) ui.save_op = (uint8_t)(!ui.save_op);
+            audilune_hud_text(ui.save_op ? "LOAD SLOT" : "SAVE SLOT", "READY");
+        }
+    } else if (ui.scr == UI_SEQ) {
+        if (k == 3u) {
+            int32_t nl = clamp(((int32_t)t->p[P_SLEN] / 16 + (s > 0 ? 1 : -1)) * 16, 16, NSTEP);
+            t->p[P_SLEN] = (int16_t)nl;
+            audilune_hud_popup("STEPS", nl, "");
+        }
+    } else if (ui.scr == UI_CHOP_SRC) {
+        ui.chop_src_type = (uint8_t)(row % 3u);
+        ui.chop_src_idx = (uint8_t)((ui.chop_src_idx + (s > 0 ? 1u : 6u)) % 7u);
+        audilune_hud_popup("SOURCE", (int32_t)ui.chop_src_idx, "");
+    } else if (ui.scr == UI_CHOP_WAVE) {
+        if (row == 0u && k == 3u) {
+            ui.chop_mode = (uint8_t)((ui.chop_mode + (s > 0 ? 1u : 4u)) % 5u);
+            audilune_hud_text("SLICE", *(AL_CHOP_MODES + ui.chop_mode));
+        } else if (row > 0u && k == 3u) {
+            audilune_hud_popup(ui.chop_trim == 1u ? "TRIM [" : ui.chop_trim == 2u ? "TRIM ]" : "NUDGE", s, "");
         }
     }
     ui.force = 1;
