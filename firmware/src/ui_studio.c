@@ -1109,3 +1109,46 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     }
     ui.force = 1;
 }
+
+UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, char *val)
+{
+    const track_t *t = TSEL;
+    lbl[0] = 0; val[0] = 0;
+    if (scr == UI_FX) {
+        str_cpy(lbl, *(AL_FX_ROWS + row), 18);
+        fmt_int(val, *(al_fx_val + row));
+        str_cpy(val + str_len(val), "%", 4);
+    } else if (scr == UI_ENV) {
+        str_cpy(lbl, *(AL_ENV_ROWS + row), 18);
+        fmt_int(val, *(t->p + P_ATK + row) * 100 / 127);
+        str_cpy(val + str_len(val), "%", 4);
+    } else if (scr == UI_LFO) {
+        static const uint32_t LFO_P[4] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+        str_cpy(lbl, *(AL_LFO_ROWS + row), 18);
+        fmt_int(val, *(t->p + *(LFO_P + row)));
+    } else if (scr == UI_EDIT) {
+        str_cpy(lbl, *(AL_EDIT_ROWS + row), 18);
+        if (row == 13u) str_cpy(val, *(AL_NOTE_NAMES + (*(t->p + P_ROOT) % 12)), 14);
+        else if (row == 14u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
+        else if (row == 15u) str_cpy(val, al_chop_chrom ? "CHROM" : "KIT", 14);
+    } else if (scr == UI_GLO) {
+        str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
+        if (row == 3u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
+    } else if (scr == UI_SAVE) {
+        str_cpy(lbl, "SLOT ", 18);
+        fmt_int(lbl + 5, (int32_t)row + 1);
+        str_cpy(val, ui.save_op ? "LOAD" : "SAVE", 14);
+    } else if (scr == UI_ARP || scr == UI_SEQ) {
+        str_cpy(lbl, "TRACK ", 18);
+        fmt_int(lbl + 6, (int32_t)row + 1);
+        if (scr == UI_ARP) str_cpy(val, ((ui.sel_trk_mask >> row) & 1u) ? "MORPH" : "ANCHOR", 14);
+        else { fmt_int(val, *(trk[row].p + P_SLEN)); str_cpy(val + str_len(val), " ST", 5); }
+    } else if (scr == UI_CHOP_SRC) {
+        static const char *const SRC_L[3] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
+        str_cpy(lbl, *(SRC_L + row), 18);
+        fmt_int(val, (int32_t)ui.chop_src_idx + 1);
+    } else if (scr == UI_CHOP_WAVE) {
+        if (row == 0u) { str_cpy(lbl, "MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
+        else { str_cpy(lbl, "CHOP ", 18); fmt_int(lbl + 5, (int32_t)row); str_cpy(val, ui.chop_trim == 1u ? "[" : ui.chop_trim == 2u ? "]" : "SLICE", 14); }
+    }
+}
