@@ -952,7 +952,7 @@ UI_SMALL static void rec_screen_draw(void)
     rec_rows(rt, 0u, 106u, &rows);
     {   /* the dials: how it records */
         static char v[3][10];
-        static const char *const LAB_E[4] = {"mode", "length", "start", "quant"};
+              static const char *const LAB_E[4] = {"mode", "length", "start", "quant"};
         static const char *const LAB_F[4] = {"mode", "", "", "quant"};
         static const char *const LAB_N[4] = {"", "length", "start", "quant"};
         static const char *const LAB_0[4] = {"", "", "", ""};
@@ -962,21 +962,21 @@ UI_SMALL static void rec_screen_draw(void)
         str_cpy(v[0], rec_tempo ? "tempo" : "free", sizeof v[0]);
         if (len % 16u == 0u) {
             fmt_int(v[1], (int32_t)(len / 16u));
-             str_cpy(v + str_len(v), len == 16u ? " bar" : " bars", 6);
+            str_cpy(v[1] + str_len(v[1]), len == 16u ? " bar" : " bars", 6);
         } else {
-            fmt_int(v, (int32_t)len);
-            str_cpy(v + str_len(v), " st", 4);
+            fmt_int(v[1], (int32_t)len);
+            str_cpy(v[1] + str_len(v[1]), " st", 4);
         }
-        str_cpy(v, rec_count ? "count" : "note", sizeof v);
-        ratio = rec_tempo ? 1000 : 0;
-        ratio = (int32_t)(len - 1u) * 1000 / 63;
-        ratio = rec_count ? 1000 : 0;
-        ratio = rec_quant_off ? 0 : 1000;
+        str_cpy(v[2], rec_count ? "count" : "note", sizeof v[2]);
+        ratio[0] = rec_tempo ? 1000 : 0;
+        ratio[1] = (int32_t)(len - 1u) * 1000 / 63;
+        ratio[2] = rec_count ? 1000 : 0;
+        ratio[3] = rec_quant_off ? 0 : 1000;
         {
             const char *const *lab = count ? LAB_0 : !empty ? LAB_N : free ? LAB_F : LAB_E;
             uint32_t k;
             for (k = 0; k < 4u; k++)
-                if (!lab[k])
+                if (!lab[k][0])
                     val[k] = "";
             te_dials(184, lab, val, ratio, rt * 7u + count * 3u, &dials);
         }
@@ -984,34 +984,35 @@ UI_SMALL static void rec_screen_draw(void)
 }
 
 /* ------------------------------------------- AUDILUNE 12-PAGE LISTS --- */
-static const char *const AL_FX_ROWS = {
+static const char *const AL_FX_ROWS[10] = {
     "TIME / GROOVE", "PITCH / FORMANT", "STUTTER / GLITCH", "GRANULAR / FRZ",
     "SPATIAL DELAY", "LUSH REVERB", "MOD / STEREO", "FILTER / EQ",
     "DRIVE / LO-FI", "PUNCH / DUCK"
 };
-static const char *const AL_SCALE_NAMES = {
+static const char *const AL_SCALE_NAMES[22] = {
     "CHROMATIC", "MAJOR", "NAT MINOR", "HARM MINOR", "MEL MINOR", "DORIAN",
     "PHRYGIAN", "LYDIAN", "MIXOLYDIAN", "MAJ PENT", "MIN PENT", "BLUES",
     "HIRAJOSHI", "IN-SEN", "PHRYG DOM", "DBL HARM", "WHOLE TONE", "DIM H-W",
     "PROMETHEUS", "ENIGMATIC", "TRITONE HEX", "LUNAR ECLPS"
 };
-static const uint16_t AL_SCALE_MASKS = {
+static const uint16_t AL_SCALE_MASKS[22] = {
     0x0FFF, 0x0AB5, 0x05AD, 0x09AD, 0x0AAD, 0x06AD,
     0x05AB, 0x0AD5, 0x06B5, 0x0295, 0x04A9, 0x04E9,
     0x0193, 0x04A3, 0x05B3, 0x09B3, 0x0555, 0x096D,
     0x0655, 0x09D3, 0x04D3, 0x0463
 };
-static const char *const AL_EDIT_ROWS = {
+static const char *const AL_EDIT_ROWS[16] = {
     "COPY", "PASTE", "DUPLICATE", "CLEAR", "QUANTIZE", "HUMANIZE",
     "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY", "RATCHET",
     "REVERSE", "ROOT NOTE", "SCALE TYPE", "CHOP MODE"
 };
-static const char *const AL_ENV_ROWS = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
-static const char *const AL_LFO_ROWS = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
-static const char *const AL_GLO_ROWS = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "SCALE LOCK"};
-static const char *const AL_NOTE_NAMES = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-static const char *const AL_CHOP_MODES = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
+static const char *const AL_ENV_ROWS[4] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
+static const char *const AL_LFO_ROWS[4] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
+static const char *const AL_GLO_ROWS[6] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "SCALE LOCK"};
+static const char *const AL_NOTE_NAMES[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+static const char *const AL_CHOP_MODES[5] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub, al_fx_val, al_chop_chrom;
+
 
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
