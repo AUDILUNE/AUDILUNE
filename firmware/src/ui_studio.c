@@ -240,13 +240,14 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
 {
     char b[12], nb[8];
     uint32_t beat = clk_beat, k, playing = song.playing, armed = (song.rec != 0) || (rec_wait != 0);
-    uint32_t mst = (uint32_t)clamp(song.g[G_MASTER] * 100 / 127, 0, 100);
-    const char *clk_s = song.g[G_CLKSRC] == 1 ? "USB" : song.g[G_CLKSRC] == 2 ? "MIDI" : "INT";
+    int32_t raw_lvl = song.sel == TRK_DRUM && !TDRUM->synth_mode ? song.g[G_DRLVL] : TSEL->p[P_LEVEL];
+    uint32_t mst = (uint32_t)clamp(raw_lvl * 100 / 127, 0, 100);
+    const char *clk_s = song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT";
     uint16_t bg = armed ? C_WHITE : C_BLACK;
     uint16_t fg = armed ? C_BLACK : C_WHITE;
     uint16_t dim = armed ? TE_G3 : TE_G2;
     uint32_t sig = studio_hash((uint32_t)song.g[G_BPM] * 7u + playing * 3u + armed * 1999u + mst * 53u +
-                               (playing ? beat * 131u + TSEL->seq_idx * 7919u : 0u) + (uint32_t)song.g[G_CLKSRC] * 77u +
+                               (playing ? beat * 131u + TSEL->seq_idx * 7919u : 0u) + (uint32_t)song.g[G_SYNC] * 77u +
                                arrangement_enabled * 5u + (ui.bpm_t != 0) * 104729u + song.solo * 37u, title);
     sig = sig * 31u + tc;
     sig = sig * 31u + (uint32_t)(sect + 1) * 211u;
@@ -283,6 +284,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
             cv_rect(bx, 20, bw, 13, armed ? C_BLACK : HUD_ACCENT);
             cv_text(bx + 3, 21, &FONT_S, sb, armed ? C_WHITE : C_BLACK);
         }
+
     }
     cv_rect(0, 39, 240, 1, armed ? C_BLACK : HUD_ACCENT);
     cv_blit(0, 0);
