@@ -1007,25 +1007,8 @@ static const char *const AL_GLO_ROWS[3 + 3] = {"COLOR THEME", "MIDI CH", "MIDI R
 static const char *const AL_NOTE_NAMES[6 + 6] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[3 + 2] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
-UI_SMALL static void audilune_hud_text(const char *prefix, const char *value)
-{
-    char b[36];
-    uint32_t p;
-    str_cpy(b, prefix, sizeof b);
-    p = str_len(b);
-    if (p + 2u < sizeof b) { b[p++] = ':'; b[p++] = ' '; b[p] = 0; }
-    str_cpy(b + p, value, sizeof b - p);
-    ui_message(b);
-}
-UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit)
-{
-    char vb[16];
-    uint32_t p;
-    fmt_int(vb, val);
-    p = str_len(vb);
-    str_cpy(vb + p, unit, sizeof vb - p);
-    audilune_hud_text(label, vb);
-}
+UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
+UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
