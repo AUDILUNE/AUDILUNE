@@ -1369,10 +1369,10 @@ UI_SMALL static void ui_input(void)
             break;
         }
         case B_ENV:
-            open_family(FAM_ENV);
+            audilune_toggle_scr(UI_ENV, FAM_ENV, "ENVELOPE");
             break;
         case B_LFO:
-            open_family(FAM_LFO);
+            audilune_toggle_scr(UI_LFO, FAM_LFO, "LFO");
             break;
         default:
             break;
@@ -1417,9 +1417,11 @@ UI_SMALL static void ui_input(void)
     }
 
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
+        uint8_t g = (uint8_t)((ui.algo_genre[song.sel] + (s > 0 ? 1u : AUDILUNE_GENRE_COUNT - 1u)) % AUDILUNE_GENRE_COUNT);
         ui_input_ms = fm1_ms;
-        audilune_genre_idx = (uint8_t)((audilune_genre_idx + (s > 0 ? 1u : AUDILUNE_GENRE_COUNT - 1u)) % AUDILUNE_GENRE_COUNT);
-        audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[audilune_genre_idx]);
+        ui.algo_genre[song.sel] = g;
+        audilune_genre_idx = g;
+        audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[g]);
         ui.force = 1;
     }
 
@@ -1427,12 +1429,14 @@ UI_SMALL static void ui_input(void)
         int32_t k_moved = 0;
         if ((s = panel_enc(EN_SELECT)) != 0) {
             ui_input_ms = fm1_ms;
+            ui.vis_style = (uint8_t)((ui.vis_style + (s > 0 ? 1u : 3u)) % 4u);
             vis_select(s);
         }
         for (k = 0; k < 4u; k++)
             if (panel_enc(EN_K1 + k) != 0)
                 k_moved = 1;
         if (pressed || notes || k_moved) {
+
             ui_input_ms = fm1_ms;
             vis_on = 0;
             go_home();
