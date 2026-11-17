@@ -1071,7 +1071,7 @@ UI_SMALL static void ui_draw(void)
         ui.force = 0;
         return;
     }
-    if (vis_shown()) {
+    if (ui.scr == UI_VIS || vis_shown()) {
         vis_draw();
         ui_timers();
         ui.force = 0;
@@ -1083,7 +1083,13 @@ UI_SMALL static void ui_draw(void)
         lcd_fill(0, 0, 240, 240, C_BLACK);
         ui.force = 1;
     }
-    if (!ui.home && cur_page()->scope == SC_TRK) {
+    if (ui.scr >= UI_FX) {
+        audilune_page_draw();
+        ui_timers();
+        ui.force = 0;
+        return;
+    }
+    if (ui.home || cur_page()->scope == SC_TRK) {
         studio_tracks_draw();
         draw_foot();
         ui_timers();
