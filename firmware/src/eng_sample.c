@@ -107,24 +107,71 @@ static void smp_user_scan(uint32_t k)
 static inline const smp_zone_t *smp_zone(uint32_t zi)
 {
     return zi < 0x8000u ? &SMP_ZONES[zi] : &usr_zone[(zi >> 5) & 7u][zi & 31u];
-    if (code & 1u)
-        vd += step >> 2;
-    v->s[0] = clamp(v->s[0] + ((code & 8u) ? -vd : vd), -32768, 32767);
-    v->s[1] = clamp(v->s[1] + IMA_IDX[code & 7u], 0, 88);
+}
+
+static inline int32_t sample_next(const smp_zone_t *z, voice_t *v, int loop)
+{
+    uint32_t pos = *(v->ph + 0), b = SMP_DATA[z->off + (pos >> 1)];
+    uint32_t code = (pos & 1u) ? (b >> 4) : (b & 15u);
+    int32_t step = IMA_STEP[(uint32_t)*(v->s + 1) <= 88u ? *(v->s + 1) : 88], vd = step >> 3;
+    if (code & 4u) vd += step;
+    if (code & 2u) vd += step >> 1;
+    if (code & 1u) vd += step >> 2;
+    *(v->s + 0) = clamp(*(v->s + 0) + ((code & 8u) ? -vd : vd), -32768, 32767);
+    *(v->s + 1) = clamp(*(v->s + 1) + IMA_IDX[code & 7u], 0, 88);
     pos++;
-    if (pos > z->le && z->looped && loop && (z->looped != SMP_LOOP_HELD || v->gate)) {   /* (HELD, let go: the tail) */
-        pos = z->ls;
-        v->s[0] = z->pred;
-        v->s[1] = z->idx;
+    if (pos > z->le && z->looped && loop && (z->looped != SMP_LOOP_HELD || v->gate)) {
+        pos = z->ls; *(v->s + 0) = z->pred; *(v->s + 1) = z->idx;
     }
-    v->ph[0] = pos;
-    return v->s[0];
+    *(v->ph + 0) = pos;
+    return *(v->s + 0);
 }
 
 static uint8_t audilune_chop_chromatic = 0;
 
-    int32_t d16 = clamp(m->pitch16 + p[P_E1] * 16 - z->root16, -1536, 1536);
-    uint32_t r = pow2_q16(d16), stepq = (r >> 8) * (z->rate >> 8);   /* Q16 samples per output */
+static void sample_note_on(track_t *t, voice_t *v)
+{
+    static const uint8_t WHITE_OFF[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 25, 26};
+    uint32_t si = (uint32_t)t->p[P_E0] % SMP_NALL, i, zi = 0xFFFFu;
+    if (si < SMP_NSETS) {
+        const smp_set_t *set = &SMP_SETS[si];
+        for (i = 0; i < set->nz; i++)
+            if (v->note >= SMP_ZONES[set->z0 + i].lo && v->note <= SMP_ZONES[set->z0 + i].hi) zi = set->z0 + i;
+        *(v->s + 4) = (int32_t)(zi == 0xFFFFu ? set->z0 : zi);
+    } else {
+        uint32_t k = si - SMP_NSETS;
+        if (usr_nz[k] == 1u) {
+            zi = 0x8000u | (k << 5); *(v->s + 4) = (int32_t)zi;
+        } else if (usr_nz[k] > 1u) {
+            if (audilune_chop_chromatic) {
+                zi = 0x8000u | (k << 5) | ((uint32_t)ui.chop_sel % usr_nz[k]);
+            } else {
+                int32_t rel = (int32_t)v->note - (53 + (int32_t)song.octave * 12);
+                for (i = 0; i < usr_nz[k] && i < 16u; i++)
+                    if (rel == (int32_t)*(WHITE_OFF + i)) { zi = 0x8000u | (k << 5) | i; break; }
+            }
+            *(v->s + 4) = (int32_t)(zi == 0xFFFFu ? 0 : zi);
+        } else if (SMP_NSETS > 0u) {
+            const smp_set_t *set = &SMP_SETS[(k * SMP_NSETS) / SMP_USER_SLOTS];
+            for (i = 0; i < set->nz; i++)
+                if (v->note >= SMP_ZONES[set->z0 + i].lo && v->note <= SMP_ZONES[set->z0 + i].hi) zi = set->z0 + i;
+            *(v->s + 4) = (int32_t)(zi == 0xFFFFu ? set->z0 : zi);
+        } else *(v->s + 4) = 0;
+    }
+    *(v->ph + 0) = 0; *(v->ph + 1) = 0; *(v->s + 0) = 0; *(v->s + 1) = 0;
+    *(v->s + 2) = *(v->s + 3) = 0; *(v->s + 5) = 0;
+    *(v->s + 6) = zi == 0xFFFFu; *(v->s + 7) = 0;
+}
+
+#ifndef SMP_STEP_MAX
+#define SMP_STEP_MAX (8u << 16)
+#endif
+static void sample_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+{
+    const int16_t *p = t->p;
+    const smp_zone_t *z = smp_zone((uint32_t)*(v->s + 4));
+    uint32_t i, frac = *(v->ph + 1);
+
     uint32_t lim = (pow2_q16(576) >> 8) * (z->rate >> 8);   /* the decode load bounded: 3 octaves up, or SMP_STEP_MAX
                                                          * source samples an output sample if that is more (a 16 kHz
                                                          * set, one zone: its pitch went flat 3 octaves over its root) */
