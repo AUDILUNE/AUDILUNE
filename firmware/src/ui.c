@@ -200,11 +200,11 @@ UI_SMALL static void midi_chan_fix(void)
             }
         }
         if (owner >= 0) {
-            char b[8], tmsg[12];
+            char b, tmsg;
             str_cpy(b, "CH ", sizeof b);
             fmt_int(b + 3, song.g[ID[k]]);
             str_cpy(tmsg, " = TRACK 1", sizeof tmsg);
-            tmsg[9] = (char)('1' + owner);
+            tmsg = (char)('1' + owner);
             ui_say(b, tmsg);
             song.g[ID[k]] = (int16_t)v;
         }
@@ -214,8 +214,7 @@ UI_SMALL static void midi_chan_fix(void)
 
 UI_SMALL static int step_on(const step_t *st) { return st->time == ST_NOTE && st->n; }
 /* LEN (SLOOP 2.6, after Felucca 1.5 by Leo Kuroshita, Discussions #178, #173): a NOTE step's length is the step and
- * the TIE steps after it (inside LEN, no wrap); SEQ > STEP's KNOB 3 on a note sets it (ui_input.c step_edit). Longer: */
-
+ * the TIE steps after it (inside LEN, no wrap); SEQ > STEP's KNOB 3 on a note sets it (ui_input.c step_edit). Longer:
  * the steps after it become clean TIEs (a REST or an empty step; it stops at the next step holding notes, which stays,
  * and at LEN); shorter: its last TIEs become RESTs (one holding notes keeps them). The steps' locks and nudges stay;
  * the turns on one step are one undo (ui_input.c). Returns the length it got */
@@ -223,6 +222,7 @@ UI_SMALL static uint32_t note_len(const track_t *t, uint32_t i)
 {
     uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP), n = 1;
     while (i + n < len && t->step[i + n].time == ST_TIE)
+
         n++;
     return n;
 }
