@@ -127,11 +127,12 @@ static inline int32_t sample_next(const smp_zone_t *z, voice_t *v, int loop)
     return *(v->s + 0);
 }
 
+static uint8_t audilune_chop_sel = 0;
 static uint8_t audilune_chop_chromatic = 0;
 
 static void sample_note_on(track_t *t, voice_t *v)
 {
-    static const uint8_t WHITE_OFF[16] = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 25, 26};
+    static const uint8_t WHITE_OFF = {0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 25, 26};
     uint32_t si = (uint32_t)t->p[P_E0] % SMP_NALL, i, zi = 0xFFFFu;
     if (si < SMP_NSETS) {
         const smp_set_t *set = &SMP_SETS[si];
@@ -144,7 +145,7 @@ static void sample_note_on(track_t *t, voice_t *v)
             zi = 0x8000u | (k << 5); *(v->s + 4) = (int32_t)zi;
         } else if (usr_nz[k] > 1u) {
             if (audilune_chop_chromatic) {
-                zi = 0x8000u | (k << 5) | ((uint32_t)ui.chop_sel % usr_nz[k]);
+                zi = 0x8000u | (k << 5) | ((uint32_t)audilune_chop_sel % usr_nz[k]);
             } else {
                 int32_t rel = (int32_t)v->note - (53 + (int32_t)song.octave * 12);
                 for (i = 0; i < usr_nz[k] && i < 16u; i++)
@@ -171,18 +172,9 @@ static void sample_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
     const int16_t *p = t->p;
     const smp_zone_t *z = smp_zone((uint32_t)*(v->s + 4));
     uint32_t i, frac = *(v->ph + 1);
+    int32_t d16 = clamp(m->pitch16 + p[P_E1] * 16 - z->root16, -1536, 1536);
+    uint32_t r = pow2_q16(d16), stepq = (r >> 8) * (z->rate >> 8);
 
-    uint32_t lim = (pow2_q16(576) >> 8) * (z->rate >> 8);   /* the decode load bounded: 3 octaves up, or SMP_STEP_MAX
-                                                         * source samples an output sample if that is more (a 16 kHz
-                                                         * set, one zone: its pitch went flat 3 octaves over its root) */
-
-    int32_t bits = p[P_E2], lp = 4000 + ((clamp((p[P_E4] << 8) + m->cutoff, 0, 127 << 8) * 28767) >> 15);
-    int32_t drv = p[P_E6], sh = bits / 10;
-    vmod_t m0;
-    if (stepq > (lim > SMP_STEP_MAX ? lim : SMP_STEP_MAX))
-        stepq = lim > SMP_STEP_MAX ? lim : SMP_STEP_MAX;
-    if (v->s[6] || !z->n) {
-        v->active = 0;
         return;
     }
     if (v->s[5]) {                                    /* (after Clipper 1.2) UNISON: this voice starts later */
