@@ -1127,7 +1127,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
     if (!rec_down) {
         if (ui.hold_kind == 1u) { ui.hold_kind = 0; ui.force = 1; }
         rec_on = 0;
-    }
+     }
     {
         static uint8_t sv_on, sv_held;
         static uint32_t sv_t0;
@@ -1137,9 +1137,28 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
         else if (sv_down && sv_on && !sv_held && now_ms - sv_t0 >= 650u && !ui.hold_kind) { ui.hold_kind = 2u; ui.force = 1; }
         if (!sv_down && sv_on) { if (ui.hold_kind == 2u) ui.hold_kind = 0; if (!sv_held) { audilune_save_latch = audilune_save_latch ? 0u : 1u; ui_message(audilune_save_latch ? "SAVE: TAP OP1-6" : "SAVE CANCELLED"); } sv_on = 0; ui.force = 1; }
     }
+    {
+        static uint8_t ed_on, ed_chop;
+        static uint32_t ed_t0;
+        uint32_t eb = ly_bit[LY_ERASE], ed_down = (fm1_in.buttons & eb) != 0u;
+        if (ed_down && !ed_on) { ed_t0 = now_ms; ed_on = 1; ed_chop = 0; }
+        if (ed_down && ed_on && !ed_chop && now_ms - ed_t0 >= 1200u) {
+            ed_chop = 1;
+            layer_unlock();
+            vis_on = 0;
+            ui.home = 0;
+            ui.scr = UI_CHOP_SRC;
+            ui.list_sel = 0;
+            ui.list_top = 0;
+            ui_message("CHOP SHOP: SOURCE");
+            ui.force = 1;
+        }
+        if (!ed_down) { ed_on = 0; ed_chop = 0; }
+    }
 }
 
 UI_SMALL static void remote_poll(void)
+
 {
     static int16_t ch_was = -1;
 
