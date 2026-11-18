@@ -102,9 +102,22 @@ static void audilune_genre_morph_dsp(uint8_t g)
 }
 
 static uint8_t audilune_inf_was;
-static uint8_t audilune_genre_was = 0xFFu;
+static uint8_t audilune_trk_genre[NTRK];
+static uint8_t audilune_trk_genre_was[NTRK] = { 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu };
+static volatile uint8_t audilune_sel_trk_mask;
+static volatile uint32_t audilune_sel_step_mask[NTRK];
+static volatile uint8_t audilune_in_arp_page;
+static volatile uint8_t audilune_active_trk;
 static uint32_t audilune_gen_bar_last = 0xFFFFFFFFu;
 static uint8_t audilune_gen_arp_was;
+
+static uint8_t audilune_active_arp_mask(void)
+{
+    uint8_t m = (uint8_t)(audilune_arp_drift_mask | (audilune_sel_trk_mask & 0x3Fu));
+    if (audilune_in_arp_page && audilune_active_trk < NTRK)
+        m |= (uint8_t)(1u << audilune_active_trk);
+    return m;
+}
 
 /* Fast deterministic 0..99 roll using the audio engine's RNG */
 static uint32_t gen_pct(void)
@@ -114,15 +127,16 @@ static uint32_t gen_pct(void)
 
 /* Builds a live harmonic scale mask from active non-generative anchor tracks */
 static uint32_t gen_anchor_scale_mask(uint32_t trk_idx, int32_t *out_root)
-
 {
     uint32_t i, s, combined = 0u;
-    int32_t root = trk[0u].p[P_ROOT];
+    uint8_t arp_mask = audilune_active_arp_mask();
+    int32_t root = trk[trk_idx].p[P_ROOT];
     for (i = 0; i < NPART; i++) {
         if (i == trk_idx)
             continue;
-        if ((audilune_arp_drift_mask >> i) & 1u)
+        if ((arp_mask >> i) & 1u)
             continue;
+
         for (s = 0; s < trk_len(&trk[i]); s++) {
             const step_t *st = &trk[i].step[s];
             if (st->time == ST_NOTE && st->n > 0u) {
@@ -289,13 +303,13 @@ static void audilune_arp_snap_restore(uint32_t ti)
     memcpy(trk[ti].micro, audilune_arp_snap_micro[ti], sizeof trk[ti].micro);
     trk[ti].seq_active = audilune_arp_snap_active[ti];
     audilune_arp_snap_saved[ti] = 0u;
-    locks_restore(&trk[ti]);
+       locks_restore(&trk[ti]);
 }
 
 static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_seed)
 {
     track_t *t = &trk[ti];
-    const genre_dna_t *tdna = (ti < NTRK) ? &GENRE_DNA[ui.algo_genre[ti] % GENRE_COUNT] : dna;
+    const genre_dna_t *tdna = (ti < NTRK) ? &GENRE_DNA[audilune_trk_genre[ti] % GENRE_COUNT] : dna;
     if (is_drum(t))
         gen_populate_drums(t, tdna, full_seed);
     else
@@ -304,6 +318,7 @@ static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_see
 
 /* Triggers step-level Punch-In FX (P_ED_FX 1..6) using the AUDILUNE OP1-OP6 matrix */
 static uint8_t audilune_step_fx_held;
+
 
 static void audilune_step_fx_apply(const track_t *t)
 {
