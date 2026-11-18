@@ -1525,10 +1525,10 @@ static void arp_end(track_t *t)
 {
     uint32_t i;
     for (i = 0; i < 3u; i++)
-        if (t->arp_ch[i]) {
-            trk_note_off(t, t->arp_ch[i]);
-            seq_out_off(t, t->arp_ch[i]);
-            t->arp_ch[i] = 0;
+        if (t->arp_ch) {
+            trk_note_off(t, t->arp_ch);
+            seq_out_off(t, t->arp_ch);
+            t->arp_ch = 0;
         }
     if (t->arp_note) {
         trk_note_off(t, t->arp_note);
@@ -1556,7 +1556,7 @@ static void seq_release(track_t *t)
 {
     uint32_t i;
     for (i = 0; i < t->seq_n && i < 4u; i++) {
-        uint32_t n = t->seq_notes[i];
+        uint32_t n = t->seq_notes;
         if (!live_has(t, n))
             trk_note_off(t, n);
         seq_out_off(t, n);
@@ -1568,13 +1568,24 @@ static void seq_release(track_t *t)
 
 static void click_tick(void)
 {
-    static uint32_t last_beat = 0xFFFFFFFFu;
+    static uint32_t last_beat = 0xFFFFFFFFu, wait_u, wait_b;
     if (song.playing && clk_beat != last_beat) {
         last_beat = clk_beat;
         if (song.g[G_CLICK])
             click_on((clk_beat & 3u) == 0u);
+    } else if (!song.playing && rec_wait) {
+        last_beat = 0xFFFFFFFFu;
+        if (!wait_u && song.g[G_CLICK])
+            click_on((wait_b & 3u) == 0u);
+        wait_u += CTL * (uint32_t)song.g[G_BPM];
+        if (wait_u >= BEAT_U) {
+            wait_u -= BEAT_U;
+            wait_b++;
+        }
     } else if (!song.playing) {
         last_beat = 0xFFFFFFFFu;
+        wait_u = 0;
+        wait_b = 0;
     }
 }
 
