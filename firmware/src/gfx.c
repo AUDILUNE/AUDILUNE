@@ -148,15 +148,16 @@ static uint16_t te_gray(uint32_t c)
 static void palette_set(uint32_t i)
 {
     uint32_t k;
-    int cu = theme_shown();
+    const palette_t *p = &PALETTES[i % NPALETTES];
     for (k = 0; k < 5u; k++)
-        pal[k] = cu ? theme.c[k] : PALETTES[i % NPALETTES].c[k];
+        pal[k] = p->c[k];
+    pal[3] = p->c[4];
     pal_bg = 0u;
     pal_hi = 0xFFFFu;
     for (k = 0; k < 4u; k++)
         te_g[k] = TE_G_DEF[k];
     for (k = 0; k < 4u; k++) {
-        TE_COL[k] = cu ? theme.trk[k] : PALETTES[i % NPALETTES].c[3];
+        TE_COL[k] = p->c[4];
         TE_MID[k] = rgb565_scale(TE_COL[k], 2u, 3u);
         TE_DIM[k] = rgb565_scale(TE_COL[k], 1u, 3u);
     }
@@ -166,6 +167,7 @@ static inline uint16_t swap16(uint32_t c) { return (uint16_t)(((c >> 8) & 0xFFu)
 
 static void cv_begin(uint32_t w, uint32_t h, uint16_t bg)
 {
+
     uint32_t i, n;
     if (w * h > CV_MAX)
         h = CV_MAX / w;
