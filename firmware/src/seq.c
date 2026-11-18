@@ -2284,10 +2284,11 @@ static void key_down(uint32_t k)
 
 static void key_up(uint32_t k)
 {
-
-    uint32_t i, mc, kind = kb_kind[k];
-    track_t *t = &trk[kb_trk[k] % NTRK];
-    kb_kind[k] = KS_NONE;
+    uint32_t i, tr, mc, kind = *(kb_kind + k), lmask = *(kb_lmask + k);
+    track_t *t = trk + (*(kb_trk + k) % NTRK);
+    *(kb_kind + k) = KS_NONE;
+    if (!lmask)
+        lmask = 1u << (*(kb_trk + k) % NTRK);
     switch (kind) {
     case KS_FX:
         if (punch.keybit == 1u << k) {
@@ -2296,43 +2297,49 @@ static void key_up(uint32_t k)
         }
         return;
     case KS_UI:
-        lk_push(kb_nt[k][0], k, 0);
+        lk_push(*(*(kb_nt + k) + 0), k, 0);
         return;
     case KS_MOD:
-        chord_revoice(kb_trk[k]);
+        chord_revoice(*(kb_trk + k));
         return;
     case KS_ERASE:
         if (is_drum(t))
-            er_lanes &= (uint16_t)~(1u << kb_nt[k][0]);
+            er_lanes &= (uint16_t)~(1u << *(*(kb_nt + k) + 0));
         else
-            for (i = 0; i < kb_n[k]; i++)
-                er_notes[(kb_nt[k][i] >> 5) & 3u] &= ~(1u << (kb_nt[k][i] & 31u));
+            for (i = 0; i < *(kb_n + k); i++)
+                *(er_notes + ((*(*(kb_nt + k) + i) >> 5) & 3u)) &= ~(1u << (*(*(kb_nt + k) + i) & 31u));
         return;
     case KS_ROLL:
         for (i = 0; i < NROLL; i++)
-            if (roll[i].on && roll[i].key == k)
+            if ((roll + i)->on && (roll + i)->key == k)
                 roll_end(i);
         return;
     case KS_NOTE:
-        mc = trk_midi_ch(kb_trk[k] % NTRK);
-        for (i = 0; i < kb_n[k]; i++) {
-            uint32_t n = kb_nt[k][i];
-            input_off(t, n);
-            if (kh_on(t) && kh_has(t, n)) {
-                kh_mo[kb_trk[k] % NTRK][(n >> 5) & 3u] |= 1u << (n & 31u);
-                kh_mc[kb_trk[k] % NTRK] = (uint8_t)mc;
-            } else {
-                midi_out_note(mc, n, 0);
+        for (tr = 0; tr < NTRK; tr++) {
+            track_t *lt = trk + tr;
+            if (!((lmask >> tr) & 1u))
+                continue;
+            mc = trk_midi_ch(tr);
+            for (i = 0; i < *(kb_n + k); i++) {
+                uint32_t n = *(*(kb_nt + k) + i);
+                input_off(lt, n);
+                if (kh_on(lt) && kh_has(lt, n)) {
+                    *(*(kh_mo + tr) + ((n >> 5) & 3u)) |= 1u << (n & 31u);
+                    *(kh_mc + tr) = (uint8_t)mc;
+                } else {
+                    midi_out_note(mc, n, 0);
+                }
             }
         }
         return;
     case KS_DRUM:
         if (ft_on && ft_trk == TRK_DRUM)
-            ft_note_off(kb_nt[k][0]);
+            ft_note_off(*(*(kb_nt + k) + 0));
         mc = trk_midi_ch(TRK_DRUM);
-        midi_out_note(mc, (uint32_t)LANE_NOTE[kb_nt[k][0] & 15u], 0);
+        midi_out_note(mc, (uint32_t)*(LANE_NOTE + (*(*(kb_nt + k) + 0) & 15u)), 0);
         return;
     default:
+
         return;
     }
 }
