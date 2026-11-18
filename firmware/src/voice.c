@@ -483,16 +483,15 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
         return;                                         /* MUTE, or another track soloed */
     vis_hit |= (uint8_t)(1u << ti);
     vis_note[ti] = (uint8_t)note;
-
-    vis_note[(uint32_t)(t - trk) & 3u] = (uint8_t)note;
     if (is_drum(t)) {                                   /* the drum track: GM drums (drums.c) */
         if (note == 35u || note == 36u)
             vis_kick_hit = 1;
         drum_on(note, vel);
         return;
     }
-    if ((uint32_t)(t - trk) < NPART && note < 128u)
-        note_hits[t - trk][note >> 5] |= 1u << (note & 31u);
+    if (ti < NPART && note < 128u)
+        note_hits[ti][note >> 5] |= 1u << (note & 31u);
+
     if (t->xf_on || t->eng_req != t->engine || t->pold) {   /* engine switch / preset under way: after the fade */
         for (i = 0; i < t->xp_n && t->xp_note[i] != note; i++)
             ;
