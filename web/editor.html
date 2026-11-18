@@ -8603,7 +8603,7 @@ function chopUI() {
   u.selRow = el("div", { class: "head selrow" }, u.selName, el("label", {}, u.keep, " " + t("chopKeep")),
     el("span", { text: t("chopLen") }), u.len, u.lenTxt, u.selPlay, u.full);
   u.fit = el("button", { onclick: chopFitAll }, t("chopFit"));
-  u.send = [0, 1, 2, 3].map((k) => el("button", { ic: "symbol_upload", onclick: () => chopSend(k) }, `USR${k + 1}`));
+  u.send = [0, 1, 2, 3, 4, 5].map((k) => el("button", { ic: "symbol_upload", onclick: () => chopSend(k) }, `USR${k + 1}`));
   const region = () => {                             /* first..last marker when there are two, else all */
     const m = CH.marks;
     return m.length >= 2 ? [m[0], m[m.length - 1]] : [m[0] || 0, CH.x.length];
@@ -8613,6 +8613,7 @@ function chopUI() {
   u.max.addEventListener("change", () => { CH.maxLen = +u.max.value; chopRender(); });
   box.append(
     el("div", { class: "head" }, el("b", { text: "CHOP" }),
+
       el("button", { ic: "symbol_folder_open", onclick: () => file.click() }, t("chopOpen")), file, u.info),
     u.cv,
     el("div", { class: "head" }, u.play, u.tap, el("label", {}, u.snap, " " + t("chopSnap")),
