@@ -1299,38 +1299,21 @@ UI_SMALL static void ui_input(void)
         return;
     }
 #endif
-     {
-        static uint8_t home_cyc = 0;
-        if (pressed && home != BT_TAP)
-            home_cyc = 0;
-        if (home == BT_TAP) {
-            static const uint8_t CYCLE[] = {
-                UI_LIVE, UI_VIS, UI_FX, UI_ENV, UI_LFO, UI_EDIT,
-                UI_GLO, UI_SAVE, UI_ARP, UI_SEQ, UI_CHOP_SRC, UI_CHOP_WAVE
-            };
-            static const char *const NAMES[] = {
-                "LIVE PLAY", "VISUALIZER", "EFFECTS", "ENVELOPE", "LFO", "EDIT PAGE",
-                "GLOBAL", "SAVE VAULT", "ARP PAGE", "SEQ PAGE", "CHOP SOURCE", "CHOP SHOP"
-            };
-            uint32_t idx = 0, i;
-       {
-        if (home == BT_TAP) {
-            pressed &= ~(1u << panel.btn[B_HOME]);
-            if (ui.scr == UI_LIVE && !vis_on) {
-                vis_on = 0;
-                ui.scr = UI_VIS;
-                vis_open();
-                ui_message("VISUALIZER");
-            } else {
-                vis_on = 0;
-                go_home();
-                ui_message("LIVE PLAY");
-            }
-            ui.list_sel = 0;
-            ui.list_top = 0;
-            ui.force = 1;
+    if (home == BT_TAP) {
+        pressed &= ~(1u << panel.btn[B_HOME]);
+        if (ui.scr == UI_LIVE && !vis_on) {
+            vis_on = 0;
+            ui.scr = UI_VIS;
+            vis_open();
+            ui_message("VISUALIZER");
+        } else {
+            vis_on = 0;
+            go_home();
+            ui_message("LIVE PLAY");
         }
-
+        ui.list_sel = 0;
+        ui.list_top = 0;
+        ui.force = 1;
     }
 
     cursor_fix();
@@ -1356,6 +1339,7 @@ UI_SMALL static void ui_input(void)
             continue;
         b = panel_btn_of(id);
         switch (b) {
+
         case B_PLAY:
 #if FELUCCA_ARRANGER
             if (!song.playing && arrangement_enabled && !arr_valid(&arrangement, arrangement_ready())) {
