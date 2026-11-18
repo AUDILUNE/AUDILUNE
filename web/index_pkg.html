@@ -113,7 +113,7 @@ const TEXT = {
     model: "接続されている機器は FM-1 ではありません。",
     lost: "USB の接続が切れました。挿し直してもう一度押してください。",
     noloader: "書き込みモードの FM-1 が見つかりません。USB を挿し直してもう一度押してください（終わるまで書き込みモードのままです）。",
-    noreturn: "FM-1 が戻ってきません。電源を入れ直してください。",
+      noreturn: "FM-1 が戻ってきません。電源を入れ直してください。",
     mismatch: "書き込みは終わりましたが、FM-1 が別のバージョンを報告しています: ",
     foreign: "FM-1 は別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で書き込みを終えてから、もう一度インストールしてください: ",
     badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
@@ -121,12 +121,12 @@ const TEXT = {
     license: "GPL-3.0、無保証。ソース:",
     stockTitle: "公式ファームウェア（V15）に戻す",
     stockHelp: "M-VAVE のサイトから公式の FM-1 V15 をダウンロードし、中の FM-1.fwsc（変更していないもの）を選んでください。ファイルはこのブラウザの中で確認され、どこにも送られません。",
-    stockBackup: "公式ファームウェアは SLOOP の曲・プロジェクト・サンプルを開けません。先にエディタでバックアップを保存してください（Projects → Backup）。SLOOP を入れ直せば、エディタから復元できます。",
+    stockBackup: "公式ファームウェアは AUDILUNE の曲・プロジェクト・サンプルを開けません。先にエディタでバックアップを保存してください（Projects → Backup）。AUDILUNE を入れ直せば、エディタから復元できます。",
     stockEditor: "エディタを開いてバックアップする", stockSaved: "バックアップをパソコンに保存しました",
     stockFile: "公式の FM-1.fwsc", stockGo: "公式 V15 をインストール",
     stockValid: "公式 V15 を確認しました", stockBad: "公式 V15 ではありません: ",
-    stockConfirm: "FM-1 に公式 V15 をインストールします。SLOOP の曲は公式ファームウェアでは開けません。バックアップは保存しましたか？",
-    stockFinish: "FM-1 は SLOOP の書き込みモードです。先に「インストール」で SLOOP の書き込みを終えてから、公式 V15 に戻してください。",
+    stockConfirm: "FM-1 に公式 V15 をインストールします。AUDILUNE の曲は公式ファームウェアでは開けません。バックアップは保存しましたか？",
+    stockFinish: "FM-1 は AUDILUNE の書き込みモードです。先に「インストール」で AUDILUNE の書き込みを終えてから、公式 V15 に戻してください。",
     back: "公式ファームウェアに戻すには、M-VAVE 公式のアップデーター M-UPGRADE（Downloads → PC Software → M-UPGRADE）と公式ファームウェアを使ってください。FM-1 が見つからない場合は、MIDI を使う他のアプリとブラウザのタブを閉じてください。それでも見つからない場合は、Clipper のインストールページを開き、その「Return to the official firmware」を使ってください（Clipper を入れる必要はありません）。",
   },
   en: {
@@ -157,17 +157,18 @@ const TEXT = {
     license: "GPL-3.0, no warranty. Source:",
     stockTitle: "Return to the official firmware (V15)",
     stockHelp: "Download the official FM-1 V15 from M-VAVE and select the FM-1.fwsc inside it, unmodified. The file is checked in this browser; it is not sent anywhere.",
-    stockBackup: "The official firmware cannot open SLOOP's music, projects or samples. Save a backup with the editor first (Projects → Backup); reinstall SLOOP and restore it from the editor whenever you want them back.",
+    stockBackup: "The official firmware cannot open AUDILUNE's music, projects or samples. Save a backup with the editor first (Projects → Backup); reinstall AUDILUNE and restore it from the editor whenever you want them back.",
     stockEditor: "Open the editor to back up", stockSaved: "I saved a backup on this computer",
     stockFile: "The official FM-1.fwsc", stockGo: "Install the official V15",
     stockValid: "Official V15 verified", stockBad: "Not the official V15: ",
-    stockConfirm: "Install the official V15 on the FM-1? The official firmware cannot open SLOOP's music. Did you save a backup?",
-    stockFinish: "The FM-1 is in SLOOP's update mode. Press Install to finish the SLOOP update first, then return to the official V15.",
+    stockConfirm: "Install the official V15 on the FM-1? The official firmware cannot open AUDILUNE's music. Did you save a backup?",
+    stockFinish: "The FM-1 is in AUDILUNE's update mode. Press Install to finish the AUDILUNE update first, then return to the official V15.",
     back: "To return to the official firmware, use M-VAVE's own updater, M-UPGRADE (Downloads → PC Software → M-UPGRADE), with the official firmware from M-VAVE (PC Firmware → FM-1, V16). If it does not find the FM-1, close every other app and browser tab that uses MIDI; if it still does not, open Clipper's installer page and use its Return to the official firmware (no need to install Clipper).",
   },
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
 const t = (k) => TEXT[lang][k];
+
 let lastKey = null, lastArg = "";
 function applyLang() {
   document.documentElement.lang = lang;
