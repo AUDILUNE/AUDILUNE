@@ -192,7 +192,7 @@ static uint32_t kb_pitch(const track_t *t, uint32_t k, int32_t oct)
         }
         for (i = 0; i < 12u; i++)
             if ((mask >> i) & 1u) {
-                if (!degree)
+                   if (!degree)
                     break;
                 degree--;
             }
@@ -207,7 +207,7 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
     if (ENGINES[t->eng_req % NENGINES] == &ENG_SAMPLE) {
         uint32_t set = (uint32_t)t->p[P_E0] % SMP_NSETS;
         if (set < 6u && usr_nz[set] > 1u && !audilune_chop_chromatic)
-            return k < 27u && WHITE_OFF[k] >= 0 ? (uint32_t)(36 + WHITE_OFF[k]) : KB_SILENT;
+            return k < 27u && ((0x0AB5u >> ((53u + k) % 12u)) & 1u) ? (uint32_t)(36 + lane_of_key(k)) : KB_SILENT;
         if (drum_set() >= 0 && set == (uint32_t)drum_set())
             return (uint32_t)clamp(36 + 12 * song.octave + (int32_t)k, 0, 127);
     }
@@ -217,7 +217,6 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
 #endif
     return kb_pitch(t, k, song.octave);
 }
-
 
 /* ------------------------------------------- AUDILUNE forward declarations --- */
 #ifndef CHAIN_MAX
