@@ -1525,10 +1525,10 @@ static void arp_end(track_t *t)
 {
     uint32_t i;
     for (i = 0; i < 3u; i++)
-        if (t->arp_ch) {
-            trk_note_off(t, t->arp_ch);
-            seq_out_off(t, t->arp_ch);
-            t->arp_ch = 0;
+        if (*(t->arp_ch + i)) {
+            trk_note_off(t, *(t->arp_ch + i));
+            seq_out_off(t, *(t->arp_ch + i));
+            *(t->arp_ch + i) = 0;
         }
     if (t->arp_note) {
         trk_note_off(t, t->arp_note);
@@ -1556,7 +1556,7 @@ static void seq_release(track_t *t)
 {
     uint32_t i;
     for (i = 0; i < t->seq_n && i < 4u; i++) {
-        uint32_t n = t->seq_notes;
+        uint32_t n = *(t->seq_notes + i);
         if (!live_has(t, n))
             trk_note_off(t, n);
         seq_out_off(t, n);
@@ -1564,6 +1564,7 @@ static void seq_release(track_t *t)
     t->seq_n = 0;
     t->seq_hold = 0;
     t->slide_glide = 0;
+
 }
 
 static void click_tick(void)
