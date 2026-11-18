@@ -1138,16 +1138,19 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 14u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
         else if (row == 15u) str_cpy(val, al_chop_chrom ? "CHROM" : "KIT", 14);
     } else if (scr == UI_GLO) {
+        static const char *const AL_THM[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
         str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
-        if (row == 3u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
+        if (row == 0u) str_cpy(val, *(AL_THM + (ui.theme & 7u)), 14);
+        else if (row == 3u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
     } else if (scr == UI_SAVE) {
         str_cpy(lbl, "SLOT ", 18);
         fmt_int(lbl + 5, (int32_t)row + 1);
         str_cpy(val, ui.save_op ? "LOAD" : "SAVE", 14);
     } else if (scr == UI_ARP || scr == UI_SEQ) {
+        static const char *const AL_ARP_M[5] = {"ANCHOR", "DRIFT", "MELODY", "RHYTHM", "CHORD"};
         str_cpy(lbl, "TRACK ", 18);
         fmt_int(lbl + 6, (int32_t)row + 1);
-        if (scr == UI_ARP) str_cpy(val, ((ui.sel_trk_mask >> row) & 1u) ? "MORPH" : "ANCHOR", 14);
+        if (scr == UI_ARP) str_cpy(val, *(AL_ARP_M + (*(al_arp_mode + row) % 5u)), 14);
         else { fmt_int(val, *(trk[row].p + P_SLEN)); str_cpy(val + str_len(val), " ST", 5); }
     } else if (scr == UI_CHOP_SRC) {
         static const char *const SRC_L[3] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
@@ -1166,7 +1169,7 @@ UI_SMALL static void audilune_page_draw(void)
     uint32_t rows = audilune_page_rows(ui.scr);
     uint32_t sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
-    uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = (212u - y0) / 22u, top = sel >= vis ? sel - vis + 1u : 0u, i;
+    uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i;
     te_header(ui.scr >= UI_FX && ui.scr <= UI_CHOP_WAVE ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
     if (ui.scr == UI_CHOP_WAVE) {
         cv_begin(240, 52, C_BLACK);
@@ -1189,7 +1192,6 @@ UI_SMALL static void audilune_page_draw(void)
         if (r == sel) cv_rect(2, y + 1, 236, 20, C_WHITE);
         cv_text(8, y + 3, &FONT_S, lbl, r == sel ? C_BLACK : C_WHITE);
         if (val[0]) cv_text(232 - text_w(&FONT_S, val), y + 3, &FONT_S, val, r == sel ? C_BLACK : HUD_ACCENT);
-
     }
     cv_blit(0, y0);
     {
