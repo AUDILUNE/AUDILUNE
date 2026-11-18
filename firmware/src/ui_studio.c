@@ -324,7 +324,7 @@ UI_SMALL static void studio_tracks_draw(void)
             str_cpy(b, "OPEN", sizeof b);
             str_cpy(e, "AMBIENT", sizeof e);
         } else if (!t->synth_mode) {
-            uint32_t kidx = (uint32_t)clamp(t->p[t->pe0], 0, (int32_t)NDRUM_KITS - 1);
+            uint32_t kidx = (uint32_t)clamp(t->p[P_KIT], 0, 31);
             b[0] = 0;
             str_cpy(e, "DRUM KIT: ", sizeof e);
             str_cpy(e + 10, DRUM_KIT_NAMES[kidx], sizeof e - 10);
@@ -353,6 +353,7 @@ UI_SMALL static void studio_tracks_draw(void)
             cv_text(32, 1, &FONT_S, e, selected ? acc : C_WHITE);
         }
         if (rec) {
+
             cv_rect(186, 2, 50, 12, C_WHITE);
             cv_text(199, 1, &FONT_S, "REC", C_BLACK);
        } else if (solo) {
