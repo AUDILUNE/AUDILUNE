@@ -1313,29 +1313,24 @@ UI_SMALL static void ui_input(void)
                 "GLOBAL", "SAVE VAULT", "ARP PAGE", "SEQ PAGE", "CHOP SOURCE", "CHOP SHOP"
             };
             uint32_t idx = 0, i;
-            if (ui.scr != UI_LIVE && !home_cyc) {
-                idx = 0;
-                home_cyc = 1;
-            } else {
-                for (i = 0; i < 12u; i++) {
-                    if (CYCLE[i] == ui.scr) { idx = (i + 1u) % 12u; break; }
-                }
-                home_cyc = 1;
-            }
-            vis_on = 0;
-            if (idx == 0u) {
-                go_home();
-            } else if (idx == 1u) {
+       {
+        if (home == BT_TAP) {
+            pressed &= ~(1u << panel.btn[B_HOME]);
+            if (ui.scr == UI_LIVE && !vis_on) {
+                vis_on = 0;
                 ui.scr = UI_VIS;
                 vis_open();
+                ui_message("VISUALIZER");
             } else {
-                ui.scr = CYCLE[idx];
+                vis_on = 0;
+                go_home();
+                ui_message("LIVE PLAY");
             }
-            ui_message(NAMES[idx]);
             ui.list_sel = 0;
             ui.list_top = 0;
             ui.force = 1;
         }
+
     }
 
     cursor_fix();
