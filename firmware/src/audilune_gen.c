@@ -86,19 +86,18 @@ static const genre_dsp_t GENRE_DSP[GENRE_COUNT] = {
     /* Industrial */   { 4, 52,  38, 86, 14, 38, 42}
 };
 
-static void audilune_genre_morph_dsp(uint8_t g)
+static void audilune_genre_morph_dsp_trk(uint32_t ti, uint8_t g)
 {
     const genre_dsp_t *dsp = &GENRE_DSP[g % GENRE_COUNT];
-    uint32_t i;
-    for (i = 0; i < NPART; i++) {
-        trk[i].p[P_ATK] = dsp->atk;
-        trk[i].p[P_DEC] = dsp->dec;
-        trk[i].p[P_REL] = dsp->rel;
-        trk[i].p[P_DIST] = dsp->dist;
-        trk[i].p[P_CHOR] = dsp->chor;
-        trk[i].p[P_DLY] = dsp->dly;
-        trk[i].p[P_REV] = dsp->rev;
-    }
+    if (ti >= NPART)
+        return;
+    trk[ti].p[P_ATK] = dsp->atk;
+    trk[ti].p[P_DEC] = dsp->dec;
+    trk[ti].p[P_REL] = dsp->rel;
+    trk[ti].p[P_DIST] = dsp->dist;
+    trk[ti].p[P_CHOR] = dsp->chor;
+    trk[ti].p[P_DLY] = dsp->dly;
+    trk[ti].p[P_REV] = dsp->rev;
 }
 
 static uint8_t audilune_inf_was;
@@ -108,6 +107,7 @@ static volatile uint8_t audilune_sel_trk_mask;
 static volatile uint32_t audilune_sel_step_mask[NTRK];
 static volatile uint8_t audilune_in_arp_page;
 static volatile uint8_t audilune_active_trk;
+
 static uint32_t audilune_gen_bar_last = 0xFFFFFFFFu;
 static uint8_t audilune_gen_arp_was;
 
