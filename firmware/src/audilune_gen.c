@@ -277,33 +277,50 @@ static void gen_populate_drums(track_t *t, const genre_dna_t *dna, int full_seed
     t->seq_active = 1;
 }
 
-static step_t audilune_arp_snap_step[NTRK][NSTEP];
-static dstep_t audilune_arp_snap_dstep[NTRK][NSTEP];
-static int8_t audilune_arp_snap_micro[NTRK][NSTEP];
-static uint8_t audilune_arp_snap_active[NTRK];
-static uint8_t audilune_arp_snap_saved[NTRK];
+#define AUDILUNE_SNAP_SLOTS 3u
+#define AUDILUNE_SNAP_STEPS 64u
+static step_t audilune_arp_snap_step[AUDILUNE_SNAP_SLOTS][AUDILUNE_SNAP_STEPS];
+static dstep_t audilune_arp_snap_dstep[AUDILUNE_SNAP_SLOTS][AUDILUNE_SNAP_STEPS];
+static int8_t audilune_arp_snap_micro[AUDILUNE_SNAP_SLOTS][AUDILUNE_SNAP_STEPS];
+static uint8_t audilune_arp_snap_active[AUDILUNE_SNAP_SLOTS];
+static uint8_t audilune_arp_snap_trk[AUDILUNE_SNAP_SLOTS] = { 0xFFu, 0xFFu, 0xFFu };
 
 static void audilune_arp_snap_save(uint32_t ti)
 {
-    if (ti >= NTRK || audilune_arp_snap_saved[ti])
+    uint32_t k, free_slot = AUDILUNE_SNAP_SLOTS;
+    if (ti >= NTRK)
         return;
-    memcpy(audilune_arp_snap_step[ti], trk[ti].step, sizeof trk[ti].step);
-    memcpy(audilune_arp_snap_dstep[ti], trk[ti].dstep, sizeof trk[ti].dstep);
-    memcpy(audilune_arp_snap_micro[ti], trk[ti].micro, sizeof trk[ti].micro);
-    audilune_arp_snap_active[ti] = trk[ti].seq_active;
-    audilune_arp_snap_saved[ti] = 1u;
+    for (k = 0; k < AUDILUNE_SNAP_SLOTS; k++) {
+        if (audilune_arp_snap_trk[k] == (uint8_t)ti)
+            return;
+        if (audilune_arp_snap_trk[k] == 0xFFu && free_slot == AUDILUNE_SNAP_SLOTS)
+            free_slot = k;
+    }
+    if (free_slot >= AUDILUNE_SNAP_SLOTS)
+        return;
+    memcpy(audilune_arp_snap_step[free_slot], trk[ti].step, sizeof audilune_arp_snap_step[0]);
+    memcpy(audilune_arp_snap_dstep[free_slot], trk[ti].dstep, sizeof audilune_arp_snap_dstep[0]);
+    memcpy(audilune_arp_snap_micro[free_slot], trk[ti].micro, sizeof audilune_arp_snap_micro[0]);
+    audilune_arp_snap_active[free_slot] = trk[ti].seq_active;
+    audilune_arp_snap_trk[free_slot] = (uint8_t)ti;
 }
 
 static void audilune_arp_snap_restore(uint32_t ti)
 {
-    if (ti >= NTRK || !audilune_arp_snap_saved[ti])
+    uint32_t k;
+    if (ti >= NTRK)
         return;
-    memcpy(trk[ti].step, audilune_arp_snap_step[ti], sizeof trk[ti].step);
-    memcpy(trk[ti].dstep, audilune_arp_snap_dstep[ti], sizeof trk[ti].dstep);
-    memcpy(trk[ti].micro, audilune_arp_snap_micro[ti], sizeof trk[ti].micro);
-    trk[ti].seq_active = audilune_arp_snap_active[ti];
-    audilune_arp_snap_saved[ti] = 0u;
-       locks_restore(&trk[ti]);
+    for (k = 0; k < AUDILUNE_SNAP_SLOTS; k++) {
+        if (audilune_arp_snap_trk[k] == (uint8_t)ti) {
+            memcpy(trk[ti].step, audilune_arp_snap_step[k], sizeof audilune_arp_snap_step[0]);
+            memcpy(trk[ti].dstep, audilune_arp_snap_dstep[k], sizeof audilune_arp_snap_dstep[0]);
+            memcpy(trk[ti].micro, audilune_arp_snap_micro[k], sizeof audilune_arp_snap_micro[0]);
+            trk[ti].seq_active = audilune_arp_snap_active[k];
+            audilune_arp_snap_trk[k] = 0xFFu;
+            break;
+        }
+    }
+    locks_restore(&trk[ti]);
 }
 
 static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_seed)
@@ -313,6 +330,7 @@ static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_see
     if (is_drum(t))
         gen_populate_drums(t, tdna, full_seed);
     else
+
         gen_populate_synth(ti, tdna, full_seed);
 }
 
