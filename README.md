@@ -13,21 +13,19 @@ Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Le
 <a href="../../issues"><b>Report an Issue</b></a>
 </p>
 
-
 ---
 
-**AUDILUNE** unlocks the **M-VAVE FM-1** as a fast, one-handed **6-track × 128-step** standalone studio and live performance instrument. Every track has full, unrestricted access to all **13 synthesis engines**, classic analog and FM synth emulators, atmospheric drones, natural & animal soundscapes, **6 floating user sample slots** (`USR1`–`USR6`), poly-wavetables, and 16-lane drum kits—with **zero track-role locks**, **zero two-button holds**, real-time macro-genre morphing, and **Smart Automatic Voice Allocation** that keeps sub-basses tight while letting chords and shimmer delays bloom wide.
+**AUDILUNE** transforms the **M-VAVE FM-1** into a fast, immediate **6-track × 128-step** standalone studio and live performance instrument. Every track has full, unrestricted access to all **13 synthesis engines**, classic analog and FM synth emulators, atmospheric drones, natural & animal soundscapes, **6 floating user sample slots** (`USR1`–`USR6`), poly-wavetables, and 16-lane drum kits—with **zero track-role locks**, **zero two-button holds**, real-time **Algorithm Knob** genre morphing, an on-device **Chop Shop** waveform slicer, and **Smart Automatic Voice Allocation** that keeps sub-basses tight while letting chords and shimmer delays bloom wide.
 
 ---
-
 
 ## Contents
 
 1. [Core Features](#core-features)
-2. [One-Handed Controls & Latching](#one-handed-controls--latching)
-3. [Knobs & Layers](#knobs--layers)
+2. [Dedicated Pages & Navigation](#dedicated-pages--navigation)
+3. [Hardware Control Map](#hardware-control-map)
 4. [Installation & Flashing Guide](#installation--flashing-guide)
-5. [Loading Personal Samples (USR1–USR6)](#loading-personal-samples-usr1usr6)
+5. [Chop Shop & Personal Samples (USR1–USR6)](#chop-shop--personal-samples-usr1usr6)
 6. [MIDI & USB-C Audio](#midi--usb-c-audio)
 7. [Rescue & Returning to Stock Firmware](#rescue--returning-to-stock-firmware)
 8. [Credits & Licence](#credits--licence)
@@ -36,28 +34,27 @@ Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Le
 
 ## Core Features
 
-* **Cosmological UI & 8 Themes:** Pure `#000000` black canvas with screen dimming disabled, stippled pixel meters, astronomical grid reticles, and **8 selectable themes** (`Teal`, `Orange`, `Burgundy`, `Purple`, `Pink`, `Blue`, `Mint`, `Grey`) via `Tap SELECT → Tap GLOBAL`.
-* **Three Dedicated Screens:**
-  * **Play Screen:** Conventional 6-track horizontal layout with textured level meters and a persistent `1px`-bordered bottom HUD (`TRK 1 | PAT A | 120 BPM | AMBIENT`) with `1.5s` live parameter popups.
-  * **Edit Screen:** Zoomed-in step editor displaying pitch, velocity, gate, micro-timing, and Step FX lock badges.
-  * **Visualizer Screen:** 4 full-screen audio-reactive visualizers (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*) cycled via the Select Encoder, plus automatic 60-second idle screensaver activation.
+* **High-Contrast Cosmological UI & 8 Themes:** Pure `#000000` black canvas with auto-dimming disabled, inverted white highlight boxes, stippled pixel level meters, astronomical grid reticles, and **8 selectable themes** (`Teal`, `Orange`, `Burgundy`, `Purple`, `Pink`, `Blue`, `Mint`, `Grey`) on **Global Page**.
+* **12 Dedicated Pages:** Instant single-button toggling between **Live Play Page**, **Visualizer Page** (4 audio-reactive styles + idle screensaver), **Effects Page**, **Envelope Page**, **LFO Page**, **Edit Page**, **Chop Shop Page**, **Global Page**, **Save Page**, **ARP Page**, and **SEQ Page**—with universal **Knob 1** (BPM), **Knob 2** (Metronome Volume), and live **Full Keyboard** responsiveness across every working page.
 * **Unrestricted 6-Track Engine:** Zero track-role locks. All **6 tracks** have simultaneous access to all **13 synthesis engines**, classic synth emulators, drones, environmental & animal soundscapes (`STORM WIND`, `THUNDER`, `CREEK`, `BIRDSONG`, `CICADAS`, `WHALE SONG`, `FOLEY CRK`), user samples (`USR1`–`USR6`), poly-wavetables, and 16-lane drum kits.
-* **Smart Automatic Voice Allocation:** Manual Mono/Poly toggling is replaced by automatic voice routing—assigning polyphonic voicing to chords, pads, and soundscapes while keeping sub-basses, gliding leads, and percussion in tight mono/legato mode.
-* **6 Macro-Genres & 110% Musical Overflow:** Morph envelopes, drive, and spatial FX in real time across `AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, and `INDUSTRIAL`. Sweeping Delay past `100%` into `101%–110%` engages musical shimmer feedback and stereo bloom without digital clipping.
-* **6 Non-Destructive Flash Save Vaults:** Save and recall complete projects across 6 dedicated SPI NOR flash vaults (`OP1`–`OP6`).
+* **Preset-Aware Genre Morphing & 110% Musical Overflow:** Turn **Algorithm Knob** to morph any preset in real time across `AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, and `INDUSTRIAL`. Sweeping spatial effects past `100%` into `101%–110%` engages musical shimmer feedback, delay cascades, and stereo bloom without digital clipping.
+* **On-Device Chop Shop & 5-Second Smart Auto-Fit:** Slice songs, tracks, or samples directly on the `#FFFFFF` waveform display (`4/8/16 EQUAL`, `AUTO TRANSIENT`, `MANUAL`), play single samples chromatically across all keys or 16 chops across the white keys, and upload files up to 5.0 seconds per slot (`USR1`–`USR6`) with automatic silence trimming and adaptive sample-rate fitting in the web editor.
+* **22 Scales & Role-Aware Generative ARP:** Quantize tracks or external MIDI to **22 scales** on **Edit Page** (including 4 Wild Card Scales: *Prometheus*, *Enigmatic*, *Tritone Hexatonic*, and *Lunar Eclipse*), or multi-lock tracks/steps on **ARP Page** to generate evolving music anchored to your active tracks.
+* **6 Non-Destructive Flash Save Vaults:** Save and recall complete projects across 6 dedicated SPI NOR flash vaults (`SLOT 1`–`6`) on **Save Page**.
 
 ---
 
-## One-Handed Controls & Latching
+## Dedicated Pages & Navigation
 
-Every modifier button (`SELECT`, `EDIT`, `ARP`, `SAVE`, `SEQUENCE`, `FX`) uses **single-finger tap-to-latch** behavior—its LED stays lit until you press your target button (or tap the modifier again to cancel). **No two-button holds are ever required.**
+Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO Button**, **Save Button**, **ARP Button**, or **SEQ Button** opens its page; pressing it again returns immediately to **Live Play Page**. Pressing **Home Button** from any dedicated page returns first to **Live Play Page**, and subsequent presses cycle sequentially through **Visualizer Page** and all remaining pages. **No two-button holds are ever required.**
 
-| Action | Function |
+| Control / Button | Function |
 | :--- | :--- |
-| **Tap `SELECT` → `OP1`–`OP6`** | Focus Track 1–6 |
-| **Tap `SELECT` → `PIT`** | Persistent live pitch bend on Select Encoder (press any function button to exit) |
-| **Tap `SELECT` → `GLOBAL`** | Cycle through the 8 UI color themes |
-| **Tap `EDIT`** | Toggle between Play Screen and Zoomed Edit Screen |
+| **Live Play Page (Home)** | 6-track horizontal performance matrix showing active Preset, Algorithm variation, and Pattern (`A`–`F`) |
+| **Visualizer Page** | Full-screen audio-reactive art (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*) |
+| **FX Button** | Full categorized **Effects Page** (6 categories, `0%–110%` overflow, **SEL Button** multi-lock) |
+| **ENV Button** | **Envelope Page** (`Attack`, `Decay`, `Sustain`, `Release` with **SEL Button** multi-lock) |
+
 | **Tap `EDIT` → `PIT`** | Transpose active step pitch with Select Encoder |
 | **Tap `HOME`** | Toggle between Play Screen and Full-Screen Visualizer |
 | **Hold `HOME` (3s)** | Toggle **Infinite Algorithmic Compositions Engine** |
