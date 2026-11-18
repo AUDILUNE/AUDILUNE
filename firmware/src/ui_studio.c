@@ -324,7 +324,7 @@ UI_SMALL static void studio_tracks_draw(void)
             str_cpy(b, "OPEN", sizeof b);
             str_cpy(e, "AMBIENT", sizeof e);
         } else if (!t->synth_mode) {
-            uint32_t kidx = (uint32_t)clamp(t->p[P_KIT], 0, 31);
+            uint32_t kidx = (uint32_t)clamp((int32_t)drum_kit(), 0, 31);
             b[0] = 0;
             str_cpy(e, "DRUM KIT: ", sizeof e);
             str_cpy(e + 10, DRUM_KIT_NAMES[kidx], sizeof e - 10);
@@ -333,6 +333,7 @@ UI_SMALL static void studio_tracks_draw(void)
             b[11] = 0;
             str_cpy(e, GEN_SHORT[gidx], sizeof e);
         }
+
         h = studio_hash(selected + locked * 31u + gidx * 17u + level * 7u + silent * 997u + rec * 1999u +
                         solo * 4999u + len * 37u + song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b[0] ? b : e);
         if (has_trk)
