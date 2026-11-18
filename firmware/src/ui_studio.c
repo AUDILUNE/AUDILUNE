@@ -1075,10 +1075,10 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("CHOP MODE", al_chop_chrom ? "CHROMATIC" : "KIT");
         }
     } else if (ui.scr == UI_GLO) {
-        static uint8_t audilune_theme_idx;
         if (row == 0u) {
+            static const char *const AL_THM_H[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
-            audilune_hud_popup("THEME", (int32_t)audilune_theme_idx + 1, "");
+            audilune_hud_text("THEME", *(AL_THM_H + audilune_theme_idx));
         } else if (row == 3u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
@@ -1086,7 +1086,6 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     } else if (ui.scr == UI_SAVE) {
         if (ui.chop_mode != 0xFF && ui.list_top == 1u) {
             if (row == 0u) {
-
                 ui.chop_save_usr = (uint8_t)((ui.chop_save_usr + (s > 0 ? 1u : 6u)) % 7u);
                 audilune_hud_popup("VAULT USR", (int32_t)ui.chop_save_usr, "");
             } else {
@@ -1098,6 +1097,14 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             if (k == 3u) ui.save_op = (uint8_t)(!ui.save_op);
             audilune_hud_text(ui.save_op ? "LOAD SLOT" : "SAVE SLOT", "READY");
         }
+    } else if (ui.scr == UI_ARP) {
+        static const char *const AL_ARP_H[5] = {"ANCHOR", "DRIFT", "MELODY", "RHYTHM", "CHORD"};
+        uint32_t tr = row % NTRK;
+        uint8_t nm = (uint8_t)((*(al_arp_mode + tr) + (s > 0 ? 1u : 4u)) % 5u);
+        *(al_arp_mode + tr) = nm;
+        if (nm) ui.sel_trk_mask |= (uint8_t)(1u << tr);
+        else ui.sel_trk_mask &= (uint8_t)~(1u << tr);
+        audilune_hud_text("ARP MODE", *(AL_ARP_H + nm));
     } else if (ui.scr == UI_SEQ) {
         if (k == 3u) {
             int32_t nl = clamp(((int32_t)t->p[P_SLEN] / 16 + (s > 0 ? 1 : -1)) * 16, 16, NSTEP);
@@ -1110,6 +1117,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         audilune_hud_popup("SOURCE", (int32_t)ui.chop_src_idx, "");
     } else if (ui.scr == UI_CHOP_WAVE) {
         if (row == 0u && k == 3u) {
+
             ui.chop_mode = (uint8_t)((ui.chop_mode + (s > 0 ? 1u : 4u)) % 5u);
             audilune_hud_text("SLICE", *(AL_CHOP_MODES + ui.chop_mode));
         } else if (row > 0u && k == 3u) {
