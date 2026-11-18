@@ -367,23 +367,34 @@ static void audilune_gen_block(void)
     uint32_t g = audilune_genre % GENRE_COUNT;
     const genre_dna_t *dna = &GENRE_DNA[g];
     uint32_t i;
-    int genre_changed = (g != audilune_genre_was);
+    int any_genre_changed = 0;
+    uint8_t cur_arp = audilune_active_arp_mask();
     uint8_t prev_arp = audilune_gen_arp_was;
 
-    if (genre_changed) {
-        audilune_genre_was = (uint8_t)g;
-        audilune_genre_morph_dsp((uint8_t)g);
+    for (i = 0; i < NTRK; i++) {
+        uint8_t tg = (uint8_t)(audilune_trk_genre[i] % GENRE_COUNT);
+        if (tg != audilune_trk_genre_was[i]) {
+            audilune_trk_genre_was[i] = tg;
+            audilune_genre_morph_dsp_trk(i, tg);
+            any_genre_changed = 1;
+        }
     }
 
-    /* Trigger 1-bar Back-Home Resolution when ARP generative drift turns off */
-    if (prev_arp && !audilune_arp_drift_mask)
+    /* Restore tracks deselected from ARP generative morphing */
+    for (i = 0; i < NTRK; i++) {
+        if (((prev_arp >> i) & 1u) && !((cur_arp >> i) & 1u))
+            audilune_arp_snap_restore(i);
+    }
+
+    /* Trigger 1-bar Back-Home Resolution when all ARP generative selections turn off */
+    if (prev_arp && !cur_arp)
         audilune_back_home_trigger();
-    audilune_gen_arp_was = audilune_arp_drift_mask;
+    audilune_gen_arp_was = cur_arp;
     audilune_back_home_tick();
 
     /* Handle Infinite Algorithmic Compositions Engine (HOME 3s hold) & ARP Scale Anchor Drift */
     if (audilune_infinite_on) {
-        int just_enabled = !audilune_inf_was || genre_changed;
+        int just_enabled = !audilune_inf_was || any_genre_changed;
         audilune_inf_was = 1u;
 
         if (!song.playing && !transport_req)
@@ -403,19 +414,21 @@ static void audilune_gen_block(void)
             }
         }
     } else {
-        uint8_t newly_armed = (uint8_t)(audilune_arp_drift_mask & ~prev_arp);
+        uint8_t newly_armed = (uint8_t)(cur_arp & ~prev_arp);
         audilune_inf_was = 0u;
 
         if (newly_armed) {
             for (i = 0; i < NTRK; i++) {
-                if ((newly_armed >> i) & 1u)
+                if ((newly_armed >> i) & 1u) {
+                    audilune_arp_snap_save(i);
                     gen_populate_track(i, dna, track_empty(&trk[i]));
+                }
             }
             audilune_gen_bar_last = clk_beat >> 2;
-        } else if (audilune_arp_drift_mask && song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
+        } else if (cur_arp && song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
             audilune_gen_bar_last = clk_beat >> 2;
             for (i = 0; i < NTRK; i++) {
-                if ((audilune_arp_drift_mask >> i) & 1u)
+                if ((cur_arp >> i) & 1u)
                     gen_populate_track(i, dna, 0);
             }
         }
@@ -423,6 +436,7 @@ static void audilune_gen_block(void)
 }
 
 uint8_t audilune_gen_eval_step(uint8_t track, uint8_t step, uint8_t genre, uint8_t *out_note, uint8_t *out_vel) {
+
     /* Trigger probability thresholds (%) across the 6 AUDILUNE Macro-Genres:
        0: Ambient, 1: Downtempo, 2: Glitch Hop, 3: Punchy, 4: Experimental, 5: Industrial */
     static const uint8_t k_genre_prob[6] = { 28, 42, 65, 60, 52, 75 };
