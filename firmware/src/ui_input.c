@@ -1387,46 +1387,39 @@ UI_SMALL static void ui_input(void)
 
     if ((s = panel_enc(EN_PRESET)) != 0) {
         ui_input_ms = fm1_ms;
-        if (is_drum(TSEL)) {
-            int32_t nk = (int32_t)TDRUM->p[P_E0] + s;
-            if (nk >= 0 && nk < (int32_t)DRUM_KITS) {
-                TDRUM->p[P_E0] = (int16_t)nk;
-                audilune_hud_popup("DRUM KIT", TDRUM->p[P_E0] + 1, "");
-            } else {
-                uint32_t total = 0;
-                TDRUM->synth_mode = 1;
-                preset_pos(&total);
-                if (total) {
-                    uint32_t next_p = nk < 0 ? total - 1u : 0u;
-                    preset_go(next_p);
-                    audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
-                }
+        {
+            uint32_t total, cur;
+            if (!TSEL->synth_mode) {
+                TSEL->synth_mode = 1;
+                ui.force = 1;
             }
-        } else {
-            uint32_t total, cur = preset_pos(&total);
+            cur = preset_pos(&total);
             if (total) {
-                int32_t raw = (int32_t)cur + s;
-                if (TSEL == TDRUM && (raw < 0 || raw >= (int32_t)total)) {
-                    TDRUM->synth_mode = 0;
-                    TDRUM->p[P_E0] = (int16_t)(raw < 0 ? DRUM_KITS - 1 : 0);
-                    ui.force = 1;
-                    audilune_hud_popup("DRUM KIT", TDRUM->p[P_E0] + 1, "");
-                } else {
-                    uint32_t next_p = (uint32_t)((raw % (int32_t)total + (int32_t)total) % (int32_t)total);
-                    preset_go(next_p);
-                    audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
-                }
+                uint32_t next_p = (uint32_t)(((int32_t)cur + s % (int32_t)total + (int32_t)total) % (int32_t)total);
+                preset_go(next_p);
+                audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
             }
         }
     }
 
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
-        uint8_t g = (uint8_t)((ui.algo_genre[song.sel] + (s > 0 ? 1u : AUDILUNE_GENRE_COUNT - 1u)) % AUDILUNE_GENRE_COUNT);
+        int32_t span = AUDILUNE_GENRE_COUNT + (int32_t)DRUM_KITS;
+        int32_t pos = TSEL->synth_mode ? (int32_t)(ui.algo_genre[song.sel] % AUDILUNE_GENRE_COUNT)
+                                       : AUDILUNE_GENRE_COUNT + clamp((int32_t)TDRUM->p[P_E0], 0, (int32_t)DRUM_KITS - 1);
+        pos = ((pos + s) % span + span) % span;
         ui_input_ms = fm1_ms;
-        ui.algo_genre[song.sel] = g;
-        audilune_genre_idx = g;
-        audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[g]);
-          ui.force = 1;
+        if (pos < AUDILUNE_GENRE_COUNT) {
+            TSEL->synth_mode = 1;
+            ui.algo_genre[song.sel] = (uint8_t)pos;
+            audilune_genre_idx = (uint8_t)pos;
+            audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[pos]);
+        } else {
+            int32_t kidx = pos - AUDILUNE_GENRE_COUNT;
+            TSEL->synth_mode = 0;
+            TDRUM->p[P_E0] = (int16_t)kidx;
+            audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[kidx]);
+        }
+        ui.force = 1;
     }
 
     if (vis_shown() && !rec_wait && !ft_on) {
@@ -1443,6 +1436,7 @@ UI_SMALL static void ui_input(void)
             ui_input_ms = fm1_ms;
             vis_on = 0;
             go_home();
+
         }
         return;
     } else if (!vis_on && ui.scr == UI_LIVE && !ui.menu && !rec_wait && !ft_on && !song.rec &&
