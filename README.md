@@ -58,52 +58,61 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 | **Tap `EDIT` → `PIT`** | Transpose active step pitch with Select Encoder |
 | **Tap `HOME`** | Toggle between Play Screen and Full-Screen Visualizer |
 | **Hold `HOME` (3s)** | Toggle **Infinite Algorithmic Compositions Engine** |
-| **Tap `RECORD`** | Arm **Wait-for-Note** capture (auto-starts from Step 1 on first key or MIDI note) |
-| **Hold `RECORD` (1.5s)** | Erase active track (Play Screen) or active step (Edit Screen) |
-| **Tap `STOP`** | Halt playback/recording and unarm |
-| **Tap `FX` → `OP1`–`OP6` (Play)** | Engage Master Punch-In FX (`OP1` Stutter, `OP2` Tape Stop, `OP3` Lo-Fi, `OP4` Reverse, `OP5` Shimmer Wash, `OP6` Sub-Octave Slam) |
-| **Tap `FX` → `OP1`–`OP6` (Edit)** | Lock FX to step; tap `Octave Up/Down` to paint FX across continuous steps |
-| **Tap `ARP` → `OP1`–`OP6`** | Toggle **Generative Scale Anchor** drift on selected tracks (disabling triggers 1-bar Back-Home recovery) |
-| **Tap `SEQUENCE` → `OP1`–`OP6` → `SEQUENCE`** | Queue pattern chain (up to 16 blocks) at end of 128-step pattern |
-| **Hold `SEQUENCE` (blink) → `OP1`–`OP6`** | Snap to pattern at next 16-step bar boundary |
-| **Tap `SAVE` → `OP1`–`OP6`** | Save project to Flash Vault 1–6 |
-| **Hold `SAVE` (3s blink) → `OP1`–`OP6`** | Load project from Flash Vault 1–6 |
+
+| **LFO Button** | **LFO Page** (`Waveform`, `Rate`, `Depth`, `Destination` with **SEL Button** multi-lock) |
+| **Tap Edit Button** | **Edit Page** (Copy, Paste, Duplicate, Clear, Quantize, Humanize, Nudge, Transpose, Probability, Ratchet, Reverse, **22-Scale Library** including *Prometheus*, *Enigmatic*, *Tritone Hexatonic* & *Lunar Eclipse*, plus **Chop Mode**: Kit / Chromatic) |
+| **Hold Edit Button (1.2s)** | **Chop Shop Page** (2-stage `#FFFFFF` waveform slicer & on-device sampler) |
+| **GLO Button** | **Global Page** (8 Color Themes, MIDI Channels, MIDI Routing, Clock Sync, USB Audio I/O) |
+| **Save Button** | **Save Page** (6 SPI NOR Flash Vaults `SLOT 1`–`6`; toggle Save/Load with **Knob 4**, press **Save Button** to execute) |
+| **ARP Button** | **ARP Page** (Dedicated generative selection—multi-lock tracks/steps with **SEL Button** to morph into role-aware music anchored to unselected active tracks) |
+| **SEQ Button** | **SEQ Page** (Pattern-chain `A`–`F` and step-length `16`–`128` builder for selected tracks) |
+| **Home Button** | Returns first to **Live Play Page**, then cycles sequentially through **Visualizer Page** and all remaining pages |
 
 ---
 
-## Knobs & Layers
+## Hardware Control Map
 
-* **Master Knob:** Global output volume (mutes cleanly at `0%`).
-* **Main Layer:** `K1` Tempo | `K2` Track DJ Filter | `K3` Track Volume (mutes at `0%`) | `K4` Metronome Volume.
-* **FX Layer:** `K1` Spatial Delay (`0%–110%` Shimmer) | `K2` Reverb | `K3` Warm Harmonic Drive | `K4` Stereo Chorus.
-* **Edit Note Layer:** `K1` Pitch Offset | `K2` Velocity (`ENV` = Decay) | `K3` Gate (`LFO` = Speed) | `K4` Micro-Timing.
+* **Master Knob:** Global master output volume (`0%` mute to `100%` full).
+* **Select Knob:** Scrolls Up/Down through list items, tracks, or chop rows, and cycles the 4 **Visualizer Page** styles.
+* **Presets Knob:** Cycles sequentially through all base presets (including `USR1`–`USR6` samples and chop kits) on the active track.
+* **Algorithm Knob:** Morphs the active track's selected preset in real time across 6 genre variations (`AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, `INDUSTRIAL`).
+* **Octave Down / Octave Up Buttons:** Shifts **Full Keyboard** octave range (`-3` to `+3` octaves) on the active track.
+* **Full Keyboard:** Pure musical triggering across all working pages with zero secondary key combos—notes on synth/drum tracks, chromatic pitch-tracking across all white and black keys on single `USR1`–`USR6` samples, and `CHOP 01`–`16` across the white keys on chopped kits.
+* **Knob 1:** Global Tempo (`BPM`) across all working pages.
+* **Knob 2:** Metronome Volume (`0%` mute to `100%` full) synced to Tempo.
+* **Knob 3:** Adjusts value/amount (`0%`–`110%` musical overflow) of highlighted or **SEL Button**-locked parameters.
+* **Knob 4:** Navigates Left/Right across columns, sub-types, options, steps, or Chop Shop nudge/trim positions.
+* **SEL Button:** Locks/unlocks highlighted tracks, steps, effects, or edits into a multi-selection group (and cycles `Whole Chop` → `Start [` → `End ]` trim modes in **Chop Shop**).
+* **Play/Stop Button:** Starts/stops playback immediately and disarms recording on stop.
+* **REC Button:** Arms **Wait-for-Note** recording from Step 1 (or punches in live during playback); hold `1.5s` to erase active track, selected steps, or highlighted `USR` sample slot.
 
 ---
 
 ## Installation & Flashing Guide
 
 1. **Download `.fwsc`:** Download the latest `AUDILUNE-v1.0.fwsc` binary from [Releases](../../releases) (or the latest green GitHub Actions artifact).
-2. **Preview in Emulator (Optional):** Load the `.fwsc` file into the [FM-1 Browser Emulator](https://github.com) to test the UI and controls first.
+2. **Preview in Emulator (Optional):** Load the `.fwsc` file into the [FM-1 Browser Emulator](https://github.io) to test the UI and controls first.
 3. **Prepare Hardware:** Charge your M-VAVE FM-1 and connect it directly using a **data-rated USB-C cable** (avoid unpowered USB hubs). Open **Chrome** or **Edge** with only one MIDI tab open.
 4. **Enter Update Mode (`UBOOT`):**
-   * On the FM-1, hold **`Octave Down` + `Octave Up`** together for **5 seconds** while stopped until `UBOOT` appears on screen (or connect via the WebMIDI installer).
+   * On the FM-1, hold **Octave Down + Octave Up** together for **5 seconds** while stopped until `UBOOT` appears on screen (or connect via the WebMIDI installer).
    * *Note:* If Windows or Android prompts you to format a newly mounted drive, click **Cancel**.
 5. **Write Firmware:** Select `AUDILUNE-v1.0.fwsc` in the WebMIDI flasher and wait until writing finishes. **Do not unplug or power off the unit while writing is in progress.**
 
 ---
 
-## Loading Personal Samples (`USR1`–`USR6`)
+## Chop Shop & Personal Samples (`USR1`–`USR6`)
 
-* **6 Dynamic Sample Slots:** AUDILUNE provides **6 floating user sample slots (`USR1`–`USR6`)** in dedicated flash (`0xA0000`–`0xDBFFF`) that can be loaded or stacked across any of the 6 tracks.
-* **Web Sample Uploader:** Connect via USB-C in Chrome or Edge, open the FM-1 Web Sample Editor on [The Firmware Hub](https://thefirmwarehub.com), drop in WAV files (converted automatically to mono 16-bit PCM), and send them to `USR1`–`USR6`.
-* **Best Practices for Audio Files:** Trim silence and keep individual samples concise (roughly **1–2 seconds mono**, or **~40 KB per slot**) for fast transfers and crisp playback.
+* **6 Dynamic Sample Slots (`40 KiB` Each):** AUDILUNE provides **6 floating user sample slots (`USR1`–`USR6`)** in dedicated flash (`0xA0000`–`0xDBFFF`), each holding up to **5.0 seconds** of audio usable or stackable across all 6 tracks.
+* **On-Device Chop Shop (`Hold Edit Button 1.2s`):** Bounce the current song, a saved project (`SLOT 1`–`6`), an individual track (`TRACK 1`–`6`), or an existing `USR1`–`USR6` sample directly into the `#FFFFFF` waveform slicer (`4/8/16 EQUAL`, `AUTO TRANSIENT`, `MANUAL`), trim start/end points, and save straight to `USR1`–`USR6` or load onto any track via **Save Button**.
+* **Web Sample Editor & 5-Second Smart Auto-Fit:** Open `web/editor.html` in Chrome or Edge over USB-C and drop in WAV/MP3/AIFF/FLAC/OGG files. **5-Second Smart Auto-Fit** automatically trims silence, caps length at `5.0s` with an anti-click fade, and adapts the sample rate (`11.025 kHz`–`44.1 kHz`) so any sample up to 5 seconds fits `USR1`–`USR6` cleanly.
+* **Direct USB-C Audio Sampling:** Select an empty `USR1`–`USR6` slot and press **REC Button** to arm Wait-for-Note recording directly from USB-C audio input; hold **REC Button (`1.5s`)** to clear the slot.
 
 ---
 
 ## MIDI & USB-C Audio
 
 * **Plug-and-Play MIDI Defaults:** Boots with **Tracks 1–6 mapped to MIDI Channels 1–6** (plus **GM Channel 10** drum support), automatic USB-C clock/transport pass-through, and live scale quantization.
-* **Global MIDI Menu (`Tap GLOBAL`):** Turn the Select Encoder to choose Track 1–6 and use the knobs to configure Send/Receive/Internal routing. Fixed track CCs: `K1 = CC 10` (Pan), `K2 = CC 74` (Filter), `K3 = CC 7` (Level), `K4 = CC 93` (Chorus).
+* **Global Page (`GLO Button`):** Turn **Select Knob** to choose Track 1–6 and use **Knob 4** to configure Send/Receive/Internal routing. Fixed track CCs: `CC 10` (Pan), `CC 74` (Filter), `CC 7` (Level), `CC 93` (Chorus).
 * **USB-C Class-Compliant Audio:** Streams stereo audio over USB-C (`44.1 kHz` / `48 kHz`) with no drivers required on Windows, macOS, Linux, or Android.
 
 ---
@@ -111,7 +120,7 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 ## Rescue & Returning to Stock Firmware
 
 * **Built-In Boot-Loop Protection:** If startup is ever interrupted, AUDILUNE's boot guard automatically enters recovery/bootloader mode after repeated failed boots.
-* **Manual Update Mode:** Hold **`Octave Down` + `Octave Up`** for 5 seconds while stopped, or hold **`Octave Down`** at power-on to enter USB Rescue.
+* **Manual Update Mode:** Hold **Octave Down + Octave Up** for 5 seconds while stopped, or hold **Octave Down** at power-on to enter USB Rescue.
 * **Returning to Official Firmware:** Use M-VAVE's **M-UPGRADE** utility with the official `FM-1.fwsc` (V16) package.
 
 > Custom firmware is installed at your own risk.
@@ -120,12 +129,12 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 
 ## Credits & Licence
 
-* **AUDILUNE v1.0 Concept, UI/UX & Direction** — Created by **AUDILUNE** (`@AUDILUNE`), designed around a cosmological `#000000` aesthetic, one-handed tap-to-latch ergonomics, and an unrestricted 6-track workflow.
+* **AUDILUNE v1.0 Concept, UI/UX & Direction** — Created by **AUDILUNE** (`@AUDILUNE`), designed around a cosmological `#000000` aesthetic, immediate 12-page navigation, and an unrestricted 6-track workflow.
 * **AI Pair-Programming & Code Assistance** — Developed with step-by-step firmware engineering, DSP calibration, and documentation assistance from **Google Gemini**.
 * **Platform, Tooling & Hardware Ecosystem:**
   * **GitHub & GitHub Actions** — Source hosting, version control, and automated cloud firmware builds.
   * **M-VAVE (Sinco Intelligent Technology)** — Hardware platform for the **M-VAVE FM-1** pocket synthesizer and groovebox.
-  * **Community Tools** — Browser emulation via [fm1-emu](https://github.com) (`@joakimeriksson`) and community firmware distribution via [The Firmware Hub](https://thefirmwarehub.com).
+  * **Community Tools** — Browser emulation via [fm1-emu](https://github.io) (`@joakimeriksson`) and community firmware distribution via [The Firmware Hub](https://thefirmwarehub.com).
 * **Upstream Open-Source Firmware Foundation:**
   * **[Felucca](https://github.com)** by **Leo Kuroshita (`@kurogedelic` / Hügelton Instruments)** — Core DSP synthesis engines, sequencer clock, USB-C audio/MIDI stack, and hardware abstraction layer.
   * **[Sloop](https://github.com)** by **`@isod89`** — Extended FM-1 firmware architecture, web editor protocol, and UI framework.
