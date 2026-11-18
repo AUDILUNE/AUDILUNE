@@ -172,6 +172,7 @@ UI_SMALL static void felucca_init(void)
     song.g[G_CLKOUT] = midi_set[9];
     song.g[G_RMCH] = midi_set[8];
     song.g[G_FXFADE] = fxfade;
+    palette_set(0u);
     layers_init();
     go_home();
     ui.force = 1;
@@ -184,6 +185,7 @@ UI_SMALL static void fm1_main(void)
     persist_boot();
 #if FELUCCA_OTA
     if (flash_ok)
+
         ota_boot_cleanup();
 #endif
     settings_init();
