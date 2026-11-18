@@ -1091,6 +1091,8 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
         rec_t0 = now_ms;
         rec_on = 1;
         rec_toggle();
+        if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
+            song.g[G_CLICK] = 70;
         ui_message((song.rec || rec_wait) ? "AUTOMATION ARMED" : "AUTOMATION OFF");
     }
     if (rec_down && rec_on && !eaten && !ui.hold_kind && now_ms - rec_t0 >= 650u) {
@@ -1123,6 +1125,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
         ui.hold_kind = 0;
         rec_on = 0;
         ui.force = 1;
+
     }
     if (!rec_down) {
         if (ui.hold_kind == 1u) { ui.hold_kind = 0; ui.force = 1; }
