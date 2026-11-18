@@ -7667,7 +7667,7 @@ $("clearseq").addEventListener("click", async () => {
     for (let i = 0; i < dev.info.nstep; i++) {
       if (i % 8 === 0) sayK("applying", `${i}/${dev.info.nstep}`);
       if (drum) { dev.dsteps[i] = parse[CMD.DRUM_STEP](await rq(req.drumStep(i, emptyDrum()))); dev.steps[i] = drumAsStep(dev.dsteps[i]); }
-      else dev.steps[i] = parse[CMD.STEP_SET](await rq(req.stepSet(i, { n: 0, notes: [0, 0, 0, 0], time: 2, flags: 0, vel: 0 })));
+      else dev.steps[i] = parse[CMD.STEP_SET](await rq(req.stepSet(i, { n: 0, notes:, time: 2, flags: 0, vel: 0 })));
     }
     $("steptables").dataset.len = "";
     renderSteps();
@@ -7676,13 +7676,14 @@ $("clearseq").addEventListener("click", async () => {
 });
 
 /* ---------------------------------------------------------- samples --- */
-const smpDraft = [0, 1, 2, 3].map(() => ({ name: "", files: [] }));   /* USR1..USR4 */
+const smpDraft = [0, 1, 2, 3, 4, 5].map(() => ({ name: "", files: [] }));   /* USR1..USR6 */
 let smpBusy = false;
 const SMP_RC = { 1: "size", 2: "header", 3: "data CRC", 4: "flash", 5: "zones" };
 const kib = (n) => (n / 1024).toFixed(1);
 /* auto key split, as in buildSlot (for the preview) */
 function splitKeys(files) {
   const z = files.map((f, i) => ({ i, root: f.root })).sort((a, b) => a.root - b.root);
+
   const out = [];
   z.forEach((x, j) => {
     out[x.i] = [j === 0 ? 0 : Math.floor((z[j - 1].root + x.root) / 2) + 1, j === z.length - 1 ? 127 : Math.floor((x.root + z[j + 1].root) / 2)];
