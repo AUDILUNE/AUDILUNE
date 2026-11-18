@@ -2147,6 +2147,8 @@ static void midi_fx(uint32_t note, int on)
     }
 }
 
+static uint8_t audilune_layer_mask, kb_lmask[27];
+
 static void key_down(uint32_t k)
 {
     uint32_t layer = layer_now(), sel = song.sel % NTRK, i, mc;
@@ -2154,8 +2156,10 @@ static void key_down(uint32_t k)
     kb_kind[k] = KS_NONE;
     kb_trk[k] = (uint8_t)sel;
     kb_n[k] = 0;
+    kb_lmask[k] = 0;
     switch (layer) {
     case LY_FX: {
+
         int32_t fx = punch_fx_of_key(k);
         kb_kind[k] = KS_FX;
         if (fx >= 0 && fx < (int32_t)PUNCH_NFX) {
@@ -2216,53 +2220,54 @@ static void key_down(uint32_t k)
     }
     if (is_drum(t)) {
         uint32_t lane = lane_of_key(k), lvl = key_lvl();
-        kb_nt[k][0] = (uint8_t)lane;
-          kb_n = 1;
+        *(*(kb_nt + k) + 0) = (uint8_t)lane;
+        *(kb_n + k) = 1;
         if (layer == LY_ROLL) {
-            kb_kind = KS_ROLL;
+            *(kb_kind + k) = KS_ROLL;
             roll_start(k, t, lane, lvl);
             return;
         }
-        kb_kind = KS_DRUM;
+        *(kb_kind + k) = KS_DRUM;
         drum_input(lane, lvl, 0, 1);
         mc = trk_midi_ch(sel);
         midi_out_note(mc, (uint32_t)LANE_NOTE[lane], lvl_vel(lvl, 100));
         return;
     }
     {
-        uint32_t n = kb_map(t, k), tr, lmask = (1u << sel) | (uint32_t)ui.sel_trk_mask;
+        uint32_t n = kb_map(t, k), tr, lmask = (1u << sel) | (uint32_t)audilune_layer_mask;
         if (n == KB_SILENT) {
             if (t->p[P_CHORD] && layer == LY_PLAY && chord_mod_of_key(k)) {
-                kb_kind = KS_MOD;
+                *(kb_kind + k) = KS_MOD;
                 chord_revoice(sel);
             }
             return;
         }
         if (layer == LY_ROLL) {
-            kb_kind = KS_ROLL;
+            *(kb_kind + k) = KS_ROLL;
             *(*(kb_nt + k) + 0) = (uint8_t)n;
-            kb_n = 1;
+            *(kb_n + k) = 1;
             roll_start(k, t, n, LV_NORM);
             return;
         }
-        kb_kind = KS_NOTE;
-        kb_root = (uint8_t)n;
-        kb_oct = (int8_t)song.octave;
+        *(kb_kind + k) = KS_NOTE;
+        *(kb_root + k) = (uint8_t)n;
+        *(kb_oct + k) = (int8_t)song.octave;
+        *(kb_lmask + k) = (uint8_t)lmask;
         if (t->p[P_CHORD]) {
-            kb_n = (uint8_t)chord_play_notes(t, n, chord_mods(), *(kb_nt + k));
+            *(kb_n + k) = (uint8_t)chord_play_notes(t, n, chord_mods(), *(kb_nt + k));
         } else {
             *(*(kb_nt + k) + 0) = (uint8_t)n;
-            kb_n = 1;
+            *(kb_n + k) = 1;
         }
         in_key = (uint8_t)(k + 1u);
         for (tr = 0; tr < NTRK; tr++) {
             if (!((lmask >> tr) & 1u))
                 continue;
             mc = trk_midi_ch(tr);
-            for (i = 0; i < kb_n; i++) {
+            for (i = 0; i < *(kb_n + k); i++) {
                 uint32_t nt = *(*(kb_nt + k) + i);
-                in_chord = kb_n > 1u ? *(kb_nt + k) : 0;
-                in_chord_n = kb_n;
+                in_chord = *(kb_n + k) > 1u ? *(kb_nt + k) : 0;
+                in_chord_n = *(kb_n + k);
                 in_chord_i = i;
                 input_on(trk + tr, nt, 100);
                 in_chord = 0;
@@ -2272,14 +2277,14 @@ static void key_down(uint32_t k)
         in_key = 0;
         if (!(kb_prev & ~(1u << k)) || pen_n >= 4u)
             pen_n = 0;
-        for (i = 0; i < kb_n && pen_n < 4u; i++)
+        for (i = 0; i < *(kb_n + k) && pen_n < 4u; i++)
             *(pen_note + pen_n++) = *(*(kb_nt + k) + i);
     }
 }
 
 static void key_up(uint32_t k)
-
 {
+
     uint32_t i, mc, kind = kb_kind[k];
     track_t *t = &trk[kb_trk[k] % NTRK];
     kb_kind[k] = KS_NONE;
