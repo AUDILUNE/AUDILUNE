@@ -1078,6 +1078,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         if (row == 0u) {
             static const char *const AL_THM_H[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
+            palette_set(audilune_theme_idx);
             audilune_hud_text("THEME", *(AL_THM_H + audilune_theme_idx));
         } else if (row == 3u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
@@ -1090,6 +1091,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 audilune_hud_popup("VAULT USR", (int32_t)ui.chop_save_usr, "");
             } else {
                 ui.chop_load_trk = (uint8_t)((ui.chop_load_trk + (s > 0 ? 1u : 6u)) % 7u);
+
                 audilune_hud_popup("LOAD TRK", (int32_t)ui.chop_load_trk, "");
             }
         } else {
