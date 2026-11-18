@@ -186,7 +186,7 @@ static uint32_t kb_pitch(const track_t *t, uint32_t k, int32_t oct)
             count += (mask >> i) & 1u;
         wo = degree / count;
         degree %= count;
-        if (degree < 0) {
+         if (degree < 0) {
             degree += count;
             wo--;
         }
@@ -204,15 +204,20 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
 {
     if (is_drum(t))
         return LANE_NOTE[lane_of_key(k)];
-    if (ENGINES[t->eng_req % NENGINES] == &ENG_SAMPLE && drum_set() >= 0 &&
-        (uint32_t)t->p[P_E0] % SMP_NSETS == (uint32_t)drum_set())
-        return (uint32_t)clamp(36 + 12 * song.octave + (int32_t)k, 0, 127);
+    if (ENGINES[t->eng_req % NENGINES] == &ENG_SAMPLE) {
+        uint32_t set = (uint32_t)t->p[P_E0] % SMP_NSETS;
+        if (set < 6u && usr_nz[set] > 1u && !audilune_chop_chromatic)
+            return k < 27u && WHITE_OFF[k] >= 0 ? (uint32_t)(36 + WHITE_OFF[k]) : KB_SILENT;
+        if (drum_set() >= 0 && set == (uint32_t)drum_set())
+            return (uint32_t)clamp(36 + 12 * song.octave + (int32_t)k, 0, 127);
+    }
 #if FELUCCA_SLICE
     if (ENGINES[t->eng_req % NENGINES] == &ENG_SLICE)
         return (uint32_t)clamp(SLC_BASE + t->p[P_ROOT] + 12 * song.octave + (int32_t)k, 0, 127);
 #endif
     return kb_pitch(t, k, song.octave);
 }
+
 
 /* ------------------------------------------- AUDILUNE forward declarations --- */
 #ifndef CHAIN_MAX
