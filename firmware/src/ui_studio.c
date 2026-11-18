@@ -308,11 +308,11 @@ UI_SMALL static void studio_tracks_draw(void)
     for (i = 0; i < disp_trks; i++) {
         uint32_t has_trk = i < NTRK;
         track_t *t = has_trk ? &trk[i] : &trk[0];
-        char b[24], e[16];
+        char b[24], e[24];
         uint32_t selected = song.sel == i;
         uint32_t locked = (ui.sel_trk_mask >> i) & 1u;
         uint32_t len = has_trk ? (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP) : 16u;
-        uint32_t level = !has_trk ? 0u : (i == TRK_DRUM && !t->synth_mode ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
+        uint32_t level = !has_trk ? 0u : (!t->synth_mode && i == TRK_DRUM ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
         uint32_t silent = !has_trk || trk_silent(t) || !level;
         uint32_t pos = has_trk ? (t->seq_idx % len) : 0u;
         uint32_t rec = has_trk ? ((song.rec >> i) & 1u) : 0u;
@@ -323,16 +323,18 @@ UI_SMALL static void studio_tracks_draw(void)
         if (!has_trk) {
             str_cpy(b, "OPEN", sizeof b);
             str_cpy(e, "AMBIENT", sizeof e);
-        } else if (i == TRK_DRUM && !t->synth_mode) {
-            str_cpy(b, DRUM_KIT_NAMES[drum_kit()], sizeof b);
-            str_cpy(e, GEN_SHORT[gidx], sizeof e);
+        } else if (!t->synth_mode) {
+            uint32_t kidx = (uint32_t)clamp(t->p[t->pe0], 0, (int32_t)NDRUM_KITS - 1);
+            b[0] = 0;
+            str_cpy(e, "DRUM KIT: ", sizeof e);
+            str_cpy(e + 10, DRUM_KIT_NAMES[kidx], sizeof e - 10);
         } else {
             trk_short_name(i, b);
+            b[11] = 0;
             str_cpy(e, GEN_SHORT[gidx], sizeof e);
         }
-        b[11] = 0;
         h = studio_hash(selected + locked * 31u + gidx * 17u + level * 7u + silent * 997u + rec * 1999u +
-                        solo * 4999u + len * 37u + song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b);
+                        solo * 4999u + len * 37u + song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b[0] ? b : e);
         if (has_trk)
             for (j = 0; j < len; j++) h = h * 31u + (uint32_t)trk_step_on(t, j);
         if (!ui.force && h == rows[i]) continue;
@@ -343,9 +345,13 @@ UI_SMALL static void studio_tracks_draw(void)
             char n[2] = {(char)('1' + i), 0};
             cv_text(10, (row_h - 14) / 2, &FONT_S, n, (selected || locked) ? C_BLACK : C_WHITE);
         }
-        cv_text(32, 1, &FONT_S, b, selected ? C_WHITE : TE_G4);
-        if (32 + text_w(&FONT_S, b) + 4 + text_w(&FONT_S, e) < 182)
-            cv_text(32 + text_w(&FONT_S, b) + 4, 1, &FONT_S, e, selected ? acc : TE_G3);
+        if (b[0]) {
+            cv_text(32, 1, &FONT_S, b, selected ? C_WHITE : TE_G4);
+            if (32 + text_w(&FONT_S, b) + 4 + text_w(&FONT_S, e) < 182)
+                cv_text(32 + text_w(&FONT_S, b) + 4, 1, &FONT_S, e, selected ? acc : TE_G3);
+        } else {
+            cv_text(32, 1, &FONT_S, e, selected ? acc : C_WHITE);
+        }
         if (rec) {
             cv_rect(186, 2, 50, 12, C_WHITE);
             cv_text(199, 1, &FONT_S, "REC", C_BLACK);
@@ -353,6 +359,7 @@ UI_SMALL static void studio_tracks_draw(void)
             cv_rect(186, 2, 50, 12, C_WHITE);
             cv_text(196, 1, &FONT_S, "SOLO", C_BLACK);
         } else if (silent) {
+
             cv_text(204, 1, &FONT_S, "MUTE", TE_G3);
         } else {
             char pb[1 + 1] = {(char)('A' + ((sect >= 0 ? sect : 0) % 6)), 0};
