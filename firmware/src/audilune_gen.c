@@ -263,13 +263,43 @@ static void gen_populate_drums(track_t *t, const genre_dna_t *dna, int full_seed
     t->seq_active = 1;
 }
 
+static step_t audilune_arp_snap_step[NTRK][NSTEP];
+static dstep_t audilune_arp_snap_dstep[NTRK][NSTEP];
+static int8_t audilune_arp_snap_micro[NTRK][NSTEP];
+static uint8_t audilune_arp_snap_active[NTRK];
+static uint8_t audilune_arp_snap_saved[NTRK];
+
+static void audilune_arp_snap_save(uint32_t ti)
+{
+    if (ti >= NTRK || audilune_arp_snap_saved[ti])
+        return;
+    memcpy(audilune_arp_snap_step[ti], trk[ti].step, sizeof trk[ti].step);
+    memcpy(audilune_arp_snap_dstep[ti], trk[ti].dstep, sizeof trk[ti].dstep);
+    memcpy(audilune_arp_snap_micro[ti], trk[ti].micro, sizeof trk[ti].micro);
+    audilune_arp_snap_active[ti] = trk[ti].seq_active;
+    audilune_arp_snap_saved[ti] = 1u;
+}
+
+static void audilune_arp_snap_restore(uint32_t ti)
+{
+    if (ti >= NTRK || !audilune_arp_snap_saved[ti])
+        return;
+    memcpy(trk[ti].step, audilune_arp_snap_step[ti], sizeof trk[ti].step);
+    memcpy(trk[ti].dstep, audilune_arp_snap_dstep[ti], sizeof trk[ti].dstep);
+    memcpy(trk[ti].micro, audilune_arp_snap_micro[ti], sizeof trk[ti].micro);
+    trk[ti].seq_active = audilune_arp_snap_active[ti];
+    audilune_arp_snap_saved[ti] = 0u;
+    locks_restore(&trk[ti]);
+}
+
 static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_seed)
 {
     track_t *t = &trk[ti];
+    const genre_dna_t *tdna = (ti < NTRK) ? &GENRE_DNA[ui.algo_genre[ti] % GENRE_COUNT] : dna;
     if (is_drum(t))
-        gen_populate_drums(t, dna, full_seed);
+        gen_populate_drums(t, tdna, full_seed);
     else
-        gen_populate_synth(ti, dna, full_seed);
+        gen_populate_synth(ti, tdna, full_seed);
 }
 
 /* Triggers step-level Punch-In FX (P_ED_FX 1..6) using the AUDILUNE OP1-OP6 matrix */
@@ -308,6 +338,7 @@ static void audilune_back_home_tick(void)
     elapsed = clk_beat - audilune_back_home_start_beat;
     for (i = 0; i < NTRK; i++) {
         locks_restore(&trk[i]);
+
         if (elapsed >= 4u)
             memset(trk[i].micro, 0, sizeof trk[i].micro);
     }
