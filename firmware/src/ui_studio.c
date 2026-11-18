@@ -1151,7 +1151,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     } else if (scr == UI_GLO) {
         static const char *const AL_THM[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
         str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
-        if (row == 0u) str_cpy(val, *(AL_THM + (ui.theme & 7u)), 14);
+        if (row == 0u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
         else if (row == 3u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
     } else if (scr == UI_SAVE) {
         str_cpy(lbl, "SLOT ", 18);
@@ -1163,6 +1163,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         fmt_int(lbl + 6, (int32_t)row + 1);
         if (scr == UI_ARP) str_cpy(val, *(AL_ARP_M + (*(al_arp_mode + row) % 5u)), 14);
         else { fmt_int(val, *(trk[row].p + P_SLEN)); str_cpy(val + str_len(val), " ST", 5); }
+
     } else if (scr == UI_CHOP_SRC) {
         static const char *const SRC_L[3] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
         str_cpy(lbl, *(SRC_L + row), 18);
