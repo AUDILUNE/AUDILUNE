@@ -1016,10 +1016,11 @@ static volatile uint8_t ci_on;
 static volatile uint8_t ci_beat;
 static uint32_t ci_u;
 static volatile uint8_t rec_go;
+static uint8_t audilune_layer_mask;
 static void seq_start(void);
 static void rec_begin(void)
 {
-    song.rec = (uint8_t)(1u << (song.sel % NTRK));
+    song.rec = (uint8_t)((1u << (song.sel % NTRK)) | audilune_layer_mask);
     rec_wait = 0;
     rec_go = 1;
 }
@@ -1038,6 +1039,7 @@ static volatile uint32_t ft_drop_mask;
 static uint32_t ft_btn_prev;
 static volatile uint8_t ft_bars;
 static volatile uint32_t ft_close_ms;
+
 static volatile uint8_t ft_closed;
 static int track_empty(const track_t *t)
 {
@@ -2147,13 +2149,14 @@ static void midi_fx(uint32_t note, int on)
     }
 }
 
-static uint8_t audilune_layer_mask, kb_lmask[27];
+static uint8_t kb_lmask[27];
 
 static void key_down(uint32_t k)
 {
     uint32_t layer = layer_now(), sel = song.sel % NTRK, i, mc;
     track_t *t = &trk[sel];
     kb_kind[k] = KS_NONE;
+
     kb_trk[k] = (uint8_t)sel;
     kb_n[k] = 0;
     kb_lmask[k] = 0;
