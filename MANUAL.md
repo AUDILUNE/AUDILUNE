@@ -1,55 +1,101 @@
 # AUDILUNE v1.0 — User Manual
 
-**A live 6-track synthesizer, sampler, and generative groovebox firmware for the M-VAVE FM-1.**
+**Turn the M-VAVE FM-1 into an unrestricted 6-track synthesizer, sampler, and generative groovebox.**
 
 ---
 
 ## Contents
 
-1. [Overview & Architecture](#1-overview--architecture)
-2. [Screens & Cosmological UI](#2-screens--cosmological-ui)
-3. [One-Handed Controls & Tap-to-Latch](#3-one-handed-controls--tap-to-latch)
-4. [Knobs & Layers (110% Shimmer Overflow)](#4-knobs--layers-110-shimmer-overflow)
-5. [Synthesis Engines, Presets & Smart Voicing](#5-synthesis-engines-presets--smart-voicing)
-6. [Sequencer, Pattern Chaining & Step FX Painting](#6-sequencer-pattern-chaining--step-fx-painting)
-7. [Master Punch-In FX & Generative Scale Anchor](#7-master-punch-in-fx--generative-scale-anchor)
-8. [User Samples (USR1–USR6) & Flash Vaults (OP1–OP6)](#8-user-samples-usr1usr6--flash-vaults-op1op6)
-9. [MIDI & USB-C Audio](#9-midi--usb-c-audio)
+1. [Overview & Core Philosophy](#1-overview--core-philosophy)
+2. [Visual Identity, Screen Bars & 8 Themes](#2-visual-identity-screen-bars--8-themes)
+3. [Hardware Control Map](#3-hardware-control-map)
+4. [The 12 Dedicated Pages](#4-the-12-dedicated-pages)
+5. [Effects Page & 110% Musical Overflow](#5-effects-page--110-musical-overflow)
+6. [Chop Shop & User Samples (USR1–USR6)](#6-chop-shop--user-samples-usr1usr6)
+7. [Scale Library & Wild Card Scales](#7-scale-library--wild-card-scales)
+8. [Synthesis Engines, Macro-Genres & Smart Voicing](#8-synthesis-engines-macro-genres--smart-voicing)
+9. [MIDI, USB-C Audio & Web Editor](#9-midi-usb-c-audio--web-editor)
 10. [Flashing, Rescue & Stock Firmware Recovery](#10-flashing-rescue--stock-firmware-recovery)
 
 ---
 
-## 1. Overview & Architecture
+## 1. Overview & Core Philosophy
 
-**AUDILUNE** converts the **M-VAVE FM-1** into a standalone **6-track × 128-step** live instrument, featuring 13 synthesis engines, 6 floating user sample slots (`USR1`–`USR6`), automatic voice allocation, 6 real-time macro-genres, and single-finger tap-to-latch ergonomics.
+**AUDILUNE** transforms the **M-VAVE FM-1** into a standalone **6-track × 128-step** studio and live performance instrument featuring universal controls, single-button page navigation, and real-time motion and step locking.
 
-## 2. Screens & Cosmological UI
+---
 
-AUDILUNE renders on a black OLED screen featuring screen-dimming protection and 8 selectable UI color themes accessed via **Tap SELECT → Tap GLOBAL**.
+## 2. Visual Identity, Screen Bars & 8 Themes
 
-## 3. One-Handed Controls & Tap-to-Latch
+* **High-Contrast Cosmological UI:** Pure `#000000` black canvas with `#FFFFFF` text, inverted highlight boxes, astronomical reticles, and lunar corner motifs.
+* **Top Header & Bottom HUD:** Persistent header showing Tempo (`BPM`), Transport state (`PLAY`/`STOP`/`REC`), Master Volume, and Clock Sync; a bottom HUD displaying live parameter values.
+* **8 Color Themes:** Configurable via **Global Page** (**GLO Button**), allowing users to switch between **Teal** (default), **Orange**, **Burgundy**, **Purple**, **Pink**, **Blue**, **Mint**, and **Grey**.
 
-Every modifier button operates via single-finger tap-to-latch for track focus, pitch bend, UI color themes, screen toggles, infinite algorithmic composition engines, recording, and transport controls.
+---
 
-## 4. Knobs & Layers (110% Shimmer Overflow)
+## 3. Hardware Control Map
 
-Features a Master Knob, Main Layer (Tempo, DJ Filter, Track Volume, Metronome Volume), FX Layer (Spatial Delay with up to 110% Shimmer, Reverb, Harmonic Drive, Chorus), and Edit Note Layer (Pitch Offset, Velocity, Gate, Micro-Timing).
+* **Master Knob & Select Knob:** Controls global output volume (`0%`–`100%`) and scrolls through lists, tracks, Chop Shop rows, or visualizer styles.
+* **Presets Knob & Algorithm Knob:** Cycles base presets (`USR1`–`USR6` samples and kits) and morphs active track presets across 6 genre-tailored variations (`AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, `INDUSTRIAL`).
+* **Octave Down / Octave Up & Full Keyboard:** Shifts keyboard range (`-3` to `+3` octaves) and triggers synth notes, chromatic samples, or chopped kits (`CHOP 01`–`16`).
+* **Knobs 1–4:** Global Tempo (`Knob 1`), Metronome Volume (`Knob 2`), Parameter/Overflow adjustment (`Knob 3`), and Column/Sub-type/Step navigation (`Knob 4`).
+* **SEL Button & Play/Stop / REC Buttons:** Multi-locks tracks, steps, effects, or edits; controls transport playback and Wait-for-Note direct sampling (`1.5s` hold to erase).
 
-## 5. Synthesis Engines, Presets & Smart Voicing
+---
 
-Provides an unrestricted 6-track engine with access to 13 synthesis engines, synth emulators, drones, environmental and animal soundscapes, user sample slots, and automatic voice allocation across 6 macro-genres.
+## 4. The 12 Dedicated Pages
 
-## 6. Sequencer, Pattern Chaining & Step FX Painting
-Includes a 6 × 128-step grid with pattern chaining, end-of-pattern queueing, 16-step bar snap, and step FX painting.
+Pressing **Home Button** from any dedicated page returns to **Live Play Page** or cycles through remaining pages:
 
-## 7. Master Punch-In FX & Generative Scale Anchor
-Includes master punch-in performance effects, a generative scale anchor with 1-bar recovery, and an infinite algorithmic composition mode.
+1. **Startup Screen:** Displays the crescent moon logo and `AUDILUNE v1.0` title for `3,000 ms`.
+2. **Live Play Page (Home):** 6-track horizontal performance view displaying active Preset, Algorithm variation, Pattern (`A`–`F`), and level meters.
+3. **Visualizer Page:** Full-screen audio-reactive art (Header/HUD hidden) cycling 4 styles via **Select Knob** (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*).
+4. **Effects Page (FX Button):** Categorized effects browser and multi-lock controller.
+5. **Envelope Page (ENV Button):** `Attack`, `Decay`, `Sustain`, and `Release` controls with **SEL Button** multi-locking.
+6. **LFO Page (LFO Button):** `Waveform`, `Rate`, `Depth`, and `Destination` controls.
+7. **Edit Page (Tap Edit Button):** Surgical step and track operations (`Copy`, `Paste`, `Duplicate`, `Clear`, `Quantize`, `Humanize`, `Nudge`, `Transpose`, `Velocity`, `Gate`, `Probability`, `Ratchet`, `Reverse`, `Root Note`, `Scale Type`, `Chop Mode`).
+8. **Chop Shop Page (Hold Edit Button 1.2s):** Two-stage waveform slicer and on-device sampler.
+9. **Global Page (GLO Button):** System configuration (`Color Theme`, `MIDI Channels`, `MIDI Routing`, `Clock Sync`, `USB Audio I/O`).
+10. **Save Page (Save Button):** 6 non-destructive SPI NOR Flash Vaults (`SLOT 1`–`6`).
+11. **ARP Page (ARP Button):** Generative selection mode for morphing tracks and steps anchored to unselected active tracks.
+12. **SEQ Page (SEQ Button):** Pattern-chain (`A`–`F`) and step-length (`16`–`128`) builder.
 
-## 8. User Samples (USR1–USR6) & Flash Vaults (OP1–OP6)
-Features dedicated user sample slots and non-destructive flash vaults for saving and recalling project states.
+---
 
-## 9. MIDI & USB-C Audio
-Provides plug-and-play MIDI mapping across channels 1–6 and drum tracks, global MIDI menu controls, and class-compliant USB-C audio with live telemetry.
+## 5. Effects Page & 110% Musical Overflow
+
+Includes categorized processing across **Time, Pitch & Groove**, **Granular, Glitch & Rhythmic**, **Spatial & Ambient (`0%`–`110%` Overflow)**, **Modulation & Stereo Movement**, **Filters & EQ**, and **Saturation, Lo-Fi & Dynamics**. Sweeping past `100%` into `101%`–`110%` unlocks shimmer feedback loops, harmonic delay cascades, and rich stereo bloom without clipping.
+
+---
+
+## 6. Chop Shop & User Samples (`USR1`–`USR6`)
+
+* **Stage 1 & Stage 2 Slicer:** Source selection (`Chop Song`, `Chop Track`, `Chop Sample`) followed by `#FFFFFF` waveform editing with slice modes (`4 EQUAL`, `8 EQUAL`, `16 EQUAL`, `AUTO TRANSIENT`, `MANUAL`) and nudge/trim controls (`Start [` / `End ]`).
+* **Playback & Direct Recording:** Chromatic playback across `USR1`–`USR6` or slice mapping across `CHOP 01`–`16`. Direct Wait-for-Note audio recording up to `5.0s` (`40 KiB` per slot) from USB-C audio input.
+
+---
+
+## 7. Scale Library & Wild Card Scales
+
+* **Core Scales (12):** Chromatic, Major, Natural Minor, Harmonic Minor, Melodic Minor, Dorian, Phrygian, Lydian, Mixolydian, Major Pentatonic, Minor Pentatonic, Blues.
+* **Atmospheric & World Scales (6):** Hirajoshi, In-Sen, Phrygian Dominant, Double Harmonic Major, Whole Tone, Diminished Half-Whole.
+* **Wild Card Scales (4):** Prometheus (Mystic), Enigmatic, Tritone Hexatonic, and Lunar Eclipse (Custom 5-Note).
+
+---
+
+## 8. Synthesis Engines, Macro-Genres & Smart Voicing
+
+Provides simultaneous access to **13 synthesis engines** (`ANALOG`, `DIGITAL`, `PHASE`, `LOFI`, `SAMPLE`, `VOICE`, `TRIO`, `WHEEL`, `GRAIN`, `FM6`, `PHYS`, `NOISE`, `DRUMS`), environmental/animal soundscapes, user samples, and automatic voice allocation.
+
+---
+
+## 9. MIDI, USB-C Audio & Web Editor
+
+* **MIDI & USB Audio:** Mapped to MIDI Channels 1–6 (plus GM Drum Channel 10), class-compliant USB-C audio (`44.1 kHz` / `48 kHz`), and web editor support with **5-Second Smart Auto-Fit**.
+
+---
 
 ## 10. Flashing, Rescue & Stock Firmware Recovery
-Details procedures for flashing AUDILUNE, utilizing built-in boot guard and USB rescue, and returning to stock firmware via M-UPGRADE.
+
+* **Flashing & Recovery:** Hold **Octave Down + Octave Up** for `5 seconds` to enter `UBOOT` via WebMIDI, hold **Octave Down** on boot for USB Rescue, or return to stock firmware using **M-UPGRADE** (`FM-1.fwsc` V16).
+
