@@ -1197,6 +1197,7 @@ UI_SMALL static void ui_input(void)
     uint32_t home = btn_hold_ms(&ui.home_t0, B_HOME, now, 1, 3000u);
     int32_t s;
     int layered;
+    audilune_layer_mask = ui.sel_trk_mask;
     enc_hold = 0;
     if (pressed || notes)
         ui_input_ms = fm1_ms;
