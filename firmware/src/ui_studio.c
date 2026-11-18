@@ -1019,6 +1019,8 @@ static const char *const AL_CHOP_MODES[3 + 2] = {"4 EQUAL", "8 EQUAL", "16 EQUAL
 static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
+static uint8_t audilune_theme_idx;
+static uint8_t al_arp_mode[NTRK];
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
@@ -1034,6 +1036,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 {
     uint32_t rows = audilune_page_rows(ui.scr);
+
     uint32_t row = rows ? (uint32_t)ui.list_sel % rows : 0u;
     track_t *t = TSEL;
     if (k < 2u || !rows)
