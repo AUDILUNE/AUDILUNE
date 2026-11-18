@@ -2416,10 +2416,10 @@ function b64dec(s) {
   return out.subarray(0, o);
 }
 /* object ids (firmware editor.c ED_BK_IDS): 0 the working project, 1 the settings, 2..5 projects A..D,
-   6..7 the user preset banks, 32..35 the sample slots USR1..4 (35, USR4: SLOOP 2.4) */
+   6..7 the user preset banks, 32..37 the sample slots USR1..6 */
 /* RESTORE: the objects in the order they are written back (banks first; 8 = the FM6 patch bank, firmware v9: a
    file without it restores fine, a v8 device gets no object 8 sent; 9 = the SYN drum kits, firmware v10, likewise) */
-const BK = { FORMAT: "sloop-backup", VERSION: 1, SAMPLES: [32, 33, 34, 35], RESTORE: [6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 0, 1] };   /* 10: MIDI LEARN (2.6),
+const BK = { FORMAT: "sloop-backup", VERSION: 1, SAMPLES:, RESTORE: [6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 0, 1] };   /* 10: MIDI LEARN (2.6),
                                                        * 11: your theme (2.7, before the settings: they say whether it is shown) */
 class BackupError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 /* read everything; progress(done, total bytes) */
@@ -2428,6 +2428,7 @@ async function backupCapture(rq, info, progress = () => {}) {
   if (L.rc) throw new BackupError("bkRc" + L.rc, `LIST rc ${L.rc}`);
   const total = L.items.reduce((s, it) => s + it.len, 0), objects = [];
   let done = 0;
+
   for (const it of L.items) {
     const data = new Uint8Array(it.len);
     for (let off = 0; off < it.len; off += 256) {
