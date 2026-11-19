@@ -2216,13 +2216,13 @@ static void key_down(uint32_t k)
     default:
         break;
     }
-    if (is_drum(t) && layer == LY_PLAY && kb_grid) {
+    if ((is_drum(t) || !t->synth_mode) && layer == LY_PLAY && kb_grid) {
         kb_kind[k] = KS_UI;
         kb_nt[k][0] = (uint8_t)KB_GRID;
         lk_push(KB_GRID, k, 1);
         return;
     }
-    if (is_drum(t)) {
+    if (is_drum(t) || !t->synth_mode) {
         uint32_t lane = lane_of_key(k), lvl = key_lvl();
         *(*(kb_nt + k) + 0) = (uint8_t)lane;
         *(kb_n + k) = 1;
@@ -2232,9 +2232,20 @@ static void key_down(uint32_t k)
             return;
         }
         *(kb_kind + k) = KS_DRUM;
-        drum_input(lane, lvl, 0, 1);
-        mc = trk_midi_ch(sel);
-        midi_out_note(mc, (uint32_t)LANE_NOTE[lane], lvl_vel(lvl, 100));
+        if (is_black_key(k)) {
+            uint32_t bn = (uint32_t)black_key_note(k), vel = lvl_vel(lvl, 100);
+            pen_lane = (uint8_t)lane;
+            arm_start(TDRUM);
+            if (((song.rec >> TRK_DRUM) & 1u) && song.playing)
+                rec_hit(TDRUM, lane, lvl, 0);
+            trk_note_on(TDRUM, bn, vel);
+            mc = trk_midi_ch(sel);
+            midi_out_note(mc, bn, vel);
+        } else {
+            drum_input(lane, lvl, 0, 1);
+            mc = trk_midi_ch(sel);
+            midi_out_note(mc, (uint32_t)LANE_NOTE[lane], lvl_vel(lvl, 100));
+        }
         return;
     }
     {
@@ -2258,6 +2269,7 @@ static void key_down(uint32_t k)
         *(kb_oct + k) = (int8_t)song.octave;
         *(kb_lmask + k) = (uint8_t)lmask;
         if (t->p[P_CHORD]) {
+
             *(kb_n + k) = (uint8_t)chord_play_notes(t, n, chord_mods(), *(kb_nt + k));
         } else {
             *(*(kb_nt + k) + 0) = (uint8_t)n;
