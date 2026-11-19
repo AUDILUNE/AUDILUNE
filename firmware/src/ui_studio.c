@@ -304,12 +304,14 @@ UI_SMALL static void studio_tracks_draw(void)
     uint32_t i, j, disp_trks = NTRK < 6u ? 6u : NTRK;
     int32_t row_h = (int32_t)(172u / disp_trks);
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
+    audilune_in_arp_page = 0u;
     te_header("AUDILUNE", C_WHITE, &head, sect);
     for (i = 0; i < disp_trks; i++) {
         uint32_t has_trk = i < NTRK;
         track_t *t = has_trk ? &trk[i] : &trk[0];
         char b[24], e[24];
         uint32_t selected = song.sel == i;
+
         uint32_t locked = (ui.sel_trk_mask >> i) & 1u;
         uint32_t len = has_trk ? (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP) : 16u;
         uint32_t level = !has_trk ? 0u : (!t->synth_mode && i == TRK_DRUM ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
