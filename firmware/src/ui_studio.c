@@ -1027,7 +1027,8 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
     if (scr == UI_EDIT) return 16u;
-    if (scr == UI_GLO || scr == UI_SAVE || scr == UI_ARP || scr == UI_SEQ) return 6u;
+    if (scr == UI_ARP) return 5u;
+    if (scr == UI_GLO || scr == UI_SAVE || scr == UI_SEQ) return 6u;
     if (scr == UI_CHOP_SRC) return 3u;
     if (scr == UI_CHOP_WAVE) return 17u;
     return 0u;
@@ -1036,6 +1037,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 {
     uint32_t rows = audilune_page_rows(ui.scr);
+
 
     uint32_t row = rows ? (uint32_t)ui.list_sel % rows : 0u;
     track_t *t = TSEL;
