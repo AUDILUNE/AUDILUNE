@@ -278,9 +278,9 @@ UI_SMALL static void ui_leds(void)
     if (ui.layer == LY_FX) {
         led_put(nl, panel.btn[B_OCTDN], ((thr_req | thr_ed) & 1u) != 0u);
         led_put(nl, panel.btn[B_OCTUP], ((thr_req | thr_ed) & 2u) != 0u);
-    } else if (is_drum(TSEL)) {
-        led_put(nl, panel.btn[B_OCTDN], (fm1_in.buttons & dyn_bit[0]) != 0u);
-        led_put(nl, panel.btn[B_OCTUP], (fm1_in.buttons & dyn_bit[1]) != 0u);
+    } else if (is_drum(TSEL) || !TSEL->synth_mode) {
+        led_put(nl, panel.btn[B_OCTDN], audilune_drum_octave < 0);
+        led_put(nl, panel.btn[B_OCTUP], audilune_drum_octave > 0);
     } else {
         led_put(nl, panel.btn[B_OCTDN], song.octave < 0);
         led_put(nl, panel.btn[B_OCTUP], song.octave > 0);
@@ -293,6 +293,7 @@ UI_SMALL static void ui_leds(void)
         led_put(nl, 14u + k, (int)((keys >> k) & 1u));
         led_put(dl, 14u + k, (int)((guide >> k) & 1u));
         led_put(bl, 14u + k, (int)((back >> k) & 1u));
+
     }
     if (lights_lvl)
         for (k = 0; k < NB; k++)
