@@ -182,6 +182,25 @@ static uint8_t gen_quantize_note(int32_t raw_note, int32_t root, uint32_t mask)
         n--;
     return (uint8_t)clamp(n, 24, 108);
 }
+
+static int gen_step_allowed(uint32_t ti, uint32_t s)
+{
+    uint32_t smask;
+    if (!audilune_in_arp_page || audilune_gen_scope != GEN_SCOPE_STEP || ti >= NTRK)
+        return 1;
+    smask = audilune_sel_step_mask[ti];
+    if (!smask && s < 32u)
+        smask = (1u << (audilune_active_step & 31u));
+    return (s < 32u) ? (int)((smask >> s) & 1u) : 0;
+}
+
+static uint32_t gen_morph_rate(int full_seed)
+{
+    if (audilune_in_arp_page && !audilune_infinite_on)
+        return (audilune_gen_morph > 100u) ? 100u : (uint32_t)audilune_gen_morph;
+    return full_seed ? 100u : 25u;
+}
+
 /* Generates or mutates one synth track (parts 0..4) according to role and active Macro-Genre */
 static void gen_populate_synth(uint32_t ti, const genre_dna_t *dna, int full_seed)
 {
@@ -190,9 +209,10 @@ static void gen_populate_synth(uint32_t ti, const genre_dna_t *dna, int full_see
     uint32_t mask = gen_anchor_scale_mask(ti, &root);
     uint32_t len = full_seed ? dna->default_len : trk_len(t);
     int32_t base_oct = (ti == 0u) ? 36 : (ti == 1u) ? 48 : (ti == 2u) ? 60 : (ti == 3u) ? 72 : 48;
+    uint32_t rate = gen_morph_rate(full_seed);
     uint32_t s;
 
-    if (full_seed) {
+    if (full_seed && !(audilune_in_arp_page && audilune_gen_scope == GEN_SCOPE_STEP)) {
         steps_clear(t);
         t->p[P_SLEN] = (int16_t)len;
         t->p[P_SDIV] = (audilune_genre == GENRE_AMBIENT) ? 1 : 2; /* 1/8 for Ambient, 1/16 otherwise */
@@ -200,8 +220,9 @@ static void gen_populate_synth(uint32_t ti, const genre_dna_t *dna, int full_see
 
     for (s = 0; s < len && s < NSTEP; s++) {
         step_t *st = &t->step[s];
-        /* In mutation mode, only refresh ~25% of steps per bar to keep motifs recognizable */
-        if (!full_seed && gen_pct() >= 25u)
+        if (!gen_step_allowed(ti, s))
+            continue;
+        if (rate == 0u || (!full_seed && gen_pct() >= rate) || (full_seed && audilune_in_arp_page && !audilune_infinite_on && gen_pct() >= rate))
             continue;
 
         lock_del(t, s, P_ED_FX);
