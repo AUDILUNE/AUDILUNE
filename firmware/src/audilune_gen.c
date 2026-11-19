@@ -467,7 +467,7 @@ static void audilune_gen_block(void)
         int just_enabled = !audilune_inf_was || any_genre_changed;
         audilune_inf_was = 1u;
 
-        if (!song.playing && !transport_req)
+            if (!song.playing && !transport_req)
             transport_req = 1u;
 
         if (just_enabled) {
@@ -484,22 +484,32 @@ static void audilune_gen_block(void)
             }
         }
     } else {
+        static uint8_t audilune_gen_morph_was = 0xFFu;
+        static uint8_t audilune_gen_scope_was = 0xFFu;
         uint8_t newly_armed = (uint8_t)(cur_arp & ~prev_arp);
+        int morph_changed = (audilune_gen_morph != audilune_gen_morph_was) ||
+                            (audilune_gen_scope != audilune_gen_scope_was);
+        audilune_gen_morph_was = audilune_gen_morph;
+        audilune_gen_scope_was = audilune_gen_scope;
         audilune_inf_was = 0u;
 
-        if (newly_armed) {
+        if (newly_armed || (cur_arp && (morph_changed || any_genre_changed))) {
             for (i = 0; i < NTRK; i++) {
-                if ((newly_armed >> i) & 1u) {
+                if ((cur_arp >> i) & 1u) {
                     audilune_arp_snap_save(i);
-                    gen_populate_track(i, dna, track_empty(&trk[i]));
+                    audilune_arp_snap_reapply(i);
+                    if (!audilune_in_arp_page || audilune_gen_morph > 0u)
+                        gen_populate_track(i, dna, track_empty(&trk[i]));
                 }
             }
             audilune_gen_bar_last = clk_beat >> 2;
         } else if (cur_arp && song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
             audilune_gen_bar_last = clk_beat >> 2;
-            for (i = 0; i < NTRK; i++) {
-                if ((cur_arp >> i) & 1u)
-                    gen_populate_track(i, dna, 0);
+            if (!audilune_in_arp_page || audilune_gen_morph > 0u) {
+                for (i = 0; i < NTRK; i++) {
+                    if ((cur_arp >> i) & 1u)
+                        gen_populate_track(i, dna, 0);
+                }
             }
         }
     }
