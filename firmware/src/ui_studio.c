@@ -1033,7 +1033,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_GLO || scr == UI_SAVE || scr == UI_SEQ) return 6u;
     if (scr == UI_CHOP_SRC) return 3u;
     if (scr == UI_CHOP_WAVE) return 17u;
-    if (scr == UI_ALGO) return AUDILUNE_GENRE_COUNT + DRUM_KITS;
+    if (scr == UI_ALGO) return 6u + DRUM_KITS;
     if (scr == UI_SETUP) return 7u;
     return 0u;
 }
@@ -1043,6 +1043,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     uint32_t rec_on = song.playing && ((song.rec >> song.sel) & 1u);
     uint32_t step = t->seq_idx % trk_len(t);
     int32_t pid = -1;
+
     if (row == 0u || row == 2u || row == 3u) {
         static const int8_t T_PF[4 + 4] = {PX_HALF, PX_LOOP8, PX_STOP, PX_REV, PX_OCT, PX_RWD, PX_LOOP8T, PX_STUT};
         static const int8_t G_PF[4 + 4] = {PX_LOOP16, PX_LOOP32, PX_LOOP8T, PX_STUT, PX_CRUSH, PX_DOWN, PX_GATE, PX_FREEZE};
