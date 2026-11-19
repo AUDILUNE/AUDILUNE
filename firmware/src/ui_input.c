@@ -1368,11 +1368,20 @@ UI_SMALL static void ui_input(void)
                 audilune_hud_popup("STEP", next_step + 1, "");
                 break;
             }
-            if (is_drum(TSEL))
+            if (is_drum(TSEL) || !TSEL->synth_mode) {
+                if ((fm1_in.buttons & both) == both) {
+                    audilune_drum_octave = 0;
+                } else {
+                    audilune_drum_octave += b == B_OCTDN ? (audilune_drum_octave > -3 ? -1 : 0)
+                                                         : (audilune_drum_octave < 3 ? 1 : 0);
+                }
+                audilune_hud_popup("DRUM OCT", audilune_drum_octave, "");
+                ui.force = 1;
                 break;
+            }
             if ((fm1_in.buttons & both) == both) {
                 song.octave = 0;
-                      audilune_hud_popup("OCTAVE", 0, "");
+                audilune_hud_popup("OCTAVE", 0, "");
             } else {
                 song.octave += b == B_OCTDN ? (song.octave > -3 ? -1 : 0) : (song.octave < 3 ? 1 : 0);
                 audilune_hud_popup("OCTAVE", song.octave, "");
@@ -1403,6 +1412,7 @@ UI_SMALL static void ui_input(void)
             cur = preset_pos(&total);
             if (total) {
                 uint32_t next_p = (uint32_t)(((int32_t)cur + s % (int32_t)total + (int32_t)total) % (int32_t)total);
+
                 preset_go(next_p);
                 audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
             }
