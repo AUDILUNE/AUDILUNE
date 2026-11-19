@@ -12,6 +12,7 @@ static const char *const AUDILUNE_THEME_NAMES[AUDILUNE_THEME_COUNT] = {
 
 static uint8_t audilune_genre_idx = 0;
 static uint8_t audilune_theme_idx = 0;
+static int8_t audilune_drum_octave = 0;
 static uint8_t audilune_save_latch = 0, audilune_pit_latch = 0;
 
 /* Bare-metal HUD popup formatter (no stdio.h needed) for 1.5s status bar linger */
@@ -23,6 +24,7 @@ UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const ch
 
     int32_t v = val;
     while (label && label[p] && p < 18u) {
+
         buf[p] = label[p];
         p++;
     }
