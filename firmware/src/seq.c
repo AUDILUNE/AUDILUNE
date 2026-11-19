@@ -202,8 +202,8 @@ static uint32_t kb_pitch(const track_t *t, uint32_t k, int32_t oct)
 }
 static uint32_t kb_map(const track_t *t, uint32_t k)
 {
-    if (is_drum(t))
-        return LANE_NOTE[lane_of_key(k)];
+    if (is_drum(t) || !t->synth_mode)
+        return is_black_key(k) ? (uint32_t)black_key_note(k) : (uint32_t)LANE_NOTE[lane_of_key(k)];
     if (ENGINES[t->eng_req % NENGINES] == &ENG_SAMPLE) {
         uint32_t set = (uint32_t)t->p[P_E0] % SMP_NSETS;
         if (set < 6u && usr_nz[set] > 1u && !audilune_chop_chromatic)
@@ -213,6 +213,7 @@ static uint32_t kb_map(const track_t *t, uint32_t k)
     }
 #if FELUCCA_SLICE
     if (ENGINES[t->eng_req % NENGINES] == &ENG_SLICE)
+
         return (uint32_t)clamp(SLC_BASE + t->p[P_ROOT] + 12 * song.octave + (int32_t)k, 0, 127);
 #endif
     return kb_pitch(t, k, song.octave);
