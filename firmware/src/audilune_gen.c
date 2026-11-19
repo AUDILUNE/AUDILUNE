@@ -317,13 +317,13 @@ static void gen_populate_drums(uint32_t ti, track_t *t, const genre_dna_t *dna, 
     t->seq_active = 1;
 }
 
-#define AUDILUNE_SNAP_SLOTS 3u
+#define AUDILUNE_SNAP_SLOTS NTRK
 #define AUDILUNE_SNAP_STEPS 64u
 static step_t audilune_arp_snap_step[AUDILUNE_SNAP_SLOTS][AUDILUNE_SNAP_STEPS];
 static dstep_t audilune_arp_snap_dstep[AUDILUNE_SNAP_SLOTS][AUDILUNE_SNAP_STEPS];
 static int8_t audilune_arp_snap_micro[AUDILUNE_SNAP_SLOTS][AUDILUNE_SNAP_STEPS];
 static uint8_t audilune_arp_snap_active[AUDILUNE_SNAP_SLOTS];
-static uint8_t audilune_arp_snap_trk[AUDILUNE_SNAP_SLOTS] = { 0xFFu, 0xFFu, 0xFFu };
+static uint8_t audilune_arp_snap_trk[AUDILUNE_SNAP_SLOTS] = { 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu };
 
 static void audilune_arp_snap_save(uint32_t ti)
 {
@@ -345,7 +345,7 @@ static void audilune_arp_snap_save(uint32_t ti)
     audilune_arp_snap_trk[free_slot] = (uint8_t)ti;
 }
 
-static void audilune_arp_snap_restore(uint32_t ti)
+static void audilune_arp_snap_reapply(uint32_t ti)
 {
     uint32_t k;
     if (ti >= NTRK)
@@ -356,11 +356,24 @@ static void audilune_arp_snap_restore(uint32_t ti)
             memcpy(trk[ti].dstep, audilune_arp_snap_dstep[k], sizeof audilune_arp_snap_dstep[0]);
             memcpy(trk[ti].micro, audilune_arp_snap_micro[k], sizeof audilune_arp_snap_micro[0]);
             trk[ti].seq_active = audilune_arp_snap_active[k];
-            audilune_arp_snap_trk[k] = 0xFFu;
             break;
         }
     }
     locks_restore(&trk[ti]);
+}
+
+static void audilune_arp_snap_restore(uint32_t ti)
+{
+    uint32_t k;
+    if (ti >= NTRK)
+        return;
+    audilune_arp_snap_reapply(ti);
+    for (k = 0; k < AUDILUNE_SNAP_SLOTS; k++) {
+        if (audilune_arp_snap_trk[k] == (uint8_t)ti) {
+            audilune_arp_snap_trk[k] = 0xFFu;
+            break;
+        }
+    }
 }
 
 static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_seed)
@@ -368,9 +381,8 @@ static void gen_populate_track(uint32_t ti, const genre_dna_t *dna, int full_see
     track_t *t = &trk[ti];
     const genre_dna_t *tdna = (ti < NTRK) ? &GENRE_DNA[audilune_trk_genre[ti] % GENRE_COUNT] : dna;
     if (is_drum(t))
-        gen_populate_drums(t, tdna, full_seed);
+        gen_populate_drums(ti, t, tdna, full_seed);
     else
-
         gen_populate_synth(ti, tdna, full_seed);
 }
 
