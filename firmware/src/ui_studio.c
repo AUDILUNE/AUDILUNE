@@ -1240,7 +1240,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, char *val)
 {
     const track_t *t = TSEL;
-    lbl[0] = 0; val[0] = 0;
+    lbl = 0; val = 0;
     if (scr == UI_FX) {
         str_cpy(lbl, *(AL_FX_ROWS + row), 18);
         fmt_int(val, *(al_fx_val + row));
@@ -1250,7 +1250,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         fmt_int(val, *(t->p + P_ATK + row) * 100 / 127);
         str_cpy(val + str_len(val), "%", 4);
     } else if (scr == UI_LFO) {
-        static const uint32_t LFO_P[4] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+        static const uint32_t LFO_P = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
         str_cpy(lbl, *(AL_LFO_ROWS + row), 18);
         fmt_int(val, *(t->p + *(LFO_P + row)));
     } else if (scr == UI_EDIT) {
@@ -1259,35 +1259,40 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 14u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
         else if (row == 15u) str_cpy(val, al_chop_chrom ? "CHROM" : "KIT", 14);
     } else if (scr == UI_GLO) {
-        static const char *const AL_THM[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
+        static const char *const AL_THM = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
         str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
 
         if (row == 0u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
         else if (row == 3u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
+        else if (row == 5u) str_cpy(val, "OPEN", 14);
     } else if (scr == UI_SAVE) {
         str_cpy(lbl, "SLOT ", 18);
         fmt_int(lbl + 5, (int32_t)row + 1);
         str_cpy(val, ui.save_op ? "LOAD" : "SAVE", 14);
     } else if (scr == UI_ARP) {
-        static const char *const AL_SCOPE_N[3] = {"SONG", "TRACK", "STEP"};
+        static const char *const AL_SCOPE_N = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
         if (row == 0u) {
-            str_cpy(lbl, "SCOPE", 18);
-            str_cpy(val, *(AL_SCOPE_N + (audilune_gen_scope % 3u)), 14);
+            str_cpy(lbl, "AUTONOMOUS ENG", 18);
+            str_cpy(val, audilune_infinite_on ? "ON" : "OFF", 14);
         } else if (row == 1u) {
+            str_cpy(lbl, "MORPH SCOPE", 18);
+            str_cpy(val, *(AL_SCOPE_N + (audilune_gen_scope % 5u)), 14);
+        } else if (row == 2u) {
             str_cpy(lbl, "MORPH (K3)", 18);
             fmt_int(val, (int32_t)audilune_gen_morph);
             str_cpy(val + str_len(val), "%", 4);
-        } else if (row == 2u) {
+        } else if (row == 3u) {
             str_cpy(lbl, "GENRE", 18);
             str_cpy(val, *(AUDILUNE_GENRE_NAMES + (audilune_genre % 6u)), 14);
-        } else if (row == 3u) {
-            str_cpy(lbl, "TARGET TRK", 18);
-            str_cpy(val, "TRK ", 14);
-            fmt_int(val + 4, (int32_t)song.sel + 1);
-        } else {
+        } else if (audilune_gen_scope == 4u) {
+            str_cpy(lbl, "DJ VAULT", 18);
+            str_cpy(val, "SLOT ", 14);
+            fmt_int(val + 5, (int32_t)ui.save_vault + 1);
+        } else if (audilune_gen_scope == 2u) {
             uint32_t st = audilune_active_step & 31u;
-            str_cpy(lbl, "STEP SEL", 18);
+            str_cpy(lbl, "TARGET STEP", 18);
             str_cpy(val, ((audilune_sel_step_mask[song.sel] >> st) & 1u) ? "*" : "", 14);
+
             fmt_int(val + str_len(val), (int32_t)st + 1);
         }
     } else if (scr == UI_SEQ) {
