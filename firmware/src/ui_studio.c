@@ -1133,6 +1133,9 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         } else if (row == 3u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
+        } else if (row == 5u) {
+            audilune_blank_studio_init();
+            audilune_hud_text("STUDIO", "SETUP");
         }
     } else if (ui.scr == UI_SAVE) {
         if (ui.chop_mode != 0xFF && ui.list_top == 1u) {
@@ -1141,8 +1144,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 audilune_hud_popup("VAULT USR", (int32_t)ui.chop_save_usr, "");
             } else {
                 ui.chop_load_trk = (uint8_t)((ui.chop_load_trk + (s > 0 ? 1u : 6u)) % 7u);
-
-                  audilune_hud_popup("LOAD TRK", (int32_t)ui.chop_load_trk, "");
+                audilune_hud_popup("LOAD TRK", (int32_t)ui.chop_load_trk, "");
             }
         } else {
             ui.save_vault = (uint8_t)(row % 6u);
@@ -1150,39 +1152,74 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text(ui.save_op ? "LOAD SLOT" : "SAVE SLOT", "READY");
         }
     } else if (ui.scr == UI_ARP) {
-        static const char *const AL_SCOPE_H[3] = {"SONG", "TRACK", "STEP"};
-        if (k == 2u || row == 1u) {
+        static const char *const AL_SCOPE_H[5] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
+        if (k == 2u || row == 2u) {
             int32_t nm = clamp((int32_t)audilune_gen_morph + s * 4, 0, 100);
             audilune_gen_morph = (uint8_t)nm;
             audilune_hud_popup("MORPH", nm, "%");
         } else if (row == 0u) {
-            audilune_gen_scope = (uint8_t)((audilune_gen_scope + (s > 0 ? 1u : 2u)) % 3u);
+            audilune_infinite_on = (uint8_t)(!audilune_infinite_on);
+            audilune_hud_text("ENGINE", audilune_infinite_on ? "ON" : "OFF");
+        } else if (row == 1u) {
+            audilune_gen_scope = (uint8_t)((audilune_gen_scope + (s > 0 ? 1u : 4u)) % 5u);
             audilune_hud_text("SCOPE", *(AL_SCOPE_H + audilune_gen_scope));
-        } else if (row == 2u) {
+        } else if (row == 3u) {
             uint8_t ng = (uint8_t)((audilune_genre + (s > 0 ? 1u : 5u)) % 6u);
             audilune_genre = ng;
             if (song.sel < NTRK) audilune_trk_genre[song.sel] = ng;
             audilune_hud_text("GENRE", *(AUDILUNE_GENRE_NAMES + ng));
-        } else if (row == 3u) {
-            uint32_t nt = (uint32_t)((song.sel + (s > 0 ? 1u : 5u)) % NTRK);
-            track_select(nt);
-            audilune_active_trk = (uint8_t)nt;
-            audilune_hud_popup("TRACK", (int32_t)nt + 1, "");
         } else if (row == 4u) {
-            uint32_t max_s = trk_len(t);
-            if (max_s > 32u) max_s = 32u;
-            audilune_active_step = (uint8_t)((audilune_active_step + (s > 0 ? 1u : max_s - 1u)) % max_s);
-            audilune_sel_step_mask[song.sel] ^= (1u << (audilune_active_step & 31u));
-            audilune_hud_popup("STEP", (int32_t)audilune_active_step + 1, "");
+            if (audilune_gen_scope == 4u) {
+                ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
+                audilune_hud_popup("DJ VAULT", (int32_t)ui.save_vault + 1, "");
+            } else if (audilune_gen_scope == 2u) {
+                uint32_t max_s = trk_len(t) > 64u ? 64u : trk_len(t);
+                audilune_active_step = (uint8_t)((audilune_active_step + (s > 0 ? 1u : max_s - 1u)) % max_s);
+                audilune_sel_step_mask[song.sel] ^= (1u << (audilune_active_step & 31u));
+                audilune_hud_popup("STEP", (int32_t)audilune_active_step + 1, "");
+            } else {
+                uint32_t nt = (uint32_t)((song.sel + (s > 0 ? 1u : 5u)) % NTRK);
+                track_select(nt);
+                audilune_active_trk = (uint8_t)nt;
+                audilune_hud_popup("TRACK", (int32_t)nt + 1, "");
+            }
+        }
+    } else if (ui.scr == UI_SETUP) {
+        uint32_t ti;
+        if (row == 1u) {
+            ui.setup_vault = (uint8_t)((ui.setup_vault + (s > 0 ? 1u : 6u)) % 7u);
+            if (ui.setup_vault == 0u) {
+                for (ti = 0; ti < NTRK; ti++) { steps_clear(&trk[ti]); trk[ti].seq_active = 0; }
+                audilune_hud_text("VAULT", "BLANK");
+            } else {
+                project_load(ui.setup_vault - 1u);
+                audilune_hud_popup("VAULT SLOT", (int32_t)ui.setup_vault, "");
+            }
+        } else if (row == 2u) {
+            song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + s, GP[G_BPM].min, GP[G_BPM].max);
+            audilune_hud_popup("TEMPO", song.g[G_BPM], "");
+        } else if (row == 3u) {
+            int32_t nr = (trk[0].p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
+            for (ti = 0; ti < NTRK; ti++) trk[ti].p[P_ROOT] = (int16_t)nr;
+            audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
+        } else if (row == 4u) {
+            int32_t ns = (trk[0].p[P_SCALE] + (s > 0 ? 1 : 21)) % 22;
+            for (ti = 0; ti < NTRK; ti++) trk[ti].p[P_SCALE] = (int16_t)ns;
+            audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
         } else if (row == 5u) {
-            audilune_infinite_on = (uint8_t)(!audilune_infinite_on);
-            audilune_hud_text("EVOLVE", audilune_infinite_on ? "ON" : "OFF");
+            int32_t nl = clamp(((int32_t)trk[0].p[P_SLEN] / 16 + (s > 0 ? 1 : -1)) * 16, 16, NSTEP);
+            for (ti = 0; ti < NTRK; ti++) trk[ti].p[P_SLEN] = (int16_t)nl;
+            audilune_hud_popup("LENGTH", nl, "");
+        } else if (row == 6u) {
+            song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
+            audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL");
         }
     } else if (ui.scr == UI_SEQ) {
         if (k == 3u) {
             int32_t nl = clamp(((int32_t)t->p[P_SLEN] / 16 + (s > 0 ? 1 : -1)) * 16, 16, NSTEP);
             t->p[P_SLEN] = (int16_t)nl;
             audilune_hud_popup("STEPS", nl, "");
+
         }
     } else if (ui.scr == UI_CHOP_SRC) {
         ui.chop_src_type = (uint8_t)(row % 3u);
