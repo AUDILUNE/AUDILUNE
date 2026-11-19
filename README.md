@@ -3,7 +3,7 @@
 <h1 align="center">AUDILUNE v1.0</h1>
 
 <p align="center"><b>Turn the M-VAVE FM-1 into an unrestricted 6-track synthesizer, sampler, and generative groovebox.</b><br>
-Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Leo Kuroshita / Hügelton Instruments and Sloop.</p>
+Created and designed by <b>David MacArthur</b> (AUDILUNE). Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Leo Kuroshita / Hügelton Instruments and Sloop.</p>
 
 <p align="center">
 <a href="MANUAL.md"><b>User Manual</b></a> ·
