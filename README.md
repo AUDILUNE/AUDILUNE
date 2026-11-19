@@ -66,24 +66,23 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 | **SEQ Button** | **SEQ Page** (Pattern-chain `A`–`F` and step-length `16`–`128` builder for selected tracks) |
 
 | **Home Button** | Returns first to **Live Play Page**, then cycles sequentially through **Visualizer Page** and all remaining pages |
-
 ---
 
 ## Hardware Control Map
 
 * **Master Knob:** Global master output volume (`0%` mute to `100%` full).
 * **Select Knob:** Scrolls Up/Down through list items, tracks, or chop rows, and cycles the 4 **Visualizer Page** styles.
-* **Presets Knob:** Cycles sequentially through all base presets (including `USR1`–`USR6` samples and chop kits) on the active track.
-* **Algorithm Knob:** Morphs the active track's selected preset in real time across 6 genre variations (`AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, `INDUSTRIAL`).
+* **Presets Knob:** Cycles sequentially through all base synth and sample presets (including `USR1`–`USR6` samples and chop kits) on the active track, switching out of Drum Kit mode back to Synth mode.
+* **Algorithm Knob:** Steps `0–5` morph the active track's selected preset in real time across 6 genre variations (`AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, `INDUSTRIAL`); steps `6–37` switch any track (`1–6`) into Drum Kit mode and cycle through all **32 Drum Kits**.
 * **Octave Down / Octave Up Buttons:** Shifts **Full Keyboard** octave range (`-3` to `+3` octaves) on the active track.
-* **Full Keyboard:** Pure musical triggering across all working pages with zero secondary key combos—notes on synth/drum tracks, chromatic pitch-tracking across all white and black keys on single `USR1`–`USR6` samples, and `CHOP 01`–`16` across the white keys on chopped kits.
+* **Full Keyboard:** Pure musical triggering across all working pages with zero secondary key combos—notes on synth/drum tracks, multi-timbral layering across all **SEL Button**-locked tracks simultaneously, chromatic pitch-tracking across all white and black keys on single `USR1`–`USR6` samples, and `CHOP 01`–`16` across the white keys on chopped kits.
 * **Knob 1:** Global Tempo (`BPM`) across all working pages.
-* **Knob 2:** Metronome Volume (`0%` mute to `100%` full) synced to Tempo.
-* **Knob 3:** Adjusts value/amount (`0%`–`110%` musical overflow) of highlighted or **SEL Button**-locked parameters.
+* **Knob 2:** Metronome Volume (`0%` mute to `100%` full) synced to Tempo and audible when **REC Button** is pressed.
+* **Knob 3:** Adjusts value/amount (`0%–110%` musical overflow) of highlighted or **SEL Button**-locked parameters, and controls Generative Morph Amount (`0%–100%`) on **ARP Page**.
 * **Knob 4:** Navigates Left/Right across columns, sub-types, options, steps, or Chop Shop nudge/trim positions.
-* **SEL Button:** Locks/unlocks highlighted tracks, steps, effects, or edits into a multi-selection group (and cycles `Whole Chop` → `Start [` → `End ]` trim modes in **Chop Shop**).
-* **Play/Stop Button:** Starts/stops playback immediately and disarms recording on stop.
-* **REC Button:** Arms **Wait-for-Note** recording from Step 1 (or punches in live during playback); hold `1.5s` to erase active track, selected steps, or highlighted `USR` sample slot.
+* **SEL Button:** Locks/unlocks highlighted tracks (for multi-timbral keyboard/MIDI layering and simultaneous multi-track recording), steps, effects, or edits into a multi-selection group (and cycles `Whole Chop` → `Start [` → `End ]` trim modes in **Chop Shop**).
+* **Play/Stop Button:** Starts/stops playback across all active 6 tracks immediately and disarms recording on stop.
+* **REC Button:** Arms **Wait-for-Note** recording from Step 1 with audible metronome click across the active track and all **SEL Button**-locked tracks simultaneously (or punches in live during playback); hold `1.5s` to erase active track, selected steps, or highlighted `USR` sample slot.
 
 ---
 
