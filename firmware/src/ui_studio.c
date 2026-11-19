@@ -1294,7 +1294,29 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(val, ((audilune_sel_step_mask[song.sel] >> st) & 1u) ? "*" : "", 14);
 
             fmt_int(val + str_len(val), (int32_t)st + 1);
+        } else {
+            str_cpy(lbl, "TARGET TRK", 18);
+            str_cpy(val, "TRK ", 14);
+            fmt_int(val + 4, (int32_t)song.sel + 1);
         }
+    } else if (scr == UI_ALGO) {
+        if (row < 6u) {
+            str_cpy(lbl, *(AUDILUNE_GENRE_NAMES + row), 18);
+            str_cpy(val, (t->synth_mode && (ui.algo_genre[song.sel] % 6u) == row) ? "ACTIVE" : "GENRE", 14);
+        } else {
+            uint32_t ki = row - 6u;
+            str_cpy(lbl, *(DRUM_KIT_NAMES + ki), 18);
+            str_cpy(val, (!t->synth_mode && (uint32_t)drum_kit() == ki) ? "ACTIVE" : "KIT", 14);
+        }
+    } else if (scr == UI_SETUP) {
+        str_cpy(lbl, *(AL_SETUP_ROWS + row), 21);
+        if (row == 0u) { str_cpy(val, "SEL", 14); }
+        else if (row == 1u) { if (ui.setup_vault == 0u) str_cpy(val, "BLANK", 14); else { str_cpy(val, "SLOT ", 14); fmt_int(val + 5, (int32_t)ui.setup_vault); } }
+        else if (row == 2u) { fmt_int(val, song.g[G_BPM]); }
+        else if (row == 3u) { str_cpy(val, *(AL_NOTE_NAMES + (*(trk[0].p + P_ROOT) % 12)), 14); }
+        else if (row == 4u) { str_cpy(val, *(AL_SCALE_NAMES + (*(trk[0].p + P_SCALE) % 22)), 14); }
+        else if (row == 5u) { fmt_int(val, *(trk[0].p + P_SLEN)); }
+        else if (row == 6u) { str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL", 14); }
     } else if (scr == UI_SEQ) {
         str_cpy(lbl, "TRACK ", 18);
         fmt_int(lbl + 6, (int32_t)row + 1);
@@ -1313,14 +1335,14 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
 UI_SMALL static void audilune_page_draw(void)
 {
     static uint32_t head, footer;
-    static const char *const TITLES[10] = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP"};
+    static const char *const TITLES[12] = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP", "ALGO / KITS", "STUDIO SETUP"};
     uint32_t rows = audilune_page_rows(ui.scr);
     uint32_t sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i;
     audilune_in_arp_page = (uint8_t)(!ui.home && ui.scr == UI_ARP);
     audilune_active_trk = song.sel;
-    te_header(ui.scr >= UI_FX && ui.scr <= UI_CHOP_WAVE ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
+    te_header(ui.scr >= UI_FX && ui.scr <= UI_SETUP ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
     if (ui.scr == UI_CHOP_WAVE) {
         cv_begin(240, 52, C_BLACK);
         cv_rect(2, 2, 236, 48, HUD_ACCENT);
@@ -1338,7 +1360,7 @@ UI_SMALL static void audilune_page_draw(void)
     for (i = 0; i < vis && (top + i) < rows; i++) {
         uint32_t r = top + i;
         int32_t y = (int32_t)i * 22;
-        char lbl[20], val[16];
+        char lbl[22], val[16];
         audilune_row_text(ui.scr, r, lbl, val);
         if (r == sel) cv_rect(2, y + 1, 236, 20, C_WHITE);
         cv_text(8, y + 3, &FONT_S, lbl, r == sel ? C_BLACK : C_WHITE);
