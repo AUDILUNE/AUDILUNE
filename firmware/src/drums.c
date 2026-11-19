@@ -383,7 +383,7 @@ static void drum_on(uint32_t note, uint32_t vel)
         drums.env[vi] = 32767;
         drums.denv[vi] = 32767;                     /* (2.7) DECAY below 0: a fade to -60 dB in 60 .. 500 ms (DK_SMP) */
         drums.dk[vi] = tw && drum_dec[ln] < 0 ? DECAY_K[DK_SMP[drum_dec[ln] + 4]] : 0u;
-        shift = shift * 16 + (tw ? drum_tune[ln] * 16 : 0);    /* (2.7) TUNE: the sound's semitones */
+        shift = shift * 16 + (tw ? drum_tune[ln] * 16 + (int32_t)audilune_drum_octave * 12 * 16 : 0);
         if (shift) {
             const smp_zone_t *z = drum_zone_of(v);
             v->s[5] = (int32_t)((pow2_q16(clamp((int32_t)note * 16 + shift - z->root16, -1536, 2047)) >> 8) * (z->rate >> 8));
@@ -393,6 +393,7 @@ static void drum_on(uint32_t note, uint32_t vel)
 
 /* adds the drums into the dry mix and the reverb and delay sends; mono != 0: into mono instead, before
  * the pan and the sends (the SLICER, slicer.c slicer_drums, does those after it) */
+
 static inline void drums_mix(int32_t *ml, int32_t *mr, int32_t *rev, int32_t *dly, int32_t *mono, uint32_t n)
 {
     uint32_t k, i;
