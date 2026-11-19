@@ -269,12 +269,13 @@ static void gen_populate_synth(uint32_t ti, const genre_dna_t *dna, int full_see
 }
 
 /* Generates or mutates a drum-mode track for the active Macro-Genre */
-static void gen_populate_drums(track_t *t, const genre_dna_t *dna, int full_seed)
+static void gen_populate_drums(uint32_t ti, track_t *t, const genre_dna_t *dna, int full_seed)
 {
     uint32_t len = full_seed ? dna->default_len : trk_len(t);
+    uint32_t rate = gen_morph_rate(full_seed);
     uint32_t s;
 
-    if (full_seed) {
+    if (full_seed && !(audilune_in_arp_page && audilune_gen_scope == GEN_SCOPE_STEP)) {
         steps_clear(t);
         t->p[P_SLEN] = (int16_t)len;
         t->p[P_SDIV] = 2; /* 1/16 */
@@ -282,7 +283,9 @@ static void gen_populate_drums(track_t *t, const genre_dna_t *dna, int full_seed
 
     for (s = 0; s < len && s < NSTEP; s++) {
         dstep_t *ds = &t->dstep[s];
-        if (!full_seed && gen_pct() >= 30u)
+        if (!gen_step_allowed(ti, s))
+            continue;
+        if (rate == 0u || (!full_seed && gen_pct() >= rate) || (full_seed && audilune_in_arp_page && !audilune_infinite_on && gen_pct() >= rate))
             continue;
         memset(ds, 0, sizeof *ds);
         lock_del(t, s, P_ED_FX);
