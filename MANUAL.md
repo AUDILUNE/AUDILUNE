@@ -21,7 +21,9 @@
 
 ## 1. Overview & Core Philosophy
 
-**AUDILUNE** transforms the **M-VAVE FM-1** into a standalone **6-track × 128-step** studio and live performance instrument featuring universal controls, single-button page navigation, and real-time motion and step locking.
+> **"If you can hear it on the FM-1, you can record it."** — Primary performance knobs, **Full Keyboard**, multi-timbral track layers, live knob sweeps, and audio effects stay active and audible across all working pages, live playing, and recording—and everything audible can be captured into patterns or resampled on-device.
+
+**AUDILUNE** transforms the **M-VAVE FM-1** into a standalone **6-track × 128-step** studio and live performance instrument featuring universal controls, single-button page navigation, multi-timbral track layering, and real-time motion and step locking.
 
 ---
 
@@ -29,35 +31,35 @@
 
 * **High-Contrast Cosmological UI:** Pure `#000000` black canvas with `#FFFFFF` text, inverted highlight boxes, astronomical reticles, and lunar corner motifs.
 * **Top Header & Bottom HUD:** Persistent header showing Tempo (`BPM`), Transport state (`PLAY`/`STOP`/`REC`), Master Volume, and Clock Sync; a bottom HUD displaying live parameter values.
-* **8 Color Themes:** Configurable via **Global Page** (**GLO Button**), allowing users to switch between **Teal** (default), **Orange**, **Burgundy**, **Purple**, **Pink**, **Blue**, **Mint**, and **Grey**.
+* **8 Color Themes:** Configurable via **Global Page** (**GLO Button**), allowing users to switch live between **Teal** (default), **Orange**, **Burgundy**, **Purple**, **Pink**, **Blue**, **Mint**, and **Grey**.
 
 ---
 
 ## 3. Hardware Control Map
 
 * **Master Knob & Select Knob:** Controls global output volume (`0%`–`100%`) and scrolls through lists, tracks, Chop Shop rows, or visualizer styles.
-* **Presets Knob & Algorithm Knob:** Cycles base presets (`USR1`–`USR6` samples and kits) and morphs active track presets across 6 genre-tailored variations (`AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, `INDUSTRIAL`).
-* **Octave Down / Octave Up & Full Keyboard:** Shifts keyboard range (`-3` to `+3` octaves) and triggers synth notes, chromatic samples, or chopped kits (`CHOP 01`–`16`).
-* **Knobs 1–4:** Global Tempo (`Knob 1`), Metronome Volume (`Knob 2`), Parameter/Overflow adjustment (`Knob 3`), and Column/Sub-type/Step navigation (`Knob 4`).
-* **SEL Button & Play/Stop / REC Buttons:** Multi-locks tracks, steps, effects, or edits; controls transport playback and Wait-for-Note direct sampling (`1.5s` hold to erase).
+* **Presets Knob & Algorithm Knob:** **Presets Knob** cycles base synth and sample presets (`USR1`–`USR6` samples and chop kits), switching out of Drum Kit mode back to Synth mode. **Algorithm Knob** steps `0–5` morph active track presets across 6 genre variations (`AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, `INDUSTRIAL`), while steps `6–37` switch any track (`1–6`) into Drum Kit mode across all **32 Drum Kits**.
+* **Octave Down / Octave Up & Full Keyboard:** Shifts keyboard range (`-3` to `+3` octaves) and triggers synth notes, multi-timbral layered tracks across all **SEL Button**-locked tracks simultaneously, chromatic samples, or chopped kits (`CHOP 01`–`16`).
+* **Knobs 1–4:** Global Tempo (`Knob 1`), Metronome Volume (`Knob 2`, automatically active when **REC Button** is pressed), Parameter/Overflow & ARP Morph adjustment (`Knob 3`), and Column/Sub-type/Step navigation (`Knob 4`).
+* **SEL Button & Play/Stop / REC Buttons:** **SEL Button** locks/unlocks tracks (for multi-timbral keyboard/MIDI layering and simultaneous multi-track recording), steps, effects, or edits. **Play/Stop Button** starts/stops playback immediately. **REC Button** arms Wait-for-Note recording with audible metronome click across the active track and all **SEL Button**-locked tracks simultaneously (`1.5s` hold to erase).
 
 ---
 
 ## 4. The 12 Dedicated Pages
 
-Pressing **Home Button** from any dedicated page returns to **Live Play Page** or cycles through remaining pages:
+Pressing **Home Button** toggles cleanly between **Live Play Page** and **Visualizer Page** (and exits any dedicated page straight to **Live Play Page**):
 
 1. **Startup Screen:** Displays the crescent moon logo and `AUDILUNE v1.0` title for `3,000 ms`.
-2. **Live Play Page (Home):** 6-track horizontal performance view displaying active Preset, Algorithm variation, Pattern (`A`–`F`), and level meters.
-3. **Visualizer Page:** Full-screen audio-reactive art (Header/HUD hidden) cycling 4 styles via **Select Knob** (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*).
-4. **Effects Page (FX Button):** Categorized effects browser and multi-lock controller.
+2. **Live Play Page (Home):** 6-track horizontal performance view displaying active Preset + Genre variation (or `DRUM KIT: [Name]`), Pattern (`A`–`F`), and level meters.
+3. **Visualizer Page:** Full-screen audio-reactive art (Header/HUD hidden) cycling 4 styles via **Select Knob** (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*) with 60s idle screensaver trigger.
+4. **Effects Page (FX Button):** Categorized effects browser (`0%–110%` overflow) active during live play and **REC Button** capture with **SEL Button** multi-locking.
 5. **Envelope Page (ENV Button):** `Attack`, `Decay`, `Sustain`, and `Release` controls with **SEL Button** multi-locking.
 6. **LFO Page (LFO Button):** `Waveform`, `Rate`, `Depth`, and `Destination` controls.
 7. **Edit Page (Tap Edit Button):** Surgical step and track operations (`Copy`, `Paste`, `Duplicate`, `Clear`, `Quantize`, `Humanize`, `Nudge`, `Transpose`, `Velocity`, `Gate`, `Probability`, `Ratchet`, `Reverse`, `Root Note`, `Scale Type`, `Chop Mode`).
 8. **Chop Shop Page (Hold Edit Button 1.2s):** Two-stage waveform slicer and on-device sampler.
 9. **Global Page (GLO Button):** System configuration (`Color Theme`, `MIDI Channels`, `MIDI Routing`, `Clock Sync`, `USB Audio I/O`).
 10. **Save Page (Save Button):** 6 non-destructive SPI NOR Flash Vaults (`SLOT 1`–`6`).
-11. **ARP Page (ARP Button):** Generative selection mode for morphing tracks and steps anchored to unselected active tracks.
+11. **ARP Page (ARP Button):** Unified generative engine supporting **SONG**, **TRACK** (single or **SEL Button**-locked), and **STEP** (single or **SEL Button**-locked) scopes, with **Knob 3** controlling Morph Amount (`0%–100%`) away from the original composition and resolving cleanly back at `0%`.
 12. **SEQ Page (SEQ Button):** Pattern-chain (`A`–`F`) and step-length (`16`–`128`) builder.
 
 ---
