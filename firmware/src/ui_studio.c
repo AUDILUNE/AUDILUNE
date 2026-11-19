@@ -1181,13 +1181,33 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         str_cpy(lbl, "SLOT ", 18);
         fmt_int(lbl + 5, (int32_t)row + 1);
         str_cpy(val, ui.save_op ? "LOAD" : "SAVE", 14);
-    } else if (scr == UI_ARP || scr == UI_SEQ) {
-        static const char *const AL_ARP_M[5] = {"ANCHOR", "DRIFT", "MELODY", "RHYTHM", "CHORD"};
+    } else if (scr == UI_ARP) {
+        static const char *const AL_SCOPE_N[3] = {"SONG", "TRACK", "STEP"};
+        if (row == 0u) {
+            str_cpy(lbl, "SCOPE", 18);
+            str_cpy(val, *(AL_SCOPE_N + (audilune_gen_scope % 3u)), 14);
+        } else if (row == 1u) {
+            str_cpy(lbl, "MORPH (K3)", 18);
+            fmt_int(val, (int32_t)audilune_gen_morph);
+            str_cpy(val + str_len(val), "%", 4);
+        } else if (row == 2u) {
+            str_cpy(lbl, "GENRE", 18);
+            str_cpy(val, *(AUDILUNE_GENRE_NAMES + (audilune_genre % 6u)), 14);
+        } else if (row == 3u) {
+            str_cpy(lbl, "TARGET TRK", 18);
+            str_cpy(val, "TRK ", 14);
+            fmt_int(val + 4, (int32_t)song.sel + 1);
+        } else {
+            uint32_t st = audilune_active_step & 31u;
+            str_cpy(lbl, "STEP SEL", 18);
+            str_cpy(val, ((audilune_sel_step_mask[song.sel] >> st) & 1u) ? "*" : "", 14);
+            fmt_int(val + str_len(val), (int32_t)st + 1);
+        }
+    } else if (scr == UI_SEQ) {
         str_cpy(lbl, "TRACK ", 18);
         fmt_int(lbl + 6, (int32_t)row + 1);
-        if (scr == UI_ARP) str_cpy(val, *(AL_ARP_M + (*(al_arp_mode + row) % 5u)), 14);
-        else { fmt_int(val, *(trk[row].p + P_SLEN)); str_cpy(val + str_len(val), " ST", 5); }
-
+        fmt_int(val, *(trk[row].p + P_SLEN));
+        str_cpy(val + str_len(val), " ST", 5);
     } else if (scr == UI_CHOP_SRC) {
         static const char *const SRC_L[3] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
         str_cpy(lbl, *(SRC_L + row), 18);
@@ -1206,6 +1226,8 @@ UI_SMALL static void audilune_page_draw(void)
     uint32_t sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i;
+    audilune_in_arp_page = (uint8_t)(!ui.home && ui.scr == UI_ARP);
+    audilune_active_trk = song.sel;
     te_header(ui.scr >= UI_FX && ui.scr <= UI_CHOP_WAVE ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
     if (ui.scr == UI_CHOP_WAVE) {
         cv_begin(240, 52, C_BLACK);
@@ -1218,6 +1240,7 @@ UI_SMALL static void audilune_page_draw(void)
             if ((i % 4u) == 0u) cv_rect(x, 4, 1, 44, TE_G2);
         }
         cv_blit(0, 42);
+
     }
     cv_begin(240, 212u - y0, C_BLACK);
     for (i = 0; i < vis && (top + i) < rows; i++) {
