@@ -996,7 +996,7 @@ UI_SMALL static void rec_screen_draw(void)
     }
 }
 
-/* ------------------------------------------- AUDILUNE 12-PAGE LISTS --- */
+/* ------------------------------------------- AUDILUNE 14-PAGE LISTS --- */
 static const char *const AL_FX_ROWS[10] = {
     "TIME / GROOVE", "PITCH / FORMANT", "STUTTER / GLITCH", "GRANULAR / FRZ",
     "SPATIAL DELAY", "LUSH REVERB", "MOD / STEREO", "FILTER / EQ",
@@ -1015,7 +1015,8 @@ static const char *const AL_EDIT_ROWS[14 + 2] = {
 };
 static const char *const AL_ENV_ROWS[2 + 2] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
 static const char *const AL_LFO_ROWS[2 + 2] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
-static const char *const AL_GLO_ROWS[3 + 3] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "SCALE LOCK"};
+static const char *const AL_GLO_ROWS[3 + 3] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
+static const char *const AL_SETUP_ROWS[7] = {"READY -> PLAY SCREEN", "SONG VAULT", "TEMPO", "ROOT NOTE", "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"};
 static const char *const AL_NOTE_NAMES[6 + 6] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[3 + 2] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
@@ -1026,13 +1027,14 @@ static uint8_t al_arp_mode[NTRK];
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
-
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
     if (scr == UI_EDIT) return 16u;
     if (scr == UI_ARP) return 5u;
     if (scr == UI_GLO || scr == UI_SAVE || scr == UI_SEQ) return 6u;
     if (scr == UI_CHOP_SRC) return 3u;
     if (scr == UI_CHOP_WAVE) return 17u;
+    if (scr == UI_ALGO) return AUDILUNE_GENRE_COUNT + DRUM_KITS;
+    if (scr == UI_SETUP) return 7u;
     return 0u;
 }
 
@@ -1048,6 +1050,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     } else if (row == 1u) {
         song.g[G_TUNE] = (int16_t)clamp(((int32_t)sub - 4) * 3 + (int32_t)val / 10, -24, 24);
     } else if (row == 4u) {
+
         pid = P_DLY;
         song.g[G_DTIME] = (int16_t)((sub & 7u) * 2 + 1);
         t->p[P_DLY] = (int16_t)((int32_t)val * 140 / 110);
