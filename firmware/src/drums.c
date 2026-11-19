@@ -79,24 +79,38 @@ static int32_t drum_set(void)
 }
 
 /* ------------------------------------------------------------ lanes --- */
-/* The drum track's 16 sounds, one per white key, F3 (kick) .. G5 (cowbell): kicks, snare and clap,
- * the hi-hats, rim and a second snare, the toms, the cymbals, the percussion. Each plays a GM note
- * (the sampled kits: their samples; the synthesised kits: drum_synth.c DS_MAP). A black key plays
- * the lane of the white key left of it (two fingers on one sound). */
-static const uint8_t LANE_NOTE[DRUM_LANES] = {36, 35, 38, 39, 42, 46, 44, 37, 40, 43, 48, 49, 51, 70, 63, 56};
+/* AUDILUNE v2.7: Standard-to-obscure drum kit keyboard layout.
+ * White keys (F3..G5) in standard drum kit order: Kick, Snare, Closed Hi-Hat, Open Hi-Hat,
+ * Low Tom, Mid Tom, High Tom, Crash Cymbal, Ride Cymbal, Rimshot, Clap, Cowbell,
+ * Shaker/Tambourine, Sub-Percussion, plus upper percussion.
+ * Black keys map to obscure/experimental hits with the strangest elements on the upper black keys. */
+static const uint8_t LANE_NOTE[DRUM_LANES] = {36, 38, 42, 46, 43, 47, 50, 49, 51, 37, 39, 56, 70, 35, 63, 75};
 static const char *const LANE_NAME[DRUM_LANES] = {
-    "KICK", "KICK 2", "SNARE", "CLAP", "HAT", "OPEN HAT", "PEDAL", "RIM",
-    "SNARE 2", "LOW TOM", "HI TOM", "CRASH", "RIDE", "SHAKER", "CONGA", "COWBELL"};
+    "KICK", "SNARE", "HAT", "OPEN HAT", "LOW TOM", "MID TOM", "HI TOM", "CRASH",
+    "RIDE", "RIM", "CLAP", "COWBELL", "SHAKER", "SUB PERC", "CONGA", "CLAVE"};
 static const char *const LANE_SHORT[DRUM_LANES] = {           /* 5 characters: tiles, dials */
-    "kick", "kick2", "snare", "clap", "hat", "open", "pedal", "rim",
-    "snr 2", "tom l", "tom h", "crash", "ride", "shake", "conga", "bell"};
-/* a GM note (MIDI in, old projects) -> its lane: the nearest sound of the 16 (35..81; below: kick, above: shaker) */
+    "kick", "snare", "hat", "open", "tom l", "tom m", "tom h", "crash",
+    "ride", "rim", "clap", "bell", "shake", "sub", "conga", "clave"};
+/* a GM note (MIDI in, old projects) -> its lane (0..15) */
 static const uint8_t LANE_OF_GM[81 - 35 + 1] = {
-    /* 35 */ 1, 0, 7, 2, 3, 8, 9, 4, 9, 6,
-    /* 45 */ 9, 5, 10, 10, 11, 10, 12, 11, 12, 13,
-    /* 55 */ 11, 15, 11, 13, 12, 14, 14, 14, 14, 14,
-    /* 65 */ 14, 14, 15, 15, 13, 13, 15, 15, 13, 13,
-    /* 75 */ 7, 7, 7, 14, 14, 15, 15};
+    /* 35 */ 13, 0, 9, 1, 10, 1, 4, 2, 4, 2,
+    /* 45 */ 4, 3, 5, 5, 7, 6, 8, 7, 8, 12,
+    /* 55 */ 7, 11, 7, 12, 8, 14, 14, 14, 14, 14,
+    /* 65 */ 14, 14, 11, 11, 12, 12, 11, 11, 12, 12,
+    /* 75 */ 15, 15, 15, 14, 14, 11, 11};
+/* Obscure / experimental GM & synth percussion notes for black keys (low -> upper strangest hits) */
+static const uint8_t BLACK_KEY_NOTE = {44, 54, 58, 60, 61, 64, 67, 68, 73, 78, 81};
+static int is_black_key(uint32_t k)
+{
+    static const uint8_t B = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0};      /* from F: F# G# A# C# D# */
+    return B[k % 12u] != 0;
+}
+static uint8_t black_key_note(uint32_t k)
+{
+    uint32_t oct = k / 12u, rem = k % 12u;
+    uint32_t idx = oct * 5u + (rem == 1u ? 0u : rem == 3u ? 1u : rem == 5u ? 2u : rem == 8u ? 3u : 4u);
+    return BLACK_KEY_NOTE[idx < 11u ? idx : 10u];
+}
 /* SLOOP 2.7, the DRUMS screen's SOUND page: each of the 16 sounds' TUNE (-8 .. +7 semitones) and DECAY (-4 .. +3,
  * 0 as the kit has it), on every kit; kept with the project and each section (project.c: in the drum track's free
  * engine values) */
@@ -105,11 +119,12 @@ static const uint8_t LANE_OF_GM[81 - 35 + 1] = {
 #define DRUM_DEC_MIN (-4)
 #define DRUM_DEC_MAX 3
 static int8_t drum_tune[DRUM_LANES], drum_dec[DRUM_LANES];
-static const uint8_t DK_SMP[4] = {47, 60, 74, 87};   /* a sample's DECAY -4 .. -1: -60 dB in 60, 120, 250, 500 ms */
+static const uint8_t DK_SMP = {47, 60, 74, 87};   /* a sample's DECAY -4 .. -1: -60 dB in 60, 120, 250, 500 ms */
 #define DRUM_CLICK(n) ((n) == 76u || (n) == 77u)    /* (the click's wood block: no lane, never tuned) */
 static uint32_t lane_of_note(uint32_t note);
 static int drum_tweaked(void)
 {
+
     uint32_t l;
     for (l = 0; l < DRUM_LANES; l++)
         if (drum_tune[l] || drum_dec[l])
