@@ -90,19 +90,23 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 
 ## Installation & Flashing Guide
 
-1. **Download `.fwsc`:** Download the latest `AUDILUNE-v1.0.fwsc` binary from [Releases](../../releases) (or the latest green GitHub Actions artifact).
-2. **Preview in Emulator (Optional):** Load the `.fwsc` file into the [FM-1 Browser Emulator](https://github.io) to test the UI and controls first.
-3. **Prepare Hardware:** Charge your M-VAVE FM-1 and connect it directly using a **data-rated USB-C cable** (avoid unpowered USB hubs). Open **Chrome** or **Edge** with only one MIDI tab open.
-4. **Enter Update Mode (`UBOOT`):**
-   * On the FM-1, hold **Octave Down + Octave Up** together for **5 seconds** while stopped until `UBOOT` appears on screen (or connect via the WebMIDI installer).
-   * *Note:* If Windows or Android prompts you to format a newly mounted drive, click **Cancel**.
-5. **Write Firmware:** Select `AUDILUNE-v1.0.fwsc` in the WebMIDI flasher and wait until writing finishes. **Do not unplug or power off the unit while writing is in progress.**
+1. **Charge & Connect Your FM-1:** Make sure your M-VAVE FM-1 is charged and connect it directly using a **data-rated USB-C cable** (avoid unpowered USB hubs). Open **Google Chrome** or **Microsoft Edge** with only one MIDI tab open.
+2. **First-Time Safety Prep (Recommended for Both Older & Newer FM-1 Revisions):**
+   * **Install M-Flasher:** Run **M-Flasher** first to install the safety recovery bootloader on your unit.
+   * **Revert to Version 15 Baseline:** Use **M-UPGRADE** to revert the unit to official **Version 15** (`FM-1.fwsc` V15) so the partition table matches the baseline expected by custom firmwares. *(You only need to do this once—skip straight to Step 3 if you are already running AUDILUNE, Sloop, or Felucca.)*
+3. **Download `.fwsc` (or Preview in Emulator):** Download the latest `AUDILUNE-v1.0.fwsc` binary from [Releases](../../releases) (or test it first in the [FM-1 Browser Emulator](https://github.io)).
+4. **One-Click USB-C Flash (No Buttons Required):** With the FM-1 powered on normally, open **The Firmware Hub** (or WebMIDI flasher) in Chrome/Edge, select `AUDILUNE-v1.0.fwsc`, and click **Flash**—the browser automatically reboots the FM-1 into update mode and writes the firmware.
+   * *Note:* If Windows or Android prompts you to format a newly mounted drive, click **Cancel**. **Do not unplug or power off the unit while writing is in progress.**
+5. **Future Updates & Switching Custom Firmwares:**
+   * **Updating AUDILUNE:** Flash newer `AUDILUNE` `.fwsc` builds straight over the top via **The Firmware Hub** without reverting to V15—your saved projects (`SLOT 1`–`6`) and user samples (`USR1`–`6`) stay intact.
+   * **Switching Between Different Custom Firmwares:** Reverting to **Version 15** via **M-UPGRADE** before switching between completely different custom firmwares is good practice to ensure a clean settings slate.
 
 ---
 
 ## Chop Shop & Personal Samples (`USR1`–`USR6`)
 
-* **6 Dynamic Sample Slots (`40 KiB` Each):** AUDILUNE provides **6 floating user sample slots (`USR1`–`USR6`)** in dedicated flash (`0xA0000`–`0xDBFFF`), each holding up to **5.0 seconds** of audio usable or stackable across all 6 tracks.
+* **6 Dynamic Sample Slots (`40 KiB` Each):** AUDILUNE provides **6 floating user sample slots (`USR1`–`USR6`)** in dedicated flash (`0xA0000`–
+`0xDBFFF`), each holding up to **5.0 seconds** of audio usable or stackable across all 6 tracks.
 * **On-Device Chop Shop (`Hold Edit Button 1.2s`):** Bounce the current song, a saved project (`SLOT 1`–`6`), an individual track (`TRACK 1`–`6`), or an existing `USR1`–`USR6` sample directly into the `#FFFFFF` waveform slicer (`4/8/16 EQUAL`, `AUTO TRANSIENT`, `MANUAL`), trim start/end points, and save straight to `USR1`–`USR6` or load onto any track via **Save Button**.
 * **Web Sample Editor & 5-Second Smart Auto-Fit:** Open `web/editor.html` in Chrome or Edge over USB-C and drop in WAV/MP3/AIFF/FLAC/OGG files. **5-Second Smart Auto-Fit** automatically trims silence, caps length at `5.0s` with an anti-click fade, and adapts the sample rate (`11.025 kHz`–`44.1 kHz`) so any sample up to 5 seconds fits `USR1`–`USR6` cleanly.
 * **Direct USB-C Audio Sampling:** Select an empty `USR1`–`USR6` slot and press **REC Button** to arm Wait-for-Note recording directly from USB-C audio input; hold **REC Button (`1.5s`)** to clear the slot.
