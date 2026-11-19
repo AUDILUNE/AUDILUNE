@@ -1042,12 +1042,11 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     uint32_t step = t->seq_idx % trk_len(t);
     int32_t pid = -1;
     if (row == 0u || row == 2u || row == 3u) {
-        static const int8_t T_PF[8] = {PF_HALF, PF_DBL, PF_BRAKE, PF_REV, PF_HALF, PF_DBL, PF_BRAKE, PF_REV};
-        static const int8_t G_PF[8] = {PF_R16, PF_R32, PF_R8T, PF_STUT, PF_CRSH, PF_SH, PF_SCAT, PF_FREEZE};
-        punch.req = val ? (row == 0u ? T_PF[sub & 7u] : row == 2u ? G_PF[sub & 7u] : PF_FREEZE) : -1;
+        static const int8_t T_PF = {PX_HALF, PX_LOOP8, PX_STOP, PX_REV, PX_OCT, PX_RWD, PX_LOOP8T, PX_STUT};
+        static const int8_t G_PF = {PX_LOOP16, PX_LOOP32, PX_LOOP8T, PX_STUT, PX_CRUSH, PX_DOWN, PX_GATE, PX_FREEZE};
+        punch.req = val ? (row == 0u ? T_PF[sub & 7u] : row == 2u ? G_PF[sub & 7u] : PX_FREEZE) : -1;
     } else if (row == 1u) {
-        pid = P_TUNE;
-        t->p[P_TUNE] = (int16_t)(((int32_t)sub - 4) * 3 + (int32_t)val / 10);
+        song.g[G_TUNE] = (int16_t)clamp(((int32_t)sub - 4) * 3 + (int32_t)val / 10, -24, 24);
     } else if (row == 4u) {
         pid = P_DLY;
         song.g[G_DTIME] = (int16_t)((sub & 7u) * 2 + 1);
@@ -1057,7 +1056,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         song.g[G_RSIZE] = (int16_t)(40 + (sub & 7u) * 12);
         t->p[P_REV] = (int16_t)((int32_t)val * 140 / 110);
     } else if (row == 6u) {
-        static const uint8_t M_IT[8] = {IT_CHORUS, IT_CHORUS, IT_FLANGER, IT_PHASER, IT_CHORUS, IT_FLANGER, IT_PHASER, IT_CHORUS};
+        static const uint8_t M_IT = {IT_CHORUS, IT_CHORUS, IT_FLANGER, IT_PHASER, IT_CHORUS, IT_FLANGER, IT_PHASER, IT_CHORUS};
         pid = P_IMIX;
         t->p[P_ITYPE] = M_IT[sub & 7u];
         t->p[P_IMIX] = (int16_t)((int32_t)val * 127 / 110);
@@ -1083,6 +1082,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     uint32_t row = rows ? (uint32_t)ui.list_sel % rows : 0u;
     track_t *t = TSEL;
     if (k < 2u || !rows)
+
         return;
     ui.hot_col = (uint8_t)k;
     ui.hot_t = 40;
