@@ -103,6 +103,7 @@ static struct {
     uint8_t save_op;             /* Save Page: 0=SAVE, 1=LOAD */
     uint8_t chop_save_usr;       /* Chop Shop Save: 0=SKIP, 1..6=USR1..6 */
     uint8_t chop_load_trk;       /* Chop Shop Save: 0=NONE, 1..6=TRK1..6 */
+    uint8_t setup_vault;         /* Studio Setup Page: 0=BLANK, 1..6=SLOT 1..6 */
     /* drawn-state cache */
     char col[4][32];
     char focus_l[8], focus_v[8], focus_u[8];   /* the touched column, shown large */
@@ -114,8 +115,25 @@ static struct {
 
 enum {
     UI_LIVE, UI_VIS, UI_FX, UI_ENV, UI_LFO, UI_EDIT,
-    UI_GLO, UI_SAVE, UI_ARP, UI_SEQ, UI_CHOP_SRC, UI_CHOP_WAVE, UI_SCREEN_COUNT
+    UI_GLO, UI_SAVE, UI_ARP, UI_SEQ, UI_CHOP_SRC, UI_CHOP_WAVE,
+    UI_ALGO, UI_SETUP, UI_SCREEN_COUNT
 };
+
+UI_SMALL static void audilune_blank_studio_init(void)
+{
+    uint32_t i;
+    for (i = 0; i < NTRK; i++) {
+        steps_clear(&trk[i]);
+        trk[i].seq_active = 0;
+        trk[i].synth_mode = 1;
+    }
+    ui.setup_vault = 0;
+    ui.sel_trk_mask = 0;
+    ui.scr = UI_SETUP;
+    ui.list_sel = 0;
+    ui.list_top = 0;
+    ui.force = 1;
+}
 
 UI_SMALL static const page_t *cur_page(void) { return &PAGES[ui.page]; }
 
