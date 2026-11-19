@@ -100,6 +100,13 @@ static void audilune_genre_morph_dsp_trk(uint32_t ti, uint8_t g)
     trk[ti].p[P_REV] = dsp->rev;
 }
 
+enum {
+    GEN_SCOPE_SONG = 0,
+    GEN_SCOPE_TRACK = 1,
+    GEN_SCOPE_STEP = 2,
+    GEN_SCOPE_COUNT = 3
+};
+
 static uint8_t audilune_inf_was;
 static uint8_t audilune_trk_genre[NTRK];
 static uint8_t audilune_trk_genre_was[NTRK] = { 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu };
@@ -107,19 +114,28 @@ static volatile uint8_t audilune_sel_trk_mask;
 static volatile uint32_t audilune_sel_step_mask[NTRK];
 static volatile uint8_t audilune_in_arp_page;
 static volatile uint8_t audilune_active_trk;
+static volatile uint8_t audilune_gen_scope;
+static volatile uint8_t audilune_gen_morph;
+static volatile uint8_t audilune_active_step;
 
 static uint32_t audilune_gen_bar_last = 0xFFFFFFFFu;
 static uint8_t audilune_gen_arp_was;
 
 static uint8_t audilune_active_arp_mask(void)
 {
-    uint8_t m = (uint8_t)(audilune_arp_drift_mask | (audilune_sel_trk_mask & 0x3Fu));
-    if (audilune_in_arp_page && audilune_active_trk < NTRK)
-        m |= (uint8_t)(1u << audilune_active_trk);
+    uint8_t m = (uint8_t)(audilune_arp_drift_mask & 0x3Fu);
+    if (audilune_in_arp_page) {
+        if (audilune_gen_scope == GEN_SCOPE_SONG)
+            return 0x3Fu;
+        m |= (uint8_t)(audilune_sel_trk_mask & 0x3Fu);
+        if (audilune_active_trk < NTRK)
+            m |= (uint8_t)(1u << audilune_active_trk);
+    }
     return m;
 }
 
 /* Fast deterministic 0..99 roll using the audio engine's RNG */
+
 static uint32_t gen_pct(void)
 {
     return (rng() >> 8) % 100u;
