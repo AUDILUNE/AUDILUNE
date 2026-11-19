@@ -99,10 +99,10 @@ static const uint8_t LANE_OF_GM[81 - 35 + 1] = {
     /* 65 */ 14, 14, 11, 11, 12, 12, 11, 11, 12, 12,
     /* 75 */ 15, 15, 15, 14, 14, 11, 11};
 /* Obscure / experimental GM & synth percussion notes for black keys (low -> upper strangest hits) */
-static const uint8_t BLACK_KEY_NOTE = {44, 54, 58, 60, 61, 64, 67, 68, 73, 78, 81};
+static const uint8_t BLACK_KEY_NOTE[11] = {44, 54, 58, 60, 61, 64, 67, 68, 73, 78, 81};
 static int is_black_key(uint32_t k)
 {
-    static const uint8_t B = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0};      /* from F: F# G# A# C# D# */
+    static const uint8_t B[12] = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0};      /* from F: F# G# A# C# D# */
     return B[k % 12u] != 0;
 }
 static uint8_t black_key_note(uint32_t k)
@@ -119,10 +119,11 @@ static uint8_t black_key_note(uint32_t k)
 #define DRUM_DEC_MIN (-4)
 #define DRUM_DEC_MAX 3
 static int8_t drum_tune[DRUM_LANES], drum_dec[DRUM_LANES];
-static const uint8_t DK_SMP = {47, 60, 74, 87};   /* a sample's DECAY -4 .. -1: -60 dB in 60, 120, 250, 500 ms */
+static const uint8_t DK_SMP[4] = {47, 60, 74, 87};   /* a sample's DECAY -4 .. -1: -60 dB in 60, 120, 250, 500 ms */
 #define DRUM_CLICK(n) ((n) == 76u || (n) == 77u)    /* (the click's wood block: no lane, never tuned) */
 static uint32_t lane_of_note(uint32_t note);
 static int drum_tweaked(void)
+
 {
 
     uint32_t l;
