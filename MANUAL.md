@@ -99,5 +99,5 @@ Provides simultaneous access to **13 synthesis engines** (`ANALOG`, `DIGITAL`, `
 
 ## 10. Flashing, Rescue & Stock Firmware Recovery
 
-* **Flashing & Recovery:** Hold **Octave Down + Octave Up** for `5 seconds` to enter `UBOOT` via WebMIDI, hold **Octave Down** on boot for USB Rescue, or return to stock firmware using **M-UPGRADE** (`FM-1.fwsc` V16).
-
+* **First-Time Preparation & One-Click Flashing:** Install **M-Flasher** (safety recovery bootloader) and revert to official **Version 15** via **M-UPGRADE** first (recommended for both older and newer FM-1 revisions). Then power on normally, connect over USB-C, and flash `AUDILUNE-v1.0.fwsc` in one click via **The Firmware Hub** / WebMIDI with **no buttons required**.
+* **Future Updates & Recovery:** Flash newer AUDILUNE updates straight over the top without reverting to V15 (preserving `SLOT 1`–`6` and `USR1`–`6`). For manual recovery only, hold **Octave Down + Octave Up** for `5 seconds` while stopped to enter `UBOOT`, hold **Octave Down** on boot for USB Rescue, or return to official firmware via **M-UPGRADE** (`FM-1.fwsc` V16).
