@@ -57,6 +57,7 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 | **Visualizer Page** | Full-screen audio-reactive art (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*) |
 | **FX Button** | Full categorized **Effects Page** (`0%–110%` overflow, active during live play & recording with **SEL Button** multi-lock) |
 | **ENV Button** | **Envelope Page** (`Attack`, `Decay`, `Sustain`, `Release` with **SEL Button** multi-lock) |
+
 | **LFO Button** | **LFO Page** (`Waveform`, `Rate`, `Depth`, `Destination` with **SEL Button** multi-lock) |
 | **Tap Edit Button** | **Edit Page** (Copy, Paste, Duplicate, Clear, Quantize, Humanize, Nudge, Transpose, Probability, Ratchet, Reverse, **22-Scale Library** including *Prometheus*, *Enigmatic*, *Tritone Hexatonic* & *Lunar Eclipse*, plus **Chop Mode**: Kit / Chromatic) |
 | **Hold Edit Button (1.2s)** | **Chop Shop Page** (2-stage `#FFFFFF` waveform slicer & on-device sampler) |
@@ -64,8 +65,8 @@ Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO B
 | **Save Button** | **Save Page** (6 SPI NOR Flash Vaults `SLOT 1`–`6`; toggle Save/Load with **Knob 4**, press **Save Button** to execute) |
 | **ARP Button** | **ARP Page** (Unified **SONG / TRACK / STEP** generative engine with **Knob 3** `0%–100%` Morph Amount) |
 | **SEQ Button** | **SEQ Page** (Pattern-chain `A`–`F` and step-length `16`–`128` builder for selected tracks) |
+| **Home Button** | Toggles cleanly between **Live Play Page** and **Visualizer Page** (and exits any dedicated page straight to **Live Play Page**) |
 
-| **Home Button** | Returns first to **Live Play Page**, then cycles sequentially through **Visualizer Page** and all remaining pages |
 ---
 
 ## Hardware Control Map
