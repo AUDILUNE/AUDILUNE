@@ -12,10 +12,11 @@ Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Le
 <a href="https://thefirmwarehub.com"><b>The Firmware Hub</b></a> ·
 <a href="../../issues"><b>Report an Issue</b></a>
 </p>
-
 ---
 
-**AUDILUNE** transforms the **M-VAVE FM-1** into a fast, immediate **6-track × 128-step** standalone studio and live performance instrument. Every track has full, unrestricted access to all **13 synthesis engines**, classic analog and FM synth emulators, atmospheric drones, natural & animal soundscapes, **6 floating user sample slots** (`USR1`–`USR6`), poly-wavetables, and 16-lane drum kits—with **zero track-role locks**, **zero two-button holds**, real-time **Algorithm Knob** genre morphing, an on-device **Chop Shop** waveform slicer, and **Smart Automatic Voice Allocation** that keeps sub-basses tight while letting chords and shimmer delays bloom wide.
+> **Core Philosophy:** *"If you can hear it, you can record it."* — Primary performance knobs, **Full Keyboard**, multi-timbral track layers, live knob sweeps, and audio effects stay active and audible across all working pages, live playing, and recording—and everything audible can be captured into patterns or resampled on-device.
+
+**AUDILUNE** transforms the **M-VAVE FM-1** into a fast, immediate **6-track × 128-step** standalone studio and live performance instrument. Every track has full, unrestricted access to all **13 synthesis engines**, classic analog and FM synth emulators, atmospheric drones, natural & animal soundscapes, **6 floating user sample slots** (`USR1`–`USR6`), poly-wavetables, and all **32 Drum Kits**—with **zero track-role locks**, **zero two-button holds**, real-time **Algorithm Knob** genre & drum-kit morphing, multi-timbral track layering, an on-device **Chop Shop** waveform slicer, and **Smart Automatic Voice Allocation** that keeps sub-basses tight while letting chords and shimmer delays bloom wide.
 
 ---
 
@@ -34,38 +35,36 @@ Free and open source (GPL-3.0), built on the M-VAVE FM-1 engine foundation by Le
 
 ## Core Features
 
-* **High-Contrast Cosmological UI & 8 Themes:** Pure `#000000` black canvas with auto-dimming disabled, inverted white highlight boxes, stippled pixel level meters, astronomical grid reticles, and **8 selectable themes** (`Teal`, `Orange`, `Burgundy`, `Purple`, `Pink`, `Blue`, `Mint`, `Grey`) on **Global Page**.
-* **12 Dedicated Pages:** Instant single-button toggling between **Live Play Page**, **Visualizer Page** (4 audio-reactive styles + idle screensaver), **Effects Page**, **Envelope Page**, **LFO Page**, **Edit Page**, **Chop Shop Page**, **Global Page**, **Save Page**, **ARP Page**, and **SEQ Page**—with universal **Knob 1** (BPM), **Knob 2** (Metronome Volume), and live **Full Keyboard** responsiveness across every working page.
-* **Unrestricted 6-Track Engine:** Zero track-role locks. All **6 tracks** have simultaneous access to all **13 synthesis engines**, classic synth emulators, drones, environmental & animal soundscapes (`STORM WIND`, `THUNDER`, `CREEK`, `BIRDSONG`, `CICADAS`, `WHALE SONG`, `FOLEY CRK`), user samples (`USR1`–`USR6`), poly-wavetables, and 16-lane drum kits.
-* **Preset-Aware Genre Morphing & 110% Musical Overflow:** Turn **Algorithm Knob** to morph any preset in real time across `AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, and `INDUSTRIAL`. Sweeping spatial effects past `100%` into `101%–110%` engages musical shimmer feedback, delay cascades, and stereo bloom without digital clipping.
+* **If You Can Hear It, You Can Record It:** Live **Full Keyboard** play, multi-timbral layered tracks, active effects, and live knob sweeps remain audible across every working page and record directly into step automation or on-device samples when **REC Button** is pressed.
+* **High-Contrast Cosmological UI & 8 Themes:** Pure `#000000` black canvas with auto-dimming disabled, inverted white highlight boxes, stippled pixel level meters, astronomical grid reticles, and **8 selectable themes** (`Teal` default, `Orange`, `Burgundy`, `Purple`, `Pink`, `Blue`, `Mint`, `Grey`) on **Global Page**.
+* **12 Dedicated Pages & Clean Home Toggling:** Instant single-button toggling between **Live Play Page**, **Visualizer Page** (4 audio-reactive styles + 60s idle screensaver), **Effects Page**, **Envelope Page**, **LFO Page**, **Edit Page**, **Chop Shop Page**, **Global Page**, **Save Page**, **ARP Page**, and **SEQ Page**—with **Home Button** toggling cleanly between **Live Play Page** and **Visualizer Page**.
+* **Unrestricted 6-Track Engine & 32 Drum Kits Everywhere:** Zero track-role locks. All **6 tracks** have simultaneous access to all **13 synthesis engines**, classic synth emulators, drones, environmental & animal soundscapes (`STORM WIND`, `THUNDER`, `CREEK`, `BIRDSONG`, `CICADAS`, `WHALE SONG`, `FOLEY CRK`), user samples (`USR1`–`USR6`), poly-wavetables, and all **32 Drum Kits** (selected via steps `6–37` of **Algorithm Knob**).
+* **Multi-Timbral Track Layering & Simultaneous Recording:** Lock multiple tracks (up to all 6) with **SEL Button** to trigger and layer them simultaneously from **Full Keyboard**, and press **REC Button** to record multi-timbral performances across all **SEL Button**-locked tracks at once with automatic tempo-synced metronome click.
+* **Preset-Aware Genre Morphing & 110% Musical Overflow:** Steps `0–5` of **Algorithm Knob** morph any preset in real time across `AMBIENT`, `DOWNTEMPO`, `GLITCH HOP`, `PUNCHY`, `EXPERIMENTAL`, and `INDUSTRIAL`. Sweeping spatial effects past `100%` into `101%–110%` engages musical shimmer feedback, delay cascades, and stereo bloom without digital clipping.
+* **Unified SONG / TRACK / STEP Generative Morphing (`0%–100%`):** On **ARP Page**, select **SONG**, **TRACK** (single or **SEL Button**-locked), or **STEP** (single or **SEL Button**-locked) scope and sweep **Knob 3** (`0%–100%`) to generate or progressively morph away from your original composition—returning **Knob 3** to `0%` or turning ARP off resolves cleanly back to the original unmorphed composition.
 * **On-Device Chop Shop & 5-Second Smart Auto-Fit:** Slice songs, tracks, or samples directly on the `#FFFFFF` waveform display (`4/8/16 EQUAL`, `AUTO TRANSIENT`, `MANUAL`), play single samples chromatically across all keys or 16 chops across the white keys, and upload files up to 5.0 seconds per slot (`USR1`–`USR6`) with automatic silence trimming and adaptive sample-rate fitting in the web editor.
-* **22 Scales & Role-Aware Generative ARP:** Quantize tracks or external MIDI to **22 scales** on **Edit Page** (including 4 Wild Card Scales: *Prometheus*, *Enigmatic*, *Tritone Hexatonic*, and *Lunar Eclipse*), or multi-lock tracks/steps on **ARP Page** to generate evolving music anchored to your active tracks.
-* **6 Non-Destructive Flash Save Vaults:** Save and recall complete projects across 6 dedicated SPI NOR flash vaults (`SLOT 1`–`6`) on **Save Page**.
+* **22 Scales & 6 Non-Destructive Flash Vaults:** Quantize tracks or external MIDI to **22 scales** on **Edit Page** (including 4 Wild Card Scales: *Prometheus*, *Enigmatic*, *Tritone Hexatonic*, and *Lunar Eclipse*), and save/recall complete projects across 6 SPI NOR flash vaults (`SLOT 1`–`6`) on **Save Page**.
 
 ---
 
 ## Dedicated Pages & Navigation
 
-Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO Button**, **Save Button**, **ARP Button**, or **SEQ Button** opens its page; pressing it again returns immediately to **Live Play Page**. Pressing **Home Button** from any dedicated page returns first to **Live Play Page**, and subsequent presses cycle sequentially through **Visualizer Page** and all remaining pages. **No two-button holds are ever required.**
+Pressing **FX Button**, **ENV Button**, **LFO Button**, **Edit Button**, **GLO Button**, **Save Button**, **ARP Button**, or **SEQ Button** opens its page; pressing it again returns immediately to **Live Play Page**. Pressing **Home Button** toggles cleanly between **Live Play Page** and **Visualizer Page** (and exits any dedicated page straight to **Live Play Page**). **No two-button holds are ever required.**
 
 | Control / Button | Function |
 | :--- | :--- |
-| **Live Play Page (Home)** | 6-track horizontal performance matrix showing active Preset, Algorithm variation, and Pattern (`A`–`F`) |
+| **Live Play Page (Home)** | 6-track horizontal performance matrix showing active Preset + Genre variation (or `DRUM KIT: [Name]`) and Pattern (`A`–`F`) |
 | **Visualizer Page** | Full-screen audio-reactive art (*Lunar Oscilloscope*, *Orbital Spectrum Bars*, *Eclipse Moon Loop*, *Starfield Cascade*) |
-| **FX Button** | Full categorized **Effects Page** (6 categories, `0%–110%` overflow, **SEL Button** multi-lock) |
+| **FX Button** | Full categorized **Effects Page** (`0%–110%` overflow, active during live play & recording with **SEL Button** multi-lock) |
 | **ENV Button** | **Envelope Page** (`Attack`, `Decay`, `Sustain`, `Release` with **SEL Button** multi-lock) |
-
-| **Tap `EDIT` → `PIT`** | Transpose active step pitch with Select Encoder |
-| **Tap `HOME`** | Toggle between Play Screen and Full-Screen Visualizer |
-| **Hold `HOME` (3s)** | Toggle **Infinite Algorithmic Compositions Engine** |
-
 | **LFO Button** | **LFO Page** (`Waveform`, `Rate`, `Depth`, `Destination` with **SEL Button** multi-lock) |
 | **Tap Edit Button** | **Edit Page** (Copy, Paste, Duplicate, Clear, Quantize, Humanize, Nudge, Transpose, Probability, Ratchet, Reverse, **22-Scale Library** including *Prometheus*, *Enigmatic*, *Tritone Hexatonic* & *Lunar Eclipse*, plus **Chop Mode**: Kit / Chromatic) |
 | **Hold Edit Button (1.2s)** | **Chop Shop Page** (2-stage `#FFFFFF` waveform slicer & on-device sampler) |
 | **GLO Button** | **Global Page** (8 Color Themes, MIDI Channels, MIDI Routing, Clock Sync, USB Audio I/O) |
 | **Save Button** | **Save Page** (6 SPI NOR Flash Vaults `SLOT 1`–`6`; toggle Save/Load with **Knob 4**, press **Save Button** to execute) |
-| **ARP Button** | **ARP Page** (Dedicated generative selection—multi-lock tracks/steps with **SEL Button** to morph into role-aware music anchored to unselected active tracks) |
+| **ARP Button** | **ARP Page** (Unified **SONG / TRACK / STEP** generative engine with **Knob 3** `0%–100%` Morph Amount) |
 | **SEQ Button** | **SEQ Page** (Pattern-chain `A`–`F` and step-length `16`–`128` builder for selected tracks) |
+
 | **Home Button** | Returns first to **Live Play Page**, then cycles sequentially through **Visualizer Page** and all remaining pages |
 
 ---
