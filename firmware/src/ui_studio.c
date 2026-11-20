@@ -1355,24 +1355,45 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         str_cpy(lbl, *(AL_SETUP_ROWS + row), 21);
         if (row == 0u) { str_cpy(val, "SEL", 14); }
         else if (row == 1u) { if (ui.setup_vault == 0u) str_cpy(val, "BLANK", 14); else { str_cpy(val, "SLOT ", 14); fmt_int(val + 5, (int32_t)ui.setup_vault); } }
-        else if (row == 2u) { fmt_int(val, song.g[G_BPM]); }
-
-        else if (row == 3u) { str_cpy(val, *(AL_NOTE_NAMES + (*(trk[0].p + P_ROOT) % 12)), 14); }
-        else if (row == 4u) { str_cpy(val, *(AL_SCALE_NAMES + (*(trk[0].p + P_SCALE) % 22)), 14); }
-        else if (row == 5u) { fmt_int(val, *(trk[0].p + P_SLEN)); }
-        else if (row == 6u) { str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL", 14); }
+        else if (row == 2u) { str_cpy(val, *(AL_SESS_NAMES + (ui.session_mode % 6u)), 14); }
+        else if (row == 3u) { str_cpy(val, *(AL_TIMER_NAMES + (ui.auto_power_off % 7u)), 14); }
+        else if (row == 4u) { str_cpy(val, *(AL_TIMER_NAMES + (ui.session_timer % 7u)), 14); }
+        else if (row == 5u) { fmt_int(val, song.g[G_BPM]); }
+        else if (row == 6u) { str_cpy(val, *(AL_NOTE_NAMES + (*(trk[0].p + P_ROOT) % 12)), 14); }
+        else if (row == 7u) { str_cpy(val, *(AL_SCALE_NAMES + (*(trk[0].p + P_SCALE) % 22)), 14); }
+        else if (row == 8u) { fmt_int(val, *(trk[0].p + P_SLEN)); }
+        else if (row == 9u) { str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL", 14); }
     } else if (scr == UI_SEQ) {
-        str_cpy(lbl, "TRACK ", 18);
-        fmt_int(lbl + 6, (int32_t)row + 1);
-        fmt_int(val, *(trk[row].p + P_SLEN));
-        str_cpy(val + str_len(val), " ST", 5);
+        uint8_t grabbed = (ui.seq_grab && (uint32_t)ui.list_sel == row);
+        if (row < 6u) {
+            str_cpy(lbl, "TRACK ", 18);
+            fmt_int(lbl + 6, (int32_t)row + 1);
+            val[0] = (char)('A' + ((uint8_t)song.g[G_SLOT] % 6u));
+            val[1] = ' ';
+            fmt_int(val + 2, *(trk[row].p + P_SLEN));
+            str_cpy(val + str_len(val), grabbed ? " [GRAB]" : " ST", 8);
+        } else if (row == 6u) {
+            str_cpy(lbl, "SET CHAIN", 18);
+            str_cpy(val, "SLOT ", 14);
+            fmt_int(val + 5, (int32_t)ui.save_vault + 1);
+            if (grabbed) str_cpy(val + str_len(val), " [GRAB]", 8);
+        } else {
+            str_cpy(lbl, "CHOP SHOP ->", 18);
+            str_cpy(val, "SEL", 14);
+        }
     } else if (scr == UI_CHOP_SRC) {
         static const char *const SRC_L[3] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
         str_cpy(lbl, *(SRC_L + row), 18);
         fmt_int(val, (int32_t)ui.chop_src_idx + 1);
     } else if (scr == UI_CHOP_WAVE) {
-        if (row == 0u) { str_cpy(lbl, "MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
-        else { str_cpy(lbl, "CHOP ", 18); fmt_int(lbl + 5, (int32_t)row); str_cpy(val, ui.chop_trim == 1u ? "[" : ui.chop_trim == 2u ? "]" : "SLICE", 14); }
+        if (row == 0u) { str_cpy(lbl, "SLICE MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
+        else if (row == 1u) { str_cpy(lbl, "PLAY MODE", 18); str_cpy(val, al_chop_chrom ? "CHROMATIC" : "KIT", 14); }
+        else {
+            uint8_t act = ((uint32_t)ui.list_sel == row && ui.chop_trim > 0u);
+            str_cpy(lbl, "CHOP ", 18);
+            fmt_int(lbl + 5, (int32_t)row - 1);
+            str_cpy(val, !act ? "GRAB" : ui.chop_trim == 1u ? "[WHOLE]" : ui.chop_trim == 2u ? "[START []" : "[END ]]", 14);
+        }
     }
 }
 
@@ -1398,11 +1419,11 @@ UI_SMALL static void audilune_page_draw(void)
             if ((i % 4u) == 0u) cv_rect(x, 4, 1, 44, TE_G2);
         }
         cv_blit(0, 42);
-
     }
     cv_begin(240, 212u - y0, C_BLACK);
     for (i = 0; i < vis && (top + i) < rows; i++) {
         uint32_t r = top + i;
+
         int32_t y = (int32_t)i * 22;
         char lbl[22], val[16];
         audilune_row_text(ui.scr, r, lbl, val);
