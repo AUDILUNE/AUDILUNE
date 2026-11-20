@@ -1014,14 +1014,20 @@ static const char *const AL_SCALE_NAMES[22] = {
     "PROMETHEUS", "ENIGMATIC", "TRITONE HEX", "LUNAR ECLPS"
 };
 static const char *const AL_EDIT_ROWS[14 + 2] = {
-    "COPY", "PASTE", "DUPLICATE", "CLEAR", "QUANTIZE", "HUMANIZE",
-    "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY", "RATCHET",
-    "REVERSE", "ROOT NOTE", "SCALE TYPE", "CHOP MODE"
+    "UNDO / REDO", "CLEAR", "COPY", "PASTE", "DUPLICATE", "QUANTIZE",
+    "HUMANIZE", "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY",
+    "RATCHET", "REVERSE", "ROOT NOTE", "SCALE TYPE"
 };
 static const char *const AL_ENV_ROWS[2 + 2] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
 static const char *const AL_LFO_ROWS[2 + 2] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
 static const char *const AL_GLO_ROWS[3 + 3] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
-static const char *const AL_SETUP_ROWS[7] = {"READY -> PLAY SCREEN", "SONG VAULT", "TEMPO", "ROOT NOTE", "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"};
+static const char *const AL_SETUP_ROWS[10] = {
+    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "AUTO POWER OFF",
+    "SESSION TIMER", "TEMPO", "ROOT NOTE", "SCALE TYPE",
+    "PATTERN LENGTH", "MIDI / CLOCK SYNC"
+};
+static const char *const AL_SESS_NAMES[6] = {"STUDIO", "SLEEP", "MEDITATE", "STUDY FOCUS", "CHILL", "DANCE"};
+static const char *const AL_TIMER_NAMES[7] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
 static const char *const AL_NOTE_NAMES[6 + 6] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[3 + 2] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
@@ -1034,14 +1040,16 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_FX) return 10u;
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
     if (scr == UI_EDIT) return 16u;
-    if (scr == UI_ARP) return 5u;
-    if (scr == UI_GLO || scr == UI_SAVE || scr == UI_SEQ) return 6u;
+    if (scr == UI_ARP) return 6u;
+    if (scr == UI_GLO || scr == UI_SAVE) return 6u;
+    if (scr == UI_SEQ) return 8u;
     if (scr == UI_CHOP_SRC) return 3u;
-    if (scr == UI_CHOP_WAVE) return 17u;
+    if (scr == UI_CHOP_WAVE) return 18u;
     if (scr == UI_ALGO) return 6u + DRUM_KITS;
-    if (scr == UI_SETUP) return 7u;
+    if (scr == UI_SETUP) return 10u;
     return 0u;
 }
+
 
 UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, uint8_t val)
 {
