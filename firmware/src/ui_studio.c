@@ -107,7 +107,8 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *cons
     char line[36], nb[12];
     uint32_t hot = ui.hot_t > 0 && ui.hot_col < 4u && lab[ui.hot_col][0] != 0;
     uint32_t sig = studio_hash((uint32_t)song.sel * 17u + (uint32_t)song.g[G_BPM] * 31u +
-                               (uint32_t)(sect + 1) * 97u + hot * 5003u + (uint32_t)ui.hot_col * 131u,
+                               (uint32_t)(sect + 1) * 97u + hot * 5003u + (uint32_t)ui.hot_col * 131u +
+                               audilune_timer_alert * 7919u,
                                ui.msg_t ? ui.msg : "");
     if (hot) {
         sig = studio_hash(sig, lab[ui.hot_col]);
@@ -122,6 +123,9 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *cons
     if (ui.msg_t) {
         cv_rect(1, 1, 238, 24, C_WHITE);
         te_text_c(120, 6, ui.msg, C_BLACK);
+    } else if (audilune_timer_alert) {
+        cv_rect(1, 1, 238, 24, C_WHITE);
+        te_text_c(120, 6, "TIME UP - HOLD SEL: DISARM", C_BLACK);
     } else if (hot) {
         char up_l[16], up_v[16];
         uint32_t p = 0;
@@ -143,6 +147,7 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *cons
         if (p + 8u < sizeof line) {
             line[p++] = ' '; line[p++] = '|'; line[p++] = ' ';
             line[p++] = 'P'; line[p++] = 'A'; line[p++] = 'T'; line[p++] = ' ';
+
             line[p++] = pat; line[p] = 0;
         }
         if (p + 3u < sizeof line) { line[p++] = ' '; line[p++] = '|'; line[p++] = ' '; line[p] = 0; }
