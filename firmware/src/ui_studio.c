@@ -1124,18 +1124,18 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
         audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
     } else if (ui.scr == UI_EDIT) {
-        if (row == 13u) {
+        if (row == 0u && k == 3u) {
+            ui.edit_redo_dir = (uint8_t)(!ui.edit_redo_dir);
+            audilune_hud_text("ACTION", ui.edit_redo_dir ? "REDO" : "UNDO");
+        } else if (row == 14u) {
             int32_t nr = (t->p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
 
             t->p[P_ROOT] = (int16_t)nr;
             audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
-        } else if (row == 14u) {
+        } else if (row == 15u) {
             int32_t ns = (t->p[P_SCALE] + (s > 0 ? 1 : 21)) % 22;
             t->p[P_SCALE] = (int16_t)ns;
             audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
-        } else if (row == 15u) {
-            al_chop_chrom = (uint8_t)(!al_chop_chrom);
-            audilune_hud_text("CHOP MODE", al_chop_chrom ? "CHROMATIC" : "KIT");
         }
     } else if (ui.scr == UI_GLO) {
         if (row == 0u) {
@@ -1148,6 +1148,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
         } else if (row == 5u) {
             audilune_blank_studio_init();
+
             audilune_hud_text("STUDIO", "SETUP");
         }
     } else if (ui.scr == UI_SAVE) {
