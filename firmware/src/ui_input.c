@@ -1499,9 +1499,11 @@ UI_SMALL static void ui_input(void)
         if (ui.scr >= UI_FX) {
             int32_t next_row = (int32_t)ui.list_sel + (s > 0 ? 1 : -1);
             if (next_row < 0) next_row = 0;
+            ui.seq_grab = 0;
+            ui.chop_trim = 0;
             ui.list_sel = (uint8_t)next_row;
             if (ui.scr == UI_CHOP_WAVE)
-                ui.chop_sel = (uint8_t)(ui.list_sel > 0 ? (ui.list_sel - 1u) & 15u : 0u);
+                ui.chop_sel = (uint8_t)(ui.list_sel >= 2u ? (ui.list_sel - 2u) & 15u : 0u);
             ui.force = 1;
         } else {
             uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
@@ -1523,6 +1525,7 @@ UI_SMALL static void ui_input(void)
 
         if (ui.scr == UI_SETUP && k >= 2u) {
             audilune_list_knob(k, s);
+
         } else if (ui.home || k < 2u) {
             audilune_main_knobs(k, s);
         } else if (ui.scr >= UI_FX) {
