@@ -1127,70 +1127,41 @@ UI_SMALL static void rec_knobs(void)
         ui.hot_col = 3, ui.hot_t = 40;
     }
 }
-
-#define AUDILUNE_HOLD_CLEAR_MS 1500u
-
 UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
 {
-    static uint8_t prev_rec, prev_wait, eaten, rec_on;
-    static uint32_t rec_t0;
     uint32_t rb = 1u << panel.btn[B_REC];
-    uint32_t rec_down = (fm1_in.buttons & rb) != 0u;
     if (on_song_page())
-        rec_down = 0, pressed &= ~rb;
+        pressed &= ~rb;
 
     if (pressed & rb) {
-        eaten = (uint8_t)ft_owns_press();
-        prev_rec = song.rec;
-        prev_wait = rec_wait;
-        rec_t0 = now_ms;
-        rec_on = 1;
+        ft_owns_press();
         rec_toggle();
         if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
             song.g[G_CLICK] = 70;
-        ui_message((song.rec || rec_wait) ? "AUTOMATION ARMED" : "AUTOMATION OFF");
+        ui_message((song.rec || rec_wait) ? "REC ARMED" : "REC DISARMED");
     }
-    if (rec_down && rec_on && !eaten && !ui.hold_kind && now_ms - rec_t0 >= 650u) {
-        song.rec = prev_rec;
-        rec_wait = prev_wait;
-        ui.msg_t = 0;
-        ui.hold_kind = 1;
-        ui.hold_t0 = now_ms;
-        ui.hold_trk = song.sel;
-        ui.force = 1;
-    }
-    if (ui.hold_kind == 1u && rec_down && now_ms - ui.hold_t0 >= AUDILUNE_HOLD_CLEAR_MS) {
-        track_t *t = &trk[ui.hold_trk % NTRK];
-        undo_mark(t, (undo_sess += 4u) | 3u);
-        fm1_irq_off();
-        if (!ui.home && cur_page()->scope == SC_STEP && !is_drum(t)) {
-            memset(&t->step[ui.cursor], 0, sizeof(step_t));
-            t->micro[ui.cursor] = 0;
-            fm1_irq_on();
-            ui_message("STEP CLEARED");
-        } else {
-            char b[12] = "1 CLEARED";
-            track_defaults_steps(t);
-            t->nheld = 0;
-            t->arp_phys = 0;
-            fm1_irq_on();
-            b[0] = (char)('1' + ui.hold_trk);
-            ui_say("TRACK ", b);
+    {
+        static uint8_t sel_on, sel_disarmed;
+        static uint32_t sel_t0;
+        uint32_t scl_b = 1u << panel.btn[B_SCL], scl_down = (fm1_in.buttons & scl_b) != 0u;
+        if (scl_down && !sel_on) { sel_t0 = now_ms; sel_on = 1; sel_disarmed = 0; }
+        if (scl_down && sel_on && !sel_disarmed && now_ms - sel_t0 >= 1000u) {
+            sel_disarmed = 1;
+            if (audilune_timer_alert) {
+                audilune_timer_alert = 0;
+                ui.session_timer = 0;
+                ui_message("TIMER DISARMED");
+                ui.force = 1;
+            }
         }
-        ui.hold_kind = 0;
-        rec_on = 0;
-        ui.force = 1;
-
+        if (!scl_down) { sel_on = 0; sel_disarmed = 0; }
     }
-    if (!rec_down) {
-        if (ui.hold_kind == 1u) { ui.hold_kind = 0; ui.force = 1; }
-        rec_on = 0;
-     }
     {
         static uint8_t sv_on, sv_held;
         static uint32_t sv_t0;
         uint32_t sb = 1u << panel.btn[B_SAVE], sv_down = (fm1_in.buttons & sb) != 0u;
         if (pressed & sb) { sv_t0 = now_ms; sv_on = 1; sv_held = 0; }
+
         if (sv_down && sv_on && !sv_held && now_ms - sv_t0 >= 3000u) { sv_held = 1; ui.hold_kind = 0; audilune_save_latch = 2u; ui_message("LOAD: TAP OP1-6"); ui.force = 1; }
         else if (sv_down && sv_on && !sv_held && now_ms - sv_t0 >= 650u && !ui.hold_kind) { ui.hold_kind = 2u; ui.force = 1; }
         if (!sv_down && sv_on) { if (ui.hold_kind == 2u) ui.hold_kind = 0; if (!sv_held) { audilune_save_latch = audilune_save_latch ? 0u : 1u; ui_message(audilune_save_latch ? "SAVE: TAP OP1-6" : "SAVE CANCELLED"); } sv_on = 0; ui.force = 1; }
