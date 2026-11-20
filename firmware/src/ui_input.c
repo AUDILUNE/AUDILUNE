@@ -1444,21 +1444,23 @@ UI_SMALL static void ui_input(void)
 
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
         int32_t span = AUDILUNE_GENRE_COUNT + (int32_t)DRUM_KITS;
-        int32_t pos = TSEL->synth_mode ? (int32_t)(ui.algo_genre[song.sel] % AUDILUNE_GENRE_COUNT)
-                                       : AUDILUNE_GENRE_COUNT + clamp((int32_t)TDRUM->p[P_E0], 0, (int32_t)DRUM_KITS - 1);
-        pos = ((pos + s) % span + span) % span;
+        int32_t pos;
         ui_input_ms = fm1_ms;
-        if (pos < AUDILUNE_GENRE_COUNT) {
-            TSEL->synth_mode = 1;
-            ui.algo_genre[song.sel] = (uint8_t)pos;
-            audilune_genre_idx = (uint8_t)pos;
-            audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[pos]);
+        vis_on = 0;
+        if (ui.scr != UI_ALGO) {
+            pos = TSEL->synth_mode ? (int32_t)(ui.algo_genre[song.sel] % AUDILUNE_GENRE_COUNT)
+                                   : AUDILUNE_GENRE_COUNT + clamp((int32_t)TDRUM->p[P_E0], 0, (int32_t)DRUM_KITS - 1);
+            ui.scr = UI_ALGO;
+            ui.list_top = 0;
         } else {
-            int32_t kidx = pos - AUDILUNE_GENRE_COUNT;
-            TSEL->synth_mode = 0;
-            TDRUM->p[P_E0] = (int16_t)kidx;
-            audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[kidx]);
+            pos = (int32_t)ui.list_sel;
         }
+        pos = ((pos + s) % span + span) % span;
+        ui.list_sel = (uint8_t)pos;
+        if (pos < AUDILUNE_GENRE_COUNT)
+            audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[pos]);
+        else
+            audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[pos - AUDILUNE_GENRE_COUNT]);
         ui.force = 1;
     }
 
@@ -1512,7 +1514,9 @@ UI_SMALL static void ui_input(void)
             ui.hot_t = 40;
         }
 
-        if (ui.home || k < 2u) {
+        if (ui.scr == UI_SETUP && k >= 2u) {
+            audilune_list_knob(k, s);
+        } else if (ui.home || k < 2u) {
             audilune_main_knobs(k, s);
         } else if (ui.scr >= UI_FX) {
             audilune_list_knob(k, s);
@@ -1523,6 +1527,7 @@ UI_SMALL static void ui_input(void)
 }
 
 /* ---------------------------------------------------- panel setup --- */
+
 #define SETUP_IDLE_MS 30000u
 UI_SMALL static void panel_setup(void)
 {
