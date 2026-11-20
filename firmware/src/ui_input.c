@@ -1153,29 +1153,32 @@ UI_SMALL static void audilune_clear_selected(void)
         }
         ui.force = 1;
         return;
-    }
-    if ((!ui.home && cur_page()->scope == SC_STEP) || ui.sel_step_mask) {
+    if ((!ui.home && cur_page()->scope == SC_STEP) ||
+        (ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3])) {
         track_t *t = TSEL;
+        uint32_t any_step = ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3];
         undo_mark(t, (undo_sess += 4u) | 3u);
         fm1_irq_off();
-        if (ui.sel_step_mask) {
-            for (i = 0; i < 64u && i < NSTEP; i++)
-                if ((ui.sel_step_mask >> i) & 1u) {
+        if (any_step) {
+            for (i = 0; i < NSTEP; i++)
+                if ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u) {
                     memset(&t->step[i], 0, sizeof t->step[i]);
-                    t->dstep[i] = 0;
+                    memset(&t->dstep[i], 0, sizeof t->dstep[i]);
                     t->micro[i] = 0;
                 }
-            ui.sel_step_mask = 0;
+            memset(ui.sel_step_mask, 0, sizeof ui.sel_step_mask);
             ui_message("STEPS CLEARED");
         } else {
             memset(&t->step[ui.cursor], 0, sizeof t->step[ui.cursor]);
-            t->dstep[ui.cursor] = 0;
+            memset(&t->dstep[ui.cursor], 0, sizeof t->dstep[ui.cursor]);
             t->micro[ui.cursor] = 0;
             ui_message("STEP CLEARED");
         }
         fm1_irq_on();
         ui.force = 1;
         return;
+    }
+
     }
     if (ui.scr == UI_SEQ && ui.list_sel < NTRK) {
         track_t *t = &trk[ui.list_sel];
