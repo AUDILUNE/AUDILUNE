@@ -892,7 +892,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             if (ui.list_sel == 0u) {
                 go_home();
                 if (ui.session_mode > 0u) {
-                    audilune_infinite_on = 1u;
+                       audilune_infinite_on = 1u;
                     if (!song.playing)
                         transport_req = 1;
                     ui_message("GENERATIVE LIVE");
@@ -902,10 +902,14 @@ UI_SMALL static void layer_tap(uint32_t layer)
             }
         } else if (ui.scr == UI_SEQ) {
             if (ui.list_sel >= 7u) {
+                ui.seq_grab = 0;
                 ui.scr = UI_CHOP_SRC;
                 ui.list_sel = 0;
                 ui.list_top = 0;
                 ui_message("CHOP SHOP");
+            } else {
+                ui.seq_grab = (uint8_t)(!ui.seq_grab);
+                ui_message(ui.seq_grab ? "GRABBED: K4 SHIFT" : "DROPPED");
             }
         } else if (ui.scr == UI_EDIT) {
             if (ui.list_sel == 0u) {
@@ -926,8 +930,10 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 ui_message("SONG DJ MORPH");
             }
         } else if (ui.scr == UI_CHOP_WAVE) {
-            ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 3u);
-            ui_message(ui.chop_trim == 0u ? "TRIM: WHOLE" : ui.chop_trim == 1u ? "TRIM: START [" : "TRIM: END ]");
+            if (ui.list_sel >= 2u) {
+                ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 4u);
+                ui_message(ui.chop_trim == 1u ? "GRAB WHOLE" : ui.chop_trim == 2u ? "GRAB START [" : ui.chop_trim == 3u ? "GRAB END ]" : "DROPPED");
+            }
         } else if (ui.scr == UI_CHOP_SRC) {
             ui.scr = UI_CHOP_WAVE;
             ui.list_sel = 0;
@@ -948,6 +954,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
         break;
     default:
         break;
+
     }
 }
 
