@@ -874,7 +874,58 @@ UI_SMALL static void layer_tap(uint32_t layer)
         audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP PAGE");
         break;
     case LY_SCALE:
-        if (ui.scr == UI_CHOP_WAVE) {
+        if (ui.scr == UI_ALGO) {
+            uint8_t row = ui.list_sel;
+            if (row < AUDILUNE_GENRE_COUNT) {
+                TSEL->synth_mode = 1;
+                ui.algo_genre[song.sel] = row;
+                audilune_genre_idx = row;
+                audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[row]);
+            } else if (row < AUDILUNE_GENRE_COUNT + DRUM_KITS) {
+                uint8_t kidx = (uint8_t)(row - AUDILUNE_GENRE_COUNT);
+                TSEL->synth_mode = 0;
+                TDRUM->p[P_E0] = (int16_t)kidx;
+                audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[kidx]);
+            }
+            go_home();
+        } else if (ui.scr == UI_SETUP) {
+            if (ui.list_sel == 0u) {
+                go_home();
+                if (ui.session_mode > 0u) {
+                    audilune_infinite_on = 1u;
+                    if (!song.playing)
+                        transport_req = 1;
+                    ui_message("GENERATIVE LIVE");
+                } else {
+                    ui_message("STUDIO LIVE");
+                }
+            }
+        } else if (ui.scr == UI_SEQ) {
+            if (ui.list_sel >= 7u) {
+                ui.scr = UI_CHOP_SRC;
+                ui.list_sel = 0;
+                ui.list_top = 0;
+                ui_message("CHOP SHOP");
+            }
+        } else if (ui.scr == UI_EDIT) {
+            if (ui.list_sel == 0u) {
+                ui_message(undo_swap(ui.edit_redo_dir) ? (ui.edit_redo_dir ? "REDO" : "UNDO") : "NOTHING TO UNDO");
+            } else if (ui.list_sel == 1u) {
+                undo_mark(TSEL, (undo_sess += 4u) | 3u);
+                fm1_irq_off();
+                track_defaults_steps(TSEL);
+                fm1_irq_on();
+                ui_message("TRACK CLEARED");
+            }
+        } else if (ui.scr == UI_ARP) {
+            if (ui.list_sel == 0u) {
+                audilune_infinite_on = (uint8_t)!audilune_infinite_on;
+                ui_message(audilune_infinite_on ? "AUTO ENGINE: ON" : "AUTO ENGINE: OFF");
+            } else if (ui.morph_scope == 4u) {
+                audilune_song_dj_trig = 1u;
+                ui_message("SONG DJ MORPH");
+            }
+        } else if (ui.scr == UI_CHOP_WAVE) {
             ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 3u);
             ui_message(ui.chop_trim == 0u ? "TRIM: WHOLE" : ui.chop_trim == 1u ? "TRIM: START [" : "TRIM: END ]");
         } else if (ui.scr == UI_CHOP_SRC) {
@@ -913,6 +964,7 @@ UI_SMALL static void layer_unlock(void)
 #define LY_QUIET_MS 250u
 static uint32_t ly_quiet_t;
 static uint8_t ly_quiet_sel;
+
 UI_SMALL static int ly_quiet(void)
 {
     if (ly_quiet_t && fm1_ms - (ly_quiet_t & ~1u) >= LY_QUIET_MS)
