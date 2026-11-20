@@ -427,44 +427,58 @@ static uint32_t trk_len(const track_t *t) { return t->p[P_SLEN] > 0 ? (uint32_t)
 
 /* ------------------------------------------------------------- undo --- */
 #define UNDO_DEPTH 4u
+#define UNDO_RING_N 3u
+#define UNDO_RING_STEPS 64u
 typedef struct {
+    uint8_t valid, undone, trk;
+    int16_t len;
+    uint32_t sess;
+    step_t st[UNDO_RING_STEPS];
+    int8_t micro[UNDO_RING_STEPS];
+} undo_ring_slot_t;
+
+static struct {
     uint8_t valid, undone, trk;
     int16_t len;
     uint32_t sess;
     step_t st[NSTEP];
     int8_t micro[NSTEP];
-} undo_slot_t;
-
-static undo_slot_t undo;
-static undo_slot_t undo_ring[UNDO_DEPTH];
+} undo;
+static undo_ring_slot_t undo_ring[UNDO_RING_N];
 static uint8_t undo_cnt, undo_redo_cnt, undo_wr;
 static uint32_t undo_sess = 1;
-
-static void undo_snap_capture(undo_slot_t *dst, const track_t *t, uint32_t sess)
-{
-    memcpy(dst->st, t->step, sizeof dst->st);
-    memcpy(dst->micro, t->micro, sizeof dst->micro);
-    dst->len = t->p[P_SLEN];
-    dst->trk = (uint8_t)trk_index(t);
-    dst->sess = sess;
-    dst->valid = 1;
-    dst->undone = 0;
-}
 
 static void undo_mark(const track_t *t, uint32_t sess)
 {
     uint32_t i = trk_index(t);
+    undo_ring_slot_t *r;
     if (undo.valid && !undo.undone && undo.trk == i && undo.sess == sess)
         return;
-    undo_snap_capture(&undo, t, sess);
-    undo_ring[undo_wr % UNDO_DEPTH] = undo;
-    undo_wr = (uint8_t)((undo_wr + 1u) % UNDO_DEPTH);
+    if (undo.valid) {
+        r = &undo_ring[undo_wr % UNDO_RING_N];
+        r->valid = undo.valid;
+        r->undone = undo.undone;
+        r->trk = undo.trk;
+        r->len = undo.len;
+        r->sess = undo.sess;
+        memcpy(r->st, undo.st, sizeof r->st);
+        memcpy(r->micro, undo.micro, sizeof r->micro);
+        undo_wr = (uint8_t)((undo_wr + 1u) % UNDO_RING_N);
+    }
+    memcpy(undo.st, t->step, sizeof undo.st);
+    memcpy(undo.micro, t->micro, sizeof undo.micro);
+    undo.len = t->p[P_SLEN];
+    undo.trk = (uint8_t)i;
+    undo.sess = sess;
+    undo.valid = 1;
+    undo.undone = 0;
     if (undo_cnt < UNDO_DEPTH)
         undo_cnt++;
     undo_redo_cnt = 0;
 }
 #define UNDO_REC(t) (((t)->pass << 2) | 1u)
 static uint32_t undo_erase_sess;
+
 
 /* ------------------------------------------------------- recording --- */
 #define REC_LAT 512u
