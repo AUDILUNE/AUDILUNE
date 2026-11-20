@@ -233,11 +233,44 @@ UI_SMALL static void fm1_main(void)
 
     healthy_since = fm1_ms;
     for (;;) {
-        uint32_t m = fm1_ms;
+        static const uint16_t TIMER_MINS[7] = {0u, 15u, 30u, 45u, 60u, 90u, 120u};
+        static uint8_t apo_was, st_was;
+        static uint32_t apo_t0, st_t0;
+        uint32_t m = fm1_ms, apo_fade_q12 = 4096u;
         fm1_wdt_feed();
         usb_retry(fm1_ms);
         if ((uint32_t)(m - healthy_since) >= 30000u && bootguard.pending)
             bootguard_clear(&bootguard);
+        if (ui.auto_power_off != apo_was) {
+            apo_was = ui.auto_power_off;
+            apo_t0 = m;
+        }
+        if (apo_was > 0u && apo_was < 7u) {
+            uint32_t dur_ms = (uint32_t)TIMER_MINS[apo_was] * 60000u;
+            uint32_t el = (uint32_t)(m - apo_t0);
+            if (el >= dur_ms) {
+                fm1_audio_stop();
+#if FELUCCA_ARRANGER
+                persist_flush_now();
+#endif
+                lcd_fill(0, 0, 240, 240, C_BLACK);
+                fm1_delay_ms(30);
+                fm1_reboot();
+            } else if (dur_ms > 20000u && el >= dur_ms - 20000u) {
+                apo_fade_q12 = ((dur_ms - el) * 4096u) / 20000u;
+            }
+        }
+        if (ui.session_timer != st_was) {
+            st_was = ui.session_timer;
+            st_t0 = m;
+        }
+        if (st_was > 0u && st_was < 7u && !audilune_timer_alert) {
+            uint32_t dur_ms = (uint32_t)TIMER_MINS[st_was] * 60000u;
+            if ((uint32_t)(m - st_t0) >= dur_ms && !song.rec && !rec_wait && !ft_on) {
+                audilune_timer_alert = 1u;
+                ui.force = 1;
+            }
+        }
         {
             int32_t b = fm1_adc_read(FM1_ADC_BATT);
             if (b > 0)
@@ -246,7 +279,7 @@ UI_SMALL static void fm1_main(void)
         {
             int32_t a = fm1_adc_read(FM1_ADC_MASTER);
             if (a >= 0) {
-                uint32_t k10;
+                uint32_t k10, mq;
                 knob += (a * 16 - knob) / 8;
                 k10 = (uint32_t)(knob / 16);
                 if (ed_master) {
@@ -257,12 +290,14 @@ UI_SMALL static void fm1_main(void)
                     else
                         k10 = (ed_master - 1u) * 1023u / 126u;
                 }
-                song.master_q12 = (k10 * k10) >> 8;
+                mq = (k10 * k10) >> 8;
+                song.master_q12 = (uint16_t)((mq * apo_fade_q12) >> 12);
             }
         }
         {
             static uint32_t t0, shown;
             uint32_t both = (1u << panel.btn[B_OCTDN]) | (1u << panel.btn[B_OCTUP]);
+
             if ((fm1_in.buttons & both) != both || song.playing) {
                 if (shown)
                     ui_say("UPDATE MODE ", "CANCELLED");
