@@ -175,6 +175,7 @@ UI_SMALL static void felucca_init(void)
     palette_set(0u);
     layers_init();
     go_home();
+    audilune_blank_studio_init();
     ui.force = 1;
 }
 
@@ -184,6 +185,7 @@ UI_SMALL static void fm1_main(void)
     uint32_t healthy_since;
     persist_boot();
 #if FELUCCA_OTA
+
     if (flash_ok)
 
         ota_boot_cleanup();
