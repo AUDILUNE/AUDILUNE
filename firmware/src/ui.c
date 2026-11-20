@@ -46,6 +46,9 @@ static uint8_t sync_reload;                  /* engine / preset / project / user
 #define Y_FOOT 202
 #define H_FOOT 38
 
+static uint8_t audilune_song_dj_trig;
+static uint8_t audilune_timer_alert;
+
 static struct {
     uint8_t home;
     uint8_t page;                /* index into PAGES */
@@ -86,7 +89,7 @@ static struct {
     uint8_t tap_n;
     char msg[24];
     uint32_t enc_t[NE];
-    /* AUDILUNE v2.3 12-page & multi-selection state */
+    /* AUDILUNE v2.8 14-page & multi-selection state */
     uint8_t scr;                 /* active screen (UI_LIVE .. UI_CHOP_WAVE) */
     uint8_t list_sel;            /* active row index in list screens */
     uint8_t list_top;            /* scroll top row index */
@@ -99,15 +102,22 @@ static struct {
     uint8_t chop_mode;           /* Chop Shop Stage 2: 0=4EQ, 1=8EQ, 2=16EQ, 3=AUTO, 4=MAN */
     uint8_t chop_sel;            /* Chop Shop Stage 2: active chop 0..15 */
     uint8_t chop_trim;           /* Chop Shop Stage 2: 0=Whole, 1=Start[, 2=End] */
+    uint8_t chop_play_mode;      /* Chop Shop Stage 2: 0=KIT, 1=CHROMATIC */
     uint8_t save_vault;          /* Save Page: SLOT 0..5 */
     uint8_t save_op;             /* Save Page: 0=SAVE, 1=LOAD */
     uint8_t chop_save_usr;       /* Chop Shop Save: 0=SKIP, 1..6=USR1..6 */
     uint8_t chop_load_trk;       /* Chop Shop Save: 0=NONE, 1..6=TRK1..6 */
     uint8_t setup_vault;         /* Studio Setup Page: 0=BLANK, 1..6=SLOT 1..6 */
+    uint8_t session_mode;        /* 0=STUDIO, 1=SLEEP, 2=MEDITATE, 3=STUDY FOCUS, 4=CHILL, 5=DANCE */
+    uint8_t auto_power_off;      /* 0=OFF, 1=15m, 2=30m, 3=45m, 4=60m, 5=90m, 6=120m */
+    uint8_t session_timer;       /* 0=OFF, 1=15m, 2=30m, 3=45m, 4=60m, 5=90m, 6=120m */
+    uint8_t edit_redo_dir;       /* Edit Page Row 0: 0=UNDO, 1=REDO */
+    uint8_t morph_scope;         /* ARP Page: 0=SONG, 1=TRACK, 2=STEP, 3=PART A->B, 4=SONG DJ */
     /* drawn-state cache */
     char col[4][32];
     char focus_l[8], focus_v[8], focus_u[8];   /* the touched column, shown large */
     char big_l[4][8], big_v[4][10], big_u[4][8];   /* the four columns, for the big values (2.4: pages without a graph) */
+
     uint16_t big_c[4];
     uint32_t graph_sig, head_sig, foot_sig, frame;
     uint8_t graph_top;           /* the graph strip's top G_OY rows hold something */
