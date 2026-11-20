@@ -1134,20 +1134,117 @@ UI_SMALL static void rec_knobs(void)
         ui.hot_col = 3, ui.hot_t = 40;
     }
 }
+
+UI_SMALL static void audilune_clear_selected(void)
+{
+    uint32_t i;
+    if (ui.scr == UI_SAVE && ui.list_sel < 6u) {
+        project_erase((uint32_t)ui.list_sel);
+        ui_message("VAULT CLEARED");
+        ui.force = 1;
+        return;
+    }
+    if (ui.scr == UI_CHOP_WAVE) {
+        if (ui.list_sel < 2u && ui.chop_src_type == 2u) {
+            up_ui(1u, ui.chop_src_idx % UP_SLOTS);
+            ui_message("USR SLOT CLEARED");
+        } else {
+            ui_message("SLICE CLEARED");
+        }
+        ui.force = 1;
+        return;
+    }
+    if ((!ui.home && cur_page()->scope == SC_STEP) || ui.sel_step_mask) {
+        track_t *t = TSEL;
+        undo_mark(t, (undo_sess += 4u) | 3u);
+        fm1_irq_off();
+        if (ui.sel_step_mask) {
+            for (i = 0; i < 64u && i < NSTEP; i++)
+                if ((ui.sel_step_mask >> i) & 1u) {
+                    memset(&t->step[i], 0, sizeof t->step[i]);
+                    t->dstep[i] = 0;
+                    t->micro[i] = 0;
+                }
+            ui.sel_step_mask = 0;
+            ui_message("STEPS CLEARED");
+        } else {
+            memset(&t->step[ui.cursor], 0, sizeof t->step[ui.cursor]);
+            t->dstep[ui.cursor] = 0;
+            t->micro[ui.cursor] = 0;
+            ui_message("STEP CLEARED");
+        }
+        fm1_irq_on();
+        ui.force = 1;
+        return;
+    }
+    if (ui.scr == UI_SEQ && ui.list_sel < NTRK) {
+        track_t *t = &trk[ui.list_sel];
+        undo_mark(t, (undo_sess += 4u) | 3u);
+        fm1_irq_off();
+        track_defaults_steps(t);
+        fm1_irq_on();
+        ui_message("SEQ TRK CLEARED");
+        ui.force = 1;
+        return;
+    }
+    if (ui.sel_trk_mask) {
+        fm1_irq_off();
+        for (i = 0; i < NTRK; i++)
+            if ((ui.sel_trk_mask >> i) & 1u) {
+                undo_mark(&trk[i], (undo_sess += 4u) | 3u);
+                track_defaults_steps(&trk[i]);
+            }
+        fm1_irq_on();
+        ui_message("TRACKS CLEARED");
+        ui.force = 1;
+        return;
+    }
+    undo_mark(TSEL, (undo_sess += 4u) | 3u);
+    fm1_irq_off();
+    track_defaults_steps(TSEL);
+    fm1_irq_on();
+    ui_message("TRACK CLEARED");
+    ui.force = 1;
+}
+
 UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
 {
-    uint32_t rb = 1u << panel.btn[B_REC];
-    if (on_song_page())
+    uint32_t rb = 1u << panel.btn[B_REC], rc_down = (fm1_in.buttons & rb) != 0u;
+    static uint8_t rc_on, rc_held;
+    static uint32_t rc_t0;
+    if (on_song_page()) {
         pressed &= ~rb;
-
+        rc_down = 0u;
+    }
     if (pressed & rb) {
-        ft_owns_press();
-        rec_toggle();
-        if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
-            song.g[G_CLICK] = 70;
-        ui_message((song.rec || rec_wait) ? "REC ARMED" : "REC DISARMED");
+        rc_t0 = now_ms;
+        rc_on = 1;
+        rc_held = 0;
+    }
+    if (rc_down && rc_on && !rc_held && now_ms - rc_t0 >= 1200u) {
+        rc_held = 1;
+        ui.hold_kind = 0;
+        audilune_clear_selected();
+    } else if (rc_down && rc_on && !rc_held && now_ms - rc_t0 >= 500u && !ui.hold_kind) {
+        ui.hold_kind = 1u;
+        ui.force = 1;
+    }
+    if (!rc_down && rc_on) {
+        if (ui.hold_kind == 1u) {
+            ui.hold_kind = 0;
+            ui.force = 1;
+        }
+        if (!rc_held) {
+            ft_owns_press();
+            rec_toggle();
+            if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
+                song.g[G_CLICK] = 70;
+            ui_message((song.rec || rec_wait) ? "REC ARMED" : "REC DISARMED");
+        }
+        rc_on = 0;
     }
     {
+
         static uint8_t sel_on, sel_disarmed;
         static uint32_t sel_t0;
         uint32_t scl_b = 1u << panel.btn[B_SCL], scl_down = (fm1_in.buttons & scl_b) != 0u;
