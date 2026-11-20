@@ -1295,9 +1295,10 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     } else if (scr == UI_EDIT) {
         str_cpy(lbl, *(AL_EDIT_ROWS + row), 18);
 
-        if (row == 13u) str_cpy(val, *(AL_NOTE_NAMES + (*(t->p + P_ROOT) % 12)), 14);
-        else if (row == 14u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
-        else if (row == 15u) str_cpy(val, al_chop_chrom ? "CHROM" : "KIT", 14);
+        if (row == 0u) str_cpy(val, ui.edit_redo_dir ? "REDO" : "UNDO", 14);
+        else if (row == 1u) str_cpy(val, "SEL", 14);
+        else if (row == 14u) str_cpy(val, *(AL_NOTE_NAMES + (*(t->p + P_ROOT) % 12)), 14);
+        else if (row == 15u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
     } else if (scr == UI_GLO) {
         static const char *const AL_THM[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
         str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
@@ -1315,13 +1316,16 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(lbl, "AUTONOMOUS ENG", 18);
             str_cpy(val, audilune_infinite_on ? "ON" : "OFF", 14);
         } else if (row == 1u) {
+            str_cpy(lbl, "SESSION MODE", 18);
+            str_cpy(val, *(AL_SESS_NAMES + (ui.session_mode % 6u)), 14);
+        } else if (row == 2u) {
             str_cpy(lbl, "MORPH SCOPE", 18);
             str_cpy(val, *(AL_SCOPE_N + (audilune_gen_scope % 5u)), 14);
-        } else if (row == 2u) {
-            str_cpy(lbl, "MORPH (K3)", 18);
+        } else if (row == 3u) {
+            str_cpy(lbl, "MORPH AMOUNT", 18);
             fmt_int(val, (int32_t)audilune_gen_morph);
             str_cpy(val + str_len(val), "%", 4);
-        } else if (row == 3u) {
+        } else if (row == 4u) {
             str_cpy(lbl, "GENRE", 18);
             str_cpy(val, *(AUDILUNE_GENRE_NAMES + (audilune_genre % 6u)), 14);
         } else if (audilune_gen_scope == 4u) {
@@ -1332,7 +1336,6 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             uint32_t st = audilune_active_step & 31u;
             str_cpy(lbl, "TARGET STEP", 18);
             str_cpy(val, ((audilune_sel_step_mask[song.sel] >> st) & 1u) ? "*" : "", 14);
-
             fmt_int(val + str_len(val), (int32_t)st + 1);
         } else {
             str_cpy(lbl, "TARGET TRK", 18);
@@ -1353,6 +1356,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         if (row == 0u) { str_cpy(val, "SEL", 14); }
         else if (row == 1u) { if (ui.setup_vault == 0u) str_cpy(val, "BLANK", 14); else { str_cpy(val, "SLOT ", 14); fmt_int(val + 5, (int32_t)ui.setup_vault); } }
         else if (row == 2u) { fmt_int(val, song.g[G_BPM]); }
+
         else if (row == 3u) { str_cpy(val, *(AL_NOTE_NAMES + (*(trk[0].p + P_ROOT) % 12)), 14); }
         else if (row == 4u) { str_cpy(val, *(AL_SCALE_NAMES + (*(trk[0].p + P_SCALE) % 22)), 14); }
         else if (row == 5u) { fmt_int(val, *(trk[0].p + P_SLEN)); }
