@@ -51,6 +51,7 @@ static uint8_t audilune_timer_alert;
 
 static struct {
     uint8_t home;
+    uint8_t seq_grab;            /* SEQ Page: 1 when SEL Button has grabbed a pattern/set slot */
     uint8_t page;                /* index into PAGES */
     uint8_t fam_last[FAM_COUNT]; /* last page used per family */
     uint8_t bank;                /* SEQ: 16-step bank (follows the cursor) */
@@ -88,6 +89,7 @@ static struct {
     uint32_t tap_ms[4];          /* tap tempo: the last taps */
     uint8_t tap_n;
     char msg[24];
+
     uint32_t enc_t[NE];
     /* AUDILUNE v2.8 14-page & multi-selection state */
     uint8_t scr;                 /* active screen (UI_LIVE .. UI_CHOP_WAVE) */
