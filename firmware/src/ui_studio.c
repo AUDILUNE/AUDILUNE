@@ -1035,6 +1035,7 @@ UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const ch
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
 static uint8_t audilune_theme_idx;
 static uint8_t al_arp_mode[NTRK];
+static uint8_t al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
@@ -1050,7 +1051,6 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     return 0u;
 }
 
-
 UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, uint8_t val)
 {
     uint32_t rec_on = song.playing && ((song.rec >> song.sel) & 1u);
@@ -1062,9 +1062,45 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         static const int8_t G_PF[4 + 4] = {PX_LOOP16, PX_LOOP32, PX_LOOP8T, PX_STUT, PX_CRUSH, PX_DOWN, PX_GATE, PX_FREEZE};
         punch.req = val ? (row == 0u ? *(T_PF + (sub & 7u)) : row == 2u ? *(G_PF + (sub & 7u)) : PX_FREEZE) : -1;
     } else if (row == 1u) {
-        song.g[G_TUNE] = (int16_t)clamp(((int32_t)sub - 4) * 3 + (int32_t)val / 10, -24, 24);
+        uint32_t has_step = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
+        uint32_t trk_mask = ui.sel_trk_mask ? ui.sel_trk_mask : (1u << song.sel);
+        uint32_t ti, si, len = trk_len(t);
+        if (sub < 4u) {
+            int32_t st = clamp(((int32_t)val - 55) * 24 / 55, -24, 24);
+            if (has_step) {
+                for (si = 0; si < len; si++)
+                    if ((ui.sel_step_mask[si >> 5] >> (si & 31u)) & 1u)
+                        lock_set(t, si, P_PITCH, (int16_t)st);
+            } else {
+                for (ti = 0; ti < NTRK; ti++)
+                    if ((trk_mask >> ti) & 1u) {
+                        trk[ti].p[P_PITCH] = (int16_t)st;
+                        if (song.playing && ((song.rec >> ti) & 1u))
+                            lock_set(&trk[ti], trk[ti].seq_idx % trk_len(&trk[ti]), P_PITCH, (int16_t)st);
+                    }
+                if (is_drum(t))
+                    for (si = 0; si < DRUM_LANES; si++)
+                        drum_tune[si] = (int8_t)clamp(st, DRUM_TUNE_MIN, DRUM_TUNE_MAX);
+            }
+        } else {
+            int32_t drift = clamp((int32_t)val * 127 / 110, 0, 127);
+            int16_t rate = (int16_t)(10 + (sub & 3u) * 8);
+            if (has_step) {
+                for (si = 0; si < len; si++)
+                    if ((ui.sel_step_mask[si >> 5] >> (si & 31u)) & 1u)
+                        lock_set(t, si, P_LD_PIT, (int16_t)drift);
+            } else {
+                for (ti = 0; ti < NTRK; ti++)
+                    if ((trk_mask >> ti) & 1u) {
+                        trk[ti].p[P_LWAVE] = 0;
+                        trk[ti].p[P_LRATE] = rate;
+                        trk[ti].p[P_LD_PIT] = (int16_t)drift;
+                        if (song.playing && ((song.rec >> ti) & 1u))
+                            lock_set(&trk[ti], trk[ti].seq_idx % trk_len(&trk[ti]), P_LD_PIT, (int16_t)drift);
+                    }
+            }
+        }
     } else if (row == 4u) {
-
         pid = P_DLY;
         song.g[G_DTIME] = (int16_t)((sub & 7u) * 2 + 1);
         t->p[P_DLY] = (int16_t)((int32_t)val * 140 / 110);
@@ -1092,6 +1128,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
 }
 
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
+
 {
     uint32_t rows = audilune_page_rows(ui.scr);
 
