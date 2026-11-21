@@ -2416,11 +2416,11 @@ function b64dec(s) {
   }
   return out.subarray(0, o);
 }
-/* object ids (firmware editor.c ED_BK_IDS): 0 the working project, 1 the settings, 2..5 projects A..D,
+/* object ids (firmware editor.c ED_BK_IDS): 0 the working project, 1 the settings, 2..5 & 12..13 Song Vaults SLOT 1..6,
    6..7 the user preset banks, 32..37 the sample slots USR1..6 */
 /* RESTORE: the objects in the order they are written back (banks first; 8 = the FM6 patch bank, firmware v9: a
    file without it restores fine, a v8 device gets no object 8 sent; 9 = the SYN drum kits, firmware v10, likewise) */
-const BK = { FORMAT: "sloop-backup", VERSION: 1, SAMPLES:, RESTORE: [6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 0, 1] };   /* 10: MIDI LEARN (2.6),
+const BK = { FORMAT: "audilune-backup", VERSION: 1, SAMPLES:, RESTORE: [6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 12, 13, 0, 1] };   /* 10: MIDI LEARN (2.6),
                                                        * 11: your theme (2.7, before the settings: they say whether it is shown) */
 class BackupError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 /* read everything; progress(done, total bytes) */
@@ -2448,7 +2448,7 @@ async function backupCapture(rq, info, progress = () => {}) {
 }
 /* a backup file -> {id: Uint8Array}; every object checked against its length and CRC */
 function backupObjects(file) {
-  if (!file || file.format !== BK.FORMAT || !(file.version >= 1) || !Array.isArray(file.objects)) throw new BackupError("bkBad", "not a SLOOP backup");
+  if (!file || (file.format !== BK.FORMAT && file.format !== "sloop-backup") || !(file.version >= 1) || !Array.isArray(file.objects)) throw new BackupError("bkBad", "not an AUDILUNE backup");
   const m = new Map();
   for (const o of file.objects) {
     const d = b64dec(o.data || "");
@@ -2463,6 +2463,7 @@ function backupObjects(file) {
 /* the project format of a backup object ("FUN6" .. as stored, low byte first: 6 ..), 0 not a project */
 const bkProjFormat = (d) => (d && d.length >= 4 && d[1] === 0x4E && d[2] === 0x55 && d[3] === 0x46 ? d[0] - 0x30 : 0);
 /* the newest project format a device reads, from its INFO: 2.6 (71 parameters) 6, 2.4 .. 2.5 (61) 5, older 4 */
+
 const bkDevFormat = (info) => (info.pcount >= 71 ? 6 : info.pcount >= 61 ? 5 : 4);
 /* "SLOOP 2.6" -> true when at least maj.min.patch */
 const bkFwAtLeast = (v, want) => {
