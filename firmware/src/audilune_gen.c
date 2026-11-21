@@ -437,65 +437,10 @@ static void audilune_back_home_tick(void)
 /* Main generative engine tick: called once per audio block inside events_block() */
 static void audilune_gen_block(void)
 {
-    uint32_t g = audilune_genre % GENRE_COUNT;
-    const genre_dna_t *dna = &GENRE_DNA[g];
-    uint32_t i;
-    int any_genre_changed = 0;
-    uint8_t cur_arp = audilune_active_arp_mask();
-    uint8_t prev_arp = audilune_gen_arp_was;
-
-    for (i = 0; i < NTRK; i++) {
-        uint8_t tg = (uint8_t)(audilune_trk_genre[i] % GENRE_COUNT);
-        if (tg != audilune_trk_genre_was[i]) {
-            audilune_trk_genre_was[i] = tg;
-            audilune_genre_morph_dsp_trk(i, tg);
-            any_genre_changed = 1;
-        }
-    }
-
-    /* Restore tracks deselected from ARP generative morphing */
-    for (i = 0; i < NTRK; i++) {
-        if (((prev_arp >> i) & 1u) && !((cur_arp >> i) & 1u))
-            audilune_arp_snap_restore(i);
-    }
-
-    /* Trigger 1-bar Back-Home Resolution when all ARP generative selections turn off */
-    if (prev_arp && !cur_arp)
-        audilune_back_home_trigger();
-    audilune_gen_arp_was = cur_arp;
-    audilune_back_home_tick();
-
-    /* Handle Infinite Algorithmic Compositions Engine (HOME 3s hold) & ARP Scale Anchor Drift */
-    if (audilune_infinite_on) {
-        int just_enabled = !audilune_inf_was || any_genre_changed;
-        audilune_inf_was = 1u;
-
-            if (!song.playing && !transport_req)
-            transport_req = 1u;
-
-        if (just_enabled) {
-            for (i = 0; i < NTRK; i++)
-                gen_populate_track(i, dna, 1);
-            audilune_gen_bar_last = clk_beat >> 2;
-        } else if (song.playing && !(clk_beat & 3u) && (clk_beat >> 2) != audilune_gen_bar_last) {
-            /* Evolve composition subtly on every 2nd bar boundary */
-            audilune_gen_bar_last = clk_beat >> 2;
-
-            if ((audilune_gen_bar_last & 1u) == 0u) {
-                for (i = 0; i < NTRK; i++)
-                    gen_populate_track(i, dna, 0);
-            }
-        }
-    } else {
-}
-
-/* Main generative engine tick: called once per audio block inside events_block() */
-static void audilune_gen_block(void)
-{
     static uint8_t sess_mode_was;
     static uint8_t dj_loaded_was;
-    static const uint8_t SESS_BPM[6] = { 120, 64, 72, 92, 84, 126 };
-    static const uint8_t SESS_GEN[6] = { GENRE_AMBIENT, GENRE_AMBIENT, GENRE_AMBIENT, GENRE_DOWNTEMPO, GENRE_DOWNTEMPO, GENRE_PUNCHY };
+    static const uint8_t SESS_BPM[3 + 3] = { 120, 64, 72, 92, 84, 126 };
+    static const uint8_t SESS_GEN[3 + 3] = { GENRE_AMBIENT, GENRE_AMBIENT, GENRE_AMBIENT, GENRE_DOWNTEMPO, GENRE_DOWNTEMPO, GENRE_PUNCHY };
     uint8_t sm = (uint8_t)(ui.session_mode % 6u);
     uint32_t g, i;
     const genre_dna_t *dna;
@@ -508,6 +453,7 @@ static void audilune_gen_block(void)
             song.g[G_BPM] = (int16_t)SESS_BPM[sm];
             audilune_genre = SESS_GEN[sm];
             for (i = 0; i < NTRK; i++)
+
                 audilune_trk_genre[i] = SESS_GEN[sm];
             audilune_infinite_on = 1u;
         }
