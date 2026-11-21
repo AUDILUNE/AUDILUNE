@@ -397,9 +397,9 @@ static void vis_living_world(void)
         } else if (genre == 4u || genre == 3u) {
             int32_t wob = (isin((vs.phase * 6u + i * 200u) & 1023u) * 3) >> 15;
             cv_line(cx - 4, cy - ry, cx - 6 + wob, cy - ry - 7, C_WHITE);
-            cv_circle(cx - 6 + wob, cy - ry - 8, 2, C_ACCENT);
+            vis_circle(cx - 6 + wob, cy - ry - 8, 2, C_ACCENT);
             cv_line(cx + 4, cy - ry, cx + 6 + wob, cy - ry - 7, C_WHITE);
-            cv_circle(cx + 6 + wob, cy - ry - 8, 2, C_ACCENT);
+            vis_circle(cx + 6 + wob, cy - ry - 8, 2, C_ACCENT);
         } else {
             vis_ellipse(cx - 5, cy + ry, 3, 2, C_DIM);
             vis_ellipse(cx + 5, cy + ry, 3, 2, C_DIM);
@@ -413,6 +413,7 @@ static void vis_living_world(void)
             vis_ellipse(cx + 4 + ed, cy - 2, 2, 3, C_BLACK);
             cv_pset(cx - 4 + ed + dir, cy - 2, C_WHITE);
             cv_pset(cx + 4 + ed + dir, cy - 2, C_WHITE);
+
         }
         if (vs.lvl[i] > 140 || mt->seq_n > 0u)
             vis_ellipse(cx + dir, cy + 4, 3 + (at->p[P_TFLT] > 10 ? 1 : 0), 2 + vs.lvl[i] / 400, C_BLACK);
