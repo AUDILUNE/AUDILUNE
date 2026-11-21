@@ -1124,9 +1124,176 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
         audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
     } else if (ui.scr == UI_EDIT) {
+        static uint8_t clip_ok, clip_drum;
+        static int16_t clip_len;
+        static step_t clip_st[NSTEP];
+        static dstep_t clip_dst[NSTEP];
+        static int8_t clip_micro[NSTEP];
+        static uint8_t clip_fill[NSTEP / 4];
+        uint32_t len = trk_len(t), i, j, has_sel = (ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3]) != 0u;
+        int32_t dir = s > 0 ? 1 : -1;
         if (row == 0u && k == 3u) {
             ui.edit_redo_dir = (uint8_t)(!ui.edit_redo_dir);
             audilune_hud_text("ACTION", ui.edit_redo_dir ? "REDO" : "UNDO");
+        } else if (row == 2u) {
+            clip_ok = 1u;
+            clip_drum = (uint8_t)is_drum(t);
+            clip_len = t->p[P_SLEN];
+            memcpy(clip_st, t->step, sizeof clip_st);
+            memcpy(clip_dst, t->dstep, sizeof clip_dst);
+            memcpy(clip_micro, t->micro, sizeof clip_micro);
+            memcpy(clip_fill, t->fill, sizeof clip_fill);
+            audilune_hud_text("COPY", "PATTERN");
+        } else if (row == 3u) {
+            if (!clip_ok) {
+                audilune_hud_text("PASTE", "EMPTY");
+            } else {
+                undo_mark(t, (undo_sess += 4u) | 3u);
+                fm1_irq_off();
+                if (is_drum(t) && clip_drum)
+                    memcpy(t->dstep, clip_dst, sizeof clip_dst);
+                else if (!is_drum(t) && !clip_drum)
+                    memcpy(t->step, clip_st, sizeof clip_st);
+                memcpy(t->micro, clip_micro, sizeof clip_micro);
+                memcpy(t->fill, clip_fill, sizeof clip_fill);
+                t->p[P_SLEN] = clip_len;
+                t->seq_active = 1;
+                fm1_irq_on();
+                sync_reload = 1;
+                audilune_hud_text("PASTE", "DONE");
+            }
+        } else if (row == 4u) {
+            if (len * 2u > NSTEP) {
+                audilune_hud_text("DUPLICATE", "MAX 128");
+            } else {
+                undo_mark(t, (undo_sess += 4u) | 3u);
+                fm1_irq_off();
+                for (i = 0; i < len; i++) {
+                    t->step[len + i] = t->step[i];
+                    t->dstep[len + i] = t->dstep[i];
+                    t->micro[len + i] = t->micro[i];
+                    step_fill_set(t, len + i, step_fill(t, i));
+                }
+                t->p[P_SLEN] = (int16_t)(len * 2u);
+                fm1_irq_on();
+                sync_reload = 1;
+                audilune_hud_popup("LEN", (int32_t)(len * 2u), " ST");
+            }
+        } else if (row == 5u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            for (i = 0; i < len; i++)
+                if (!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
+                    t->micro[i] = 0;
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_text("QUANTIZE", "100%");
+        } else if (row == 6u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            for (i = 0; i < len; i++) {
+                if (has_sel && !((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
+                    continue;
+                int32_t jit = (int32_t)((i * 37u + 13u) % 15u) - 7;
+                t->micro[i] = (int8_t)clamp((int32_t)t->micro[i] + jit, MICRO_MIN, MICRO_MAX);
+                if (!is_drum(t) && step_on(&t->step[i]))
+                    t->step[i].vel = (uint8_t)clamp((int32_t)(t->step[i].vel ? t->step[i].vel : 96) + jit * 2, 24, 127);
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_text("HUMANIZE", "+VAR");
+        } else if (row == 7u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            for (i = 0; i < len; i++)
+                if (!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
+                    t->micro[i] = (int8_t)clamp((int32_t)t->micro[i] + dir * 2, MICRO_MIN, MICRO_MAX);
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_popup("NUDGE", dir * 2, "");
+        } else if (row == 8u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            if (is_drum(t)) {
+                for (i = 0; i < DRUM_LANES; i++)
+                    drum_tune[i] = (int8_t)clamp((int32_t)drum_tune[i] + dir, DRUM_TUNE_MIN, DRUM_TUNE_MAX);
+            } else {
+                for (i = 0; i < len; i++)
+                    if ((!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u)) && step_on(&t->step[i]))
+                        for (j = 0; j < t->step[i].n && j < 4u; j++)
+                            t->step[i].note[j] = (uint8_t)clamp((int32_t)t->step[i].note[j] + dir, 0, 127);
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_popup("TRANSPOSE", dir, " ST");
+        } else if (row == 9u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            for (i = 0; i < len; i++) {
+                if (has_sel && !((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
+                    continue;
+                if (is_drum(t)) {
+                    for (j = 0; j < DRUM_LANES; j++)
+                        if (dstep_has(&t->dstep[i], j)) {
+                            uint32_t r = (uint32_t)clamp((int32_t)lvl_rank(dstep_lvl(&t->dstep[i], j)) + dir, 0, 3);
+                            dstep_set(&t->dstep[i], j, LV_UP[r], dstep_rat(&t->dstep[i], j));
+                        }
+                } else if (step_on(&t->step[i])) {
+                    int32_t nv = clamp((int32_t)(t->step[i].vel ? t->step[i].vel : 96) + dir * 6, 16, 127);
+                    t->step[i].vel = (uint8_t)nv;
+                }
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_popup("VELOCITY", dir * 6, "");
+        } else if (row == 10u) {
+            t->p[P_SGATE] = (int16_t)clamp(t->p[P_SGATE] + dir * 4, 1, 127);
+            audilune_hud_popup("GATE", t->p[P_SGATE] * 100 / 127, "%");
+        } else if (row == 11u) {
+            t->p[P_APROB] = (int16_t)clamp(t->p[P_APROB] + dir * 4, 0, 127);
+            audilune_hud_popup("PROB", t->p[P_APROB] * 100 / 127, "%");
+        } else if (row == 12u) {
+            uint32_t nr = 0;
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            for (i = 0; i < len; i++) {
+                if (has_sel && !((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
+                    continue;
+                if (is_drum(t)) {
+                    for (j = 0; j < DRUM_LANES; j++)
+                        if (dstep_has(&t->dstep[i], j)) {
+                            nr = (uint32_t)clamp((int32_t)dstep_rat(&t->dstep[i], j) + dir, 0, 3);
+                            dstep_set(&t->dstep[i], j, dstep_lvl(&t->dstep[i], j), nr);
+                        }
+                } else if (step_on(&t->step[i])) {
+                    nr = (uint32_t)clamp((int32_t)(t->step[i].rat & 3u) + dir, 0, 3);
+                    t->step[i].rat = (uint8_t)(nr * 0x55u);
+                }
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_popup("RATCHET", (int32_t)nr + 1, "X");
+        } else if (row == 13u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            for (i = 0; i < len / 2u; i++) {
+                uint32_t ri = len - 1u - i;
+                step_t ts = t->step[i];
+                dstep_t ds = t->dstep[i];
+                int8_t tm = t->micro[i];
+                uint32_t tf = step_fill(t, i);
+                t->step[i] = t->step[ri];
+                t->step[ri] = ts;
+                t->dstep[i] = t->dstep[ri];
+                t->dstep[ri] = ds;
+                t->micro[i] = t->micro[ri];
+                t->micro[ri] = tm;
+                step_fill_set(t, i, step_fill(t, ri));
+                step_fill_set(t, ri, tf);
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_text("REVERSE", "DONE");
         } else if (row == 14u) {
             int32_t nr = (t->p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
 
@@ -1143,6 +1310,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
             palette_set(audilune_theme_idx);
             audilune_hud_text("THEME", *(AL_THM_H + audilune_theme_idx));
+
         } else if (row == 3u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
