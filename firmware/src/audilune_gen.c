@@ -445,7 +445,7 @@ static void audilune_gen_block(void)
     static uint8_t dj_loaded_was;
     static const uint8_t SESS_BPM[3 + 3] = { 120, 64, 72, 92, 84, 126 };
     static const uint8_t SESS_GEN[3 + 3] = { GENRE_AMBIENT, GENRE_AMBIENT, GENRE_AMBIENT, GENRE_DOWNTEMPO, GENRE_DOWNTEMPO, GENRE_PUNCHY };
-    uint8_t sm = (uint8_t)(ui.session_mode % 6u);
+    uint8_t sm = (uint8_t)(audilune_session_mode % 6u);
     uint32_t g, i;
     const genre_dna_t *dna;
     int any_genre_changed = 0;
@@ -531,7 +531,7 @@ static void audilune_gen_block(void)
             }
             if (m >= 50 && !dj_loaded_was) {
                 dj_loaded_was = 1u;
-                project_load(ui.save_vault % 6u);
+                audilune_dj_load_req = (uint8_t)((audilune_dj_vault % 6u) + 1u);
             } else if (m < 50 && dj_loaded_was) {
                 dj_loaded_was = 0u;
                 for (i = 0; i < NTRK; i++)
@@ -543,6 +543,7 @@ static void audilune_gen_block(void)
                     audilune_arp_snap_save(i);
                     audilune_arp_snap_reapply(i);
                     if (audilune_in_arp_page && audilune_gen_scope == GEN_SCOPE_PART_AB && i < NPART) {
+
                         const genre_dsp_t *dsp = &GENRE_DSP[audilune_trk_genre[i] % GENRE_COUNT];
                         int32_t w = (int32_t)audilune_gen_morph;
                         trk[i].p[P_ATK] = (int16_t)(trk[i].p[P_ATK] + ((dsp->atk - trk[i].p[P_ATK]) * w) / 100);
