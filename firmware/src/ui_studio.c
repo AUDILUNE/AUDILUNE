@@ -1062,21 +1062,27 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         static const int8_t G_PF[4 + 4] = {PX_LOOP16, PX_LOOP32, PX_LOOP8T, PX_STUT, PX_CRUSH, PX_DOWN, PX_GATE, PX_FREEZE};
         punch.req = val ? (row == 0u ? *(T_PF + (sub & 7u)) : row == 2u ? *(G_PF + (sub & 7u)) : PX_FREEZE) : -1;
     } else if (row == 1u) {
+        static int8_t last_st;
         uint32_t has_step = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         uint32_t trk_mask = ui.sel_trk_mask ? ui.sel_trk_mask : (1u << song.sel);
-        uint32_t ti, si, len = trk_len(t);
+        uint32_t ti, si, nj, len = trk_len(t);
         if (sub < 4u) {
             int32_t st = clamp(((int32_t)val - 55) * 24 / 55, -24, 24);
-            if (has_step) {
+            int32_t delta = st - (int32_t)last_st;
+            last_st = (int8_t)st;
+            if (has_step && !is_drum(t)) {
                 for (si = 0; si < len; si++)
-                    if ((ui.sel_step_mask[si >> 5] >> (si & 31u)) & 1u)
-                        lock_set(t, si, P_PITCH, (int16_t)st);
+                    if (((ui.sel_step_mask[si >> 5] >> (si & 31u)) & 1u) && step_on(&t->step[si]))
+                        for (nj = 0; nj < t->step[si].n && nj < 4u; nj++)
+                            t->step[si].note[nj] = (uint8_t)clamp((int32_t)t->step[si].note[nj] + delta, 0, 127);
             } else {
+                song.g[G_TUNE] = (int16_t)st;
                 for (ti = 0; ti < NTRK; ti++)
-                    if ((trk_mask >> ti) & 1u) {
-                        trk[ti].p[P_PITCH] = (int16_t)st;
-                        if (song.playing && ((song.rec >> ti) & 1u))
-                            lock_set(&trk[ti], trk[ti].seq_idx % trk_len(&trk[ti]), P_PITCH, (int16_t)st);
+                    if ((trk_mask >> ti) & 1u && song.playing && ((song.rec >> ti) & 1u) && !is_drum(&trk[ti])) {
+                        uint32_t cs = trk[ti].seq_idx % trk_len(&trk[ti]);
+                        if (step_on(&trk[ti].step[cs]))
+                            for (nj = 0; nj < trk[ti].step[cs].n && nj < 4u; nj++)
+                                trk[ti].step[cs].note[nj] = (uint8_t)clamp((int32_t)trk[ti].step[cs].note[nj] + delta, 0, 127);
                     }
                 if (is_drum(t))
                     for (si = 0; si < DRUM_LANES; si++)
@@ -1093,6 +1099,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
                 for (ti = 0; ti < NTRK; ti++)
                     if ((trk_mask >> ti) & 1u) {
                         trk[ti].p[P_LWAVE] = 0;
+
                         trk[ti].p[P_LRATE] = rate;
                         trk[ti].p[P_LD_PIT] = (int16_t)drift;
                         if (song.playing && ((song.rec >> ti) & 1u))
