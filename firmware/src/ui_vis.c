@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* AUDILUNE Block 2: Standalone Full-Screen Visualizer (Bottom HUD hidden).
- * Cycles through 4 styles: 1 OSCILLOSCOPE, 2 SPECTRUM BARS, 3 MOON LOOP, 4 STARFIELD CASCADE. */
-#define VIS_N 4u
-static const char *const VIS_NAME[ 4 ] = {"OSCILLOSCOPE", "SPECTRUM BARS", "MOON LOOP", "STARFIELD CASCADE"};
+/* AUDILUNE Parameter-Locked Generative World & Entity Engine (Full-Screen Visualizer).
+ * Cycles 5 modes: 1 LIVING WORLD, 2 OSCILLOSCOPE, 3 SPECTRUM BARS, 4 MOON LOOP, 5 STARFIELD CASCADE. */
+#define VIS_N 5u
+static const char *const VIS_NAME[ 3 + 2 ] = {"LIVING WORLD", "OSCILLOSCOPE", "SPECTRUM BARS", "MOON LOOP", "STARFIELD CASCADE"};
 
 #define VIS_FFT 512u
 #define VIS_STARS 48u
-static int16_t vis_re[ 512 ] __attribute__((section(".pool"))), vis_im[ 512 ] __attribute__((section(".pool")));
+static int16_t vis_re[ 256 + 256 ] __attribute__((section(".pool"))), vis_im[ 256 + 256 ] __attribute__((section(".pool")));
 #include "scratch.h"
 #define vis_l (main_scratch.vis[ 0 ])
 #define vis_r (main_scratch.vis[ 1 ])
@@ -14,16 +14,20 @@ _Static_assert(sizeof main_scratch.vis[ 0 ] == 512u * sizeof(int16_t), "scratch 
 
 static struct {
     int32_t scale, peak;
-    int16_t bar[ 32 ], cap[ 32 ], capv[ 32 ];
-    int16_t lvl[ 5 ];
+    int16_t bar[ 16 + 16 ], cap[ 16 + 16 ], capv[ 16 + 16 ];
+    int16_t lvl[ 3 + 2 ];
     uint8_t kick;
     uint32_t free_q8, last_ms, phase;
-    int16_t sx[ 48 ], sy[ 48 ], sz[ 48 ];
+    int16_t sx[ 24 + 24 ], sy[ 24 + 24 ], sz[ 24 + 24 ];
+    int16_t mx[ 2 + 2 ];
+    int8_t mvx[ 2 + 2 ];
+    uint8_t mhop[ 2 + 2 ];
+    uint8_t world_seed;
     uint8_t stars_init;
 } vs;
 
-static const uint8_t VIS_EDGE[ 33 ] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 25, 29, 35,
-                                       41, 49, 58, 69, 82, 98, 116, 138, 164, 195, 232};
+static const uint8_t VIS_EDGE[ 17 + 16 ] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 25, 29, 35,
+                                            41, 49, 58, 69, 82, 98, 116, 138, 164, 195, 232};
 
 static int vis_shown(void) { return vis_on && !ui.home && !ui.menu && cur_page()->scope == SC_TRK; }
 static void vis_open(void)
@@ -33,6 +37,7 @@ static void vis_open(void)
     ui.force = 1;
 }
 static int32_t isin(uint32_t a) { return SINE[a & 1023u]; }
+
 static int32_t icos(uint32_t a) { return SINE[(a + 256u) & 1023u]; }
 
 static int32_t vis_lvl(int32_t a)
