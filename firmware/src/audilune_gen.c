@@ -104,7 +104,9 @@ enum {
     GEN_SCOPE_SONG = 0,
     GEN_SCOPE_TRACK = 1,
     GEN_SCOPE_STEP = 2,
-    GEN_SCOPE_COUNT = 3
+    GEN_SCOPE_PART_AB = 3,
+    GEN_SCOPE_SONG_DJ = 4,
+    GEN_SCOPE_COUNT = 5
 };
 
 static uint8_t audilune_inf_was;
@@ -124,8 +126,8 @@ static uint8_t audilune_gen_arp_was;
 static uint8_t audilune_active_arp_mask(void)
 {
     uint8_t m = (uint8_t)(audilune_arp_drift_mask & 0x3Fu);
-    if (audilune_in_arp_page) {
-        if (audilune_gen_scope == GEN_SCOPE_SONG)
+    if (audilune_in_arp_page && (audilune_infinite_on || audilune_gen_morph > 0u)) {
+        if (audilune_gen_scope == GEN_SCOPE_SONG || audilune_gen_scope == GEN_SCOPE_SONG_DJ)
             return 0x3Fu;
         m |= (uint8_t)(audilune_sel_trk_mask & 0x3Fu);
         if (audilune_active_trk < NTRK)
@@ -143,6 +145,7 @@ static uint32_t gen_pct(void)
 
 /* Builds a live harmonic scale mask from active non-generative anchor tracks */
 static uint32_t gen_anchor_scale_mask(uint32_t trk_idx, int32_t *out_root)
+
 {
     uint32_t i, s, combined = 0u;
     uint8_t arp_mask = audilune_active_arp_mask();
