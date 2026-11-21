@@ -2699,7 +2699,7 @@ async function songCapture(rq, info, name, progress = () => {}) {
 }
 /* a song file -> {objects: Map id -> bytes, order: bytes or null}; every object checked against its length and CRC */
 function songObjects(file) {
-  if (!file || file.format !== SONGF.FORMAT || !(file.version >= 1) || !Array.isArray(file.objects)) throw new BackupError("songBadFile", "not a SLOOP song");
+  if (!file || (file.format !== SONGF.FORMAT && file.format !== "sloop-song") || !(file.version >= 1) || !Array.isArray(file.objects)) throw new BackupError("songBadFile", "not an AUDILUNE song");
   const m = new Map();
   for (const o of file.objects) {
     const d = b64dec(o.data || "");
@@ -2728,6 +2728,7 @@ async function songLoad(rq, file, progress = () => {}) {
     const it = L.rc ? null : L.items.find((x) => x.id === 1);
     if (!it) throw new BackupError("bkRead", `LIST rc ${L.rc}`);
     const s = await bkReadObj(rq, it);
+
     if (songOrderOk(s)) { s.set(order, SONGF.ORDER_OFF); await bkWriteObj(rq, 1, s); }
   }
   return true;
