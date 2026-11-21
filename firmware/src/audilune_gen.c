@@ -119,6 +119,9 @@ static volatile uint8_t audilune_active_trk;
 static volatile uint8_t audilune_gen_scope;
 static volatile uint8_t audilune_gen_morph;
 static volatile uint8_t audilune_active_step;
+static volatile uint8_t audilune_session_mode;
+static volatile uint8_t audilune_dj_vault;
+static volatile uint8_t audilune_dj_load_req;
 
 static uint32_t audilune_gen_bar_last = 0xFFFFFFFFu;
 static uint8_t audilune_gen_arp_was;
@@ -133,6 +136,7 @@ static uint8_t audilune_active_arp_mask(void)
         if (audilune_active_trk < NTRK)
             m |= (uint8_t)(1u << audilune_active_trk);
     }
+
     return m;
 }
 
