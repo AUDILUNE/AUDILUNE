@@ -1115,7 +1115,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         pid = P_REV;
         song.g[G_RSIZE] = (int16_t)(40 + (sub & 7u) * 12);
         t->p[P_REV] = (int16_t)((int32_t)val * 140 / 110);
-    } else if (row == 6u) {
+     } else if (row == 6u) {
         static const uint8_t M_IT[4 + 4] = {IT_CHORUS, IT_CHORUS, IT_FLANGER, IT_PHASER, IT_CHORUS, IT_FLANGER, IT_PHASER, IT_CHORUS};
         pid = P_IMIX;
         t->p[P_ITYPE] = *(M_IT + (sub & 7u));
@@ -1135,28 +1135,34 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
 }
 
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
-
 {
     uint32_t rows = audilune_page_rows(ui.scr);
-
-
     uint32_t row = rows ? (uint32_t)ui.list_sel % rows : 0u;
     track_t *t = TSEL;
     if (k < 2u || !rows)
-
         return;
     ui.hot_col = (uint8_t)k;
     ui.hot_t = 40;
     if (ui.scr == UI_FX) {
         if (k == 3u) {
             al_fx_sub[row] = (uint8_t)((al_fx_sub[row] + (s > 0 ? 1u : 7u)) & 7u);
+            if (row == 1u && al_fx_sub[row] < 4u && al_fx_val[row] == 0u)
+                al_fx_val[row] = 55u;
             audilune_fx_apply(t, row, al_fx_sub[row], al_fx_val[row]);
-            audilune_hud_popup(AL_FX_ROWS[row], (int32_t)(al_fx_sub[row] + 1u), "");
+            if (row == 1u)
+                audilune_hud_text("PITCH FX", al_fx_sub[row] < 4u ? "SHIFT" : "DRIFT");
+            else
+                audilune_hud_popup(AL_FX_ROWS[row], (int32_t)(al_fx_sub[row] + 1u), "");
         } else {
             int32_t nv = clamp((int32_t)al_fx_val[row] + s * 4, 0, 110);
             al_fx_val[row] = (uint8_t)nv;
             audilune_fx_apply(t, row, al_fx_sub[row], al_fx_val[row]);
-            audilune_hud_popup(AL_FX_ROWS[row], nv, "%");
+            if (row == 1u && al_fx_sub[row] < 4u)
+                audilune_hud_popup("PITCH SHIFT", clamp((nv - 55) * 24 / 55, -24, 24), " ST");
+            else if (row == 1u)
+                audilune_hud_popup("PITCH DRIFT", nv, "%");
+            else
+                audilune_hud_popup(AL_FX_ROWS[row], nv, "%");
         }
     } else if (ui.scr == UI_ENV && k == 2u) {
         uint32_t pid = P_ATK + row;
@@ -1169,10 +1175,11 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
     } else if (ui.scr == UI_EDIT) {
         enum { CLIP_STEPS = 64u };
-        static uint8_t clip_ok, clip_drum;
+        static uint8_t clip_drum;
         static int16_t clip_len;
         static union { step_t st[CLIP_STEPS + 0]; dstep_t dst[CLIP_STEPS + 0]; } clip_buf;
         static int8_t clip_micro[CLIP_STEPS + 0];
+
         static uint8_t clip_fill[CLIP_STEPS / 4];
         uint32_t len = trk_len(t), i, j, has_sel = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         int32_t dir = s > 0 ? 1 : -1;
