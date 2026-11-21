@@ -109,8 +109,9 @@ static int is_black_key(uint32_t k)
 static uint8_t black_key_note(uint32_t k)
 {
     uint32_t oct = k / 12u, rem = k % 12u;
-    uint32_t idx = oct * 5u + (rem == 1u ? 0u : rem == 3u ? 1u : rem == 5u ? 2u : rem == 8u ? 3u : 4u);
-    return BLACK_KEY_NOTE[idx < 11u ? idx : 10u];
+    uint32_t idx = oct * 5u + (rem == 1u ? 0u : rem == 3u ? 1u : rem == 6u ? 2u : rem == 8u ? 3u : 4u);
+    uint32_t rev = idx < 11u ? (10u - idx) : 0u;
+    return BLACK_KEY_NOTE[rev];
 }
 /* SLOOP 2.7, the DRUMS screen's SOUND page: each of the 16 sounds' TUNE (-8 .. +7 semitones) and DECAY (-4 .. +3,
  * 0 as the kit has it), on every kit; kept with the project and each section (project.c: in the drum track's free
@@ -120,7 +121,7 @@ static uint8_t black_key_note(uint32_t k)
 #define DRUM_DEC_MIN (-4)
 #define DRUM_DEC_MAX 3
 static int8_t drum_tune[DRUM_LANES], drum_dec[DRUM_LANES];
-static const uint8_t DK_SMP[4] = {47, 60, 74, 87};   /* a sample's DECAY -4 .. -1: -60 dB in 60, 120, 250, 500 ms */
+static const uint8_t DK_SMP = {47, 60, 74, 87};   /* a sample's DECAY -4 .. -1: -60 dB in 60, 120, 250, 500 ms */
 #define DRUM_CLICK(n) ((n) == 76u || (n) == 77u)    /* (the click's wood block: no lane, never tuned) */
 static uint32_t lane_of_note(uint32_t note);
 static int drum_tweaked(void)
@@ -135,25 +136,29 @@ static int drum_tweaked(void)
 }
 static uint32_t lane_of_note(uint32_t note)
 {
-    return note < 35u ? 0u : note > 81u ? 13u : LANE_OF_GM[note - 35u];
+    return note < 35u ? 0u : note > 81u ? 11u : LANE_OF_GM[note - 35u];
 }
-/* the lane of key k (0 = F3 .. 26 = G5): white keys in order, a black key the white key left of it */
+/* AUDILUNE v3.4: Right-to-left white-key lane lookup (k = 26 -> lane 0 .. k = 0 -> lane 15) */
 static uint32_t lane_of_key(uint32_t k)
 {
-    static const int8_t W[12] = {0, -1, 1, -1, 2, -1, 3, 4, -1, 5, -1, 6};   /* from F */
+    static const int8_t W = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6};   /* from F: F G A B C D E */
     int32_t i = W[k % 12u];
+    uint32_t w_idx;
     if (i < 0)
         i = W[(k - 1u) % 12u];
-    return (uint32_t)((int32_t)(k / 12u) * 7 + i) & 15u;
+    w_idx = (uint32_t)((int32_t)(k / 12u) * 7 + i);
+    return w_idx < 16u ? (15u - w_idx) : 0u;
 }
-/* the white key of lane l (key index), for the key LEDs */
+/* the white key of lane l (key index, right-to-left), for the key LEDs */
 static uint32_t key_of_lane(uint32_t l)
 {
-    static const uint8_t K[7] = {0, 2, 4, 6, 7, 9, 11};      /* F G A B C D E */
-    return (l / 7u) * 12u + K[l % 7u];
+    static const uint8_t K = {0, 2, 4, 5, 7, 9, 11};      /* F G A B C D E */
+    uint32_t w_idx = 15u - (l & 15u);
+    return (w_idx / 7u) * 12u + K[w_idx % 7u];
 }
 
 /* drum steps: a lane's bit, level, ratchet */
+
 static int dstep_has(const dstep_t *s, uint32_t l) { return (s->on[(l >> 3) & 1u] >> (l & 7u)) & 1u; }
 static uint32_t dstep_lvl(const dstep_t *s, uint32_t l) { return (s->lvl[(l >> 2) & 3u] >> ((l & 3u) * 2u)) & 3u; }
 static uint32_t dstep_rat(const dstep_t *s, uint32_t l) { return (s->rat[(l >> 2) & 3u] >> ((l & 3u) * 2u)) & 3u; }
