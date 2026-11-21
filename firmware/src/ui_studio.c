@@ -1124,11 +1124,12 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
         audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
     } else if (ui.scr == UI_EDIT) {
+        enum { CLIP_STEPS = 64u };
         static uint8_t clip_ok, clip_drum;
         static int16_t clip_len;
-        static union { step_t st[NSTEP + 0]; dstep_t dst[NSTEP + 0]; } clip_buf;
-        static int8_t clip_micro[NSTEP + 0];
-        static uint8_t clip_fill[NSTEP / 4];
+        static union { step_t st[CLIP_STEPS + 0]; dstep_t dst[CLIP_STEPS + 0]; } clip_buf;
+        static int8_t clip_micro[CLIP_STEPS + 0];
+        static uint8_t clip_fill[CLIP_STEPS / 4];
         uint32_t len = trk_len(t), i, j, has_sel = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         int32_t dir = s > 0 ? 1 : -1;
         if (row == 0u && k == 3u) {
@@ -1166,6 +1167,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         } else if (row == 4u) {
             if (len * 2u > NSTEP) {
                 audilune_hud_text("DUPLICATE", "MAX 128");
+
             } else {
                 undo_mark(t, (undo_sess += 4u) | 3u);
                 fm1_irq_off();
