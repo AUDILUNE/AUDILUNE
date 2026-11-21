@@ -6558,14 +6558,14 @@ function refreshAll() {
 }
 function report(err) { if (err && err.message !== "closed") { console.warn(err); sayK("error", err.message); } }
 
-/* projects: the protocol cannot ask whether a slot is used without loading or saving it */
+/* Song Vaults (SLOT 1..6): load or save project slots on the FM-1 */
 function renderSlots() {
   const box = $("slots");
   box.replaceChildren();
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     const u = dev.slotUsed[i];
     box.append(el("div", { class: "slot" + (u ? " used" : "") },
-      el("b", { text: "ABCD"[i] }),
+      el("b", { text: `SLOT ${i + 1}` }),
       el("span", { class: "st", text: u == null ? t("unknown") : t(u ? "used" : "empty") }),
       el("p", { class: "bar" },
         el("button", { class: u ? "pri" : null, ic: "symbol_folder_open", onclick: () => project(0, i) }, t("load")),
@@ -6574,17 +6574,18 @@ function renderSlots() {
 }
 async function project(op, slot) {
   if (!dev) return;
-  if (!confirm(t(op ? "confirmSave" : "confirmLoad").replace("{n}", "ABCD"[slot]))) return;
+  const label = `SLOT ${slot + 1}`;
+  if (!confirm(t(op ? "confirmSave" : "confirmLoad").replace("{n}", label))) return;
   busy++;
   try {
     /* save writes flash: a long timeout and no retry */
     if (!op) selfLoad();
     const r = parse[CMD.PROJECT](await rq(req.project(op, slot), { timeout: 4000, retries: 0 }));
-    if (r.busy) throw new Error("Stop playback before loading or saving a section.");
+    if (r.busy) throw new Error("Stop playback before loading or saving a Song Vault.");
     dev.slotUsed[slot] = r.used;
     renderSlots();
     if (!op && r.used) await afterSoundChange();
-    sayK(op ? "secSaved" : r.used ? "secLoaded" : "secEmpty", "ABCD"[slot]);
+    sayK(op ? "secSaved" : r.used ? "secLoaded" : "secEmpty", label);
   } catch (err) { report(err); } finally { busy--; }
 }
 
@@ -6598,6 +6599,7 @@ function renderSteps() {
   if (!dev || !dev.steps.length) return;
   const dg = drumGrid() && !!dev.dstepsOk;
   $("drumbar").hidden = $("drumgrid").hidden = !dg;
+
   $("stepgrid").hidden = $("steptables").hidden = dg;
   renderSeqTools();
   const rollOn = !dg && !isDrum() && RV.view === "roll";   /* (2.5) the piano roll instead of the tiles */
