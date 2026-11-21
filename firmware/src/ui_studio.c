@@ -1187,7 +1187,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             ui.edit_redo_dir = (uint8_t)(!ui.edit_redo_dir);
             audilune_hud_text("ACTION", ui.edit_redo_dir ? "REDO" : "UNDO");
         } else if (row == 2u) {
-            clip_ok = 1u;
+            al_clip_ok = 1u;
             clip_drum = (uint8_t)is_drum(t);
             clip_len = t->p[P_SLEN];
             if (clip_drum)
@@ -1198,7 +1198,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             memcpy(clip_fill, t->fill, sizeof clip_fill);
             audilune_hud_text("COPY", "PATTERN");
         } else if (row == 3u) {
-            if (!clip_ok) {
+            if (!al_clip_ok) {
                 audilune_hud_text("PASTE", "EMPTY");
             } else {
                 undo_mark(t, (undo_sess += 4u) | 3u);
@@ -1208,6 +1208,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 else if (!is_drum(t) && !clip_drum)
                     memcpy(t->step, clip_buf.st, sizeof clip_buf.st);
                 memcpy(t->micro, clip_micro, sizeof clip_micro);
+
                 memcpy(t->fill, clip_fill, sizeof clip_fill);
                 t->p[P_SLEN] = clip_len;
                 t->seq_active = 1;
