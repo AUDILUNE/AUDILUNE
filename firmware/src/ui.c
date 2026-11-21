@@ -313,13 +313,72 @@ UI_SMALL static void step_clear(step_t *st)
     st->time = ST_REST;
 }
 
-/* undo / redo (EDIT + OCT- / OCT+): the marked pattern and the one now swap places */
+/* undo / redo (Edit Page Row 0 / EDIT + OCT- / OCT+): 4-level circular stack */
 UI_SMALL static int undo_swap(int redo)
 {
     track_t *t;
     int16_t len;
-    if (!undo.valid || (uint32_t)!!redo != undo.undone)
+    if (!undo.valid)
         return 0;
+    if (!redo) {
+        if (undo.undone) {
+            uint32_t prev;
+            undo_ring_slot_t *r, tmp;
+            if (undo_cnt <= 1u)
+                return 0;
+            prev = (undo_wr + UNDO_RING_N - 1u) % UNDO_RING_N;
+            r = &undo_ring[prev];
+            if (!r->valid)
+                return 0;
+            tmp = *r;
+            r->valid = undo.valid;
+            r->undone = 1;
+            r->trk = undo.trk;
+            r->len = undo.len;
+            r->sess = undo.sess;
+            memcpy(r->st, undo.st, sizeof r->st);
+            memcpy(r->micro, undo.micro, sizeof r->micro);
+            undo.trk = tmp.trk;
+            undo.len = tmp.len;
+            undo.sess = tmp.sess;
+            memcpy(undo.st, tmp.st, sizeof tmp.st);
+            memcpy(undo.micro, tmp.micro, sizeof tmp.micro);
+            undo_cnt--;
+            if (undo_redo_cnt < UNDO_DEPTH)
+                undo_redo_cnt++;
+        } else {
+            undo_redo_cnt = 1;
+        }
+    } else {
+        if (!undo.undone) {
+            uint32_t prev;
+            undo_ring_slot_t *r, tmp;
+            if (!undo_redo_cnt)
+                return 0;
+            prev = (undo_wr + UNDO_RING_N - 1u) % UNDO_RING_N;
+            r = &undo_ring[prev];
+            if (!r->valid)
+                return 0;
+            tmp = *r;
+            r->valid = undo.valid;
+            r->undone = 0;
+            r->trk = undo.trk;
+            r->len = undo.len;
+            r->sess = undo.sess;
+            memcpy(r->st, undo.st, sizeof r->st);
+            memcpy(r->micro, undo.micro, sizeof r->micro);
+            undo.trk = tmp.trk;
+            undo.len = tmp.len;
+            undo.sess = tmp.sess;
+            memcpy(undo.st, tmp.st, sizeof tmp.st);
+            memcpy(undo.micro, tmp.micro, sizeof tmp.micro);
+            if (undo_cnt < UNDO_DEPTH)
+                undo_cnt++;
+            undo_redo_cnt--;
+        } else if (undo_redo_cnt) {
+            undo_redo_cnt--;
+        }
+    }
     t = &trk[undo.trk % NTRK];
     fm1_irq_off();
     {
@@ -342,6 +401,7 @@ UI_SMALL static int undo_swap(int redo)
     ui.force = 1;
     return 1;
 }
+
 
 /* SEQ cursor: wraps inside the pattern length, the bank follows, a step entry ends */
 UI_SMALL static void cursor_set(int32_t c)
