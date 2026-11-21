@@ -79,30 +79,31 @@ static int32_t drum_set(void)
 }
 
 /* ------------------------------------------------------------ lanes --- */
-/* AUDILUNE v2.7: Standard-to-obscure drum kit keyboard layout.
- * White keys (F3..G5) in standard drum kit order: Kick, Snare, Closed Hi-Hat, Open Hi-Hat,
- * Low Tom, Mid Tom, High Tom, Crash Cymbal, Ride Cymbal, Rimshot, Clap, Cowbell,
- * Shaker/Tambourine, Sub-Percussion, plus upper percussion.
- * Black keys map to obscure/experimental hits with the strangest elements on the upper black keys. */
-static const uint8_t LANE_NOTE[DRUM_LANES] = {36, 38, 42, 46, 43, 47, 50, 49, 51, 37, 39, 56, 70, 35, 63, 75};
+/* AUDILUNE v3.4: Right-to-Left Ergonomic Drum Kit Layout.
+ * White Key 1 = far-right white key directly under black OP1 key, moving leftward toward knobs:
+ * 1–2 Kick A/B, 3–5 Floor/Mid/High Toms (3-key buffer), 6–7 Snare A/B,
+ * 8–11 Closed/Open Hats & Crash/Ride, 12–16 Rimshot, Handclap, Cowbell, Shaker, Tambourine.
+ * Black keys (11 keys, right-to-left) map to obscure/experimental hits (strangest toward far left). */
+static const uint8_t LANE_NOTE[DRUM_LANES] = {36, 35, 43, 47, 50, 38, 40, 42, 46, 49, 51, 37, 39, 56, 70, 54};
 static const char *const LANE_NAME[DRUM_LANES] = {
-    "KICK", "SNARE", "HAT", "OPEN HAT", "LOW TOM", "MID TOM", "HI TOM", "CRASH",
-    "RIDE", "RIM", "CLAP", "COWBELL", "SHAKER", "SUB PERC", "CONGA", "CLAVE"};
+    "KICK A", "KICK B", "FLR TOM", "MID TOM", "HI TOM", "SNARE A", "SNARE B", "CLSD HAT",
+    "OPEN HAT", "CRASH", "RIDE", "RIMSHOT", "CLAP", "COWBELL", "SHAKER", "TAMB"};
 static const char *const LANE_SHORT[DRUM_LANES] = {           /* 5 characters: tiles, dials */
-    "kick", "snare", "hat", "open", "tom l", "tom m", "tom h", "crash",
-    "ride", "rim", "clap", "bell", "shake", "sub", "conga", "clave"};
+    "kick1", "kick2", "tom f", "tom m", "tom h", "snar1", "snar2", "hat c",
+    "hat o", "crash", "ride", "rim", "clap", "bell", "shake", "tamb"};
 /* a GM note (MIDI in, old projects) -> its lane (0..15) */
 static const uint8_t LANE_OF_GM[81 - 35 + 1] = {
-    /* 35 */ 13, 0, 9, 1, 10, 1, 4, 2, 4, 2,
-    /* 45 */ 4, 3, 5, 5, 7, 6, 8, 7, 8, 12,
-    /* 55 */ 7, 11, 7, 12, 8, 14, 14, 14, 14, 14,
-    /* 65 */ 14, 14, 11, 11, 12, 12, 11, 11, 12, 12,
-    /* 75 */ 15, 15, 15, 14, 14, 11, 11};
-/* Obscure / experimental GM & synth percussion notes for black keys (low -> upper strangest hits) */
-static const uint8_t BLACK_KEY_NOTE[11] = {44, 54, 58, 60, 61, 64, 67, 68, 73, 78, 81};
+    /* 35 */ 1, 0, 11, 5, 12, 6, 2, 7, 2, 7,
+    /* 45 */ 2, 8, 3, 3, 9, 4, 10, 9, 10, 15,
+    /* 55 */ 9, 13, 9, 14, 10, 11, 11, 12, 12, 12,
+    /* 65 */ 13, 13, 13, 13, 14, 14, 14, 14, 15, 15,
+    /* 75 */ 11, 11, 11, 15, 15, 13, 13};
+/* Obscure / experimental GM & synth percussion notes for black keys (right -> far-left strangest hits) */
+static const uint8_t BLACK_KEY_NOTE[11] = {44, 58, 60, 61, 63, 64, 67, 68, 73, 78, 81};
 static int is_black_key(uint32_t k)
 {
     static const uint8_t B[12] = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0};      /* from F: F# G# A# C# D# */
+
     return B[k % 12u] != 0;
 }
 static uint8_t black_key_note(uint32_t k)
