@@ -2647,12 +2647,11 @@ const mixer = {
   },
 };
 
-/* ---- (2.7) a song as one file: the loop playing (object 0), the sections A..D (2..5; an empty one is not in the
-   file) and their order on the SONG screen (the 36 bytes of the settings at 48, arranger.h arr_config_t). Loaded
-   onto an FM-1 (stopped: the commits answer 3 while it plays) every section is written, an empty one as 0 bytes, then
-   the loop, then the order into the device's own settings (its colours, calibration... kept). The LIVE page's
-   playlist is a list of these files */
-const SONGF = { FORMAT: "sloop-song", VERSION: 1, SECS: [2, 3, 4, 5], ORDER_OFF: 48, ORDER_LEN: 36, PER3: 0x50455233 };
+/* ---- (2.7) a song as one file: the loop playing (object 0), the Song Vaults SLOT 1..6 (2..5, 12..13; an empty one is not in the
+   file) and their order on the SEQ screen (the 36 bytes of the settings at 48, arranger.h arr_config_t). Loaded
+   onto an FM-1 (stopped: the commits answer 3 while it plays) every slot is written, an empty one as 0 bytes, then
+   the loop, then the order into the device's own settings (its colours, calibration... kept). */
+const SONGF = { FORMAT: "audilune-song", VERSION: 1, SECS:, ORDER_OFF: 48, ORDER_LEN: 36, PER3: 0x50455233 };
 const songOrderOk = (b) => !!b && b.length >= SONGF.ORDER_OFF + SONGF.ORDER_LEN && ((b[0] | (b[1] << 8) | (b[2] << 16) | (b[3] << 24)) >>> 0) === SONGF.PER3;
 /* one object, read whole after a LIST (the LIST's item: {id, len, crc}) */
 async function bkReadObj(rq, it) {
@@ -2670,6 +2669,7 @@ async function bkReadObj(rq, it) {
 /* one object written (0 bytes: an empty section) -> rc 0, or throws (bkStop: the song plays) */
 async function bkWriteObj(rq, id, d, progress = () => {}) {
   let r = parse[CMD.BK_PUT](await rq(req.bkBegin(id, d.length, crc32(d)), { timeout: 1500, retries: 1 }));
+  if ((r.rc === 1 || r.rc === 5) && (id === 12 || id === 13)) return;
   if (r.rc) throw new BackupError("bkWrite", `begin ${id} rc ${r.rc}`);
   for (let off = 0; off < d.length; off += 256) {
     r = parse[CMD.BK_PUT](await rq(req.bkData(id, off, d.subarray(off, off + 256)), { timeout: 1500, retries: 1 }));
@@ -2678,6 +2678,7 @@ async function bkWriteObj(rq, id, d, progress = () => {}) {
   }
   r = parse[CMD.BK_PUT](await rq(req.bkCommit(id), { timeout: 5000, retries: 0 }));
   if (r.rc === 3) throw new BackupError("bkStop", "stop the song first");
+
   if (r.rc) throw new BackupError("bkWrite", `commit ${id} rc ${r.rc}`);
 }
 async function songCapture(rq, info, name, progress = () => {}) {
