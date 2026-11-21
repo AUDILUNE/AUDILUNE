@@ -2478,13 +2478,13 @@ async function backupRestore(rq, file, progress = () => {}) {
   /* (2.6) projects newer than the device reads (a 2.6 backup into 2.5): stop before anything is written (it stopped at
      the first project, the preset banks already replaced) */
   const info = parse[CMD.INFO](await rq(req.info(), { timeout: 1000, retries: 2 }));
-  const newest = Math.max(0, ...[0, 2, 3, 4, 5].filter((id) => m.has(id)).map((id) => bkProjFormat(m.get(id))));
+  const newest = Math.max(0, ...[0, 2, 3, 4, 5, 12, 13].filter((id) => m.has(id)).map((id) => bkProjFormat(m.get(id))));
   if (newest > bkDevFormat(info)) throw new BackupError("bkNewer", `${file.firmware || "?"} > ${info.version}`);
   /* (2.6) a backup of a 2.6 FM-1 without object 10 had the MIDI settings at their defaults (nothing learned, channels
-     1 2 3, drums 10, OTHER SEL, BEND 2): restored as such, not left as the device has them now */
+     1 2 3 4 5, drums 10, OTHER SEL, BEND 2): restored as such, not left as the device has them now */
   if (!m.has(10) && bkFwAtLeast(file.firmware, [2, 5, 1])) {
     const d = new Uint8Array(40);
-    d.set([1, 2, 3, 10, 2], 32);
+    d.set([1, 2, 3, 4, 5, 10], 32);
     m.set(10, d);
   }
   const total = [...m.values()].reduce((s, d) => s + d.length, 0) || 1;
@@ -2493,9 +2493,7 @@ async function backupRestore(rq, file, progress = () => {}) {
     if (!m.has(id)) continue;
     const d = m.get(id);
     let r = parse[CMD.BK_PUT](await rq(req.bkBegin(id, d.length, crc32(d)), { timeout: 1500, retries: 1 }));
-    if ((r.rc === 1 || r.rc === 5) && (id === 8 || id === 9 || id === 10 || id === 11)) continue;   /* a device without the FM6 bank (v8) /
-                                                       * the SYN kits (v9) / MIDI LEARN (2.6): skipped (its BK_PUT answers
-                                                       * an unknown id's begin with 5) */
+    if ((r.rc === 1 || r.rc === 5) && (id === 8 || id === 9 || id === 10 || id === 11 || id === 12 || id === 13)) continue;   /* optional or newer objects skipped on legacy firmware */
     if (r.rc) throw new BackupError("bkWrite", `begin ${id} rc ${r.rc}`);
     for (let off = 0; off < d.length; off += 256) {
       r = parse[CMD.BK_PUT](await rq(req.bkData(id, off, d.subarray(off, off + 256)), { timeout: 1500, retries: 1 }));
@@ -2523,6 +2521,7 @@ async function backupRestore(rq, file, progress = () => {}) {
       if (w.rc) throw new BackupError("bkWrite", `USR${k + 1} write rc ${w.rc}`);
       done += Math.min(256, data.length - off);
       progress(done, total);
+
     }
     r = parse[CMD.SMP_END](await rq(req.smpEnd(k, d.subarray(0, SMP.HDR_LEN)), { timeout: 2000, retries: 0 }));
     if (r.rc) throw new BackupError("bkWrite", `USR${k + 1} end rc ${r.rc}`);
