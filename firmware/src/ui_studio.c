@@ -1513,20 +1513,25 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         fmt_int(val, *(t->p + P_ATK + row) * 100 / 127);
         str_cpy(val + str_len(val), "%", 4);
     } else if (scr == UI_LFO) {
-        static const uint32_t LFO_P[4] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+        static const uint32_t LFO_P[2 + 2] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
         str_cpy(lbl, *(AL_LFO_ROWS + row), 18);
         fmt_int(val, *(t->p + *(LFO_P + row)));
     } else if (scr == UI_EDIT) {
+        uint32_t has_sel = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         str_cpy(lbl, *(AL_EDIT_ROWS + row), 18);
-
         if (row == 0u) str_cpy(val, ui.edit_redo_dir ? "REDO" : "UNDO", 14);
-        else if (row == 1u) str_cpy(val, "SEL", 14);
+        else if (row == 1u) str_cpy(val, has_sel ? "STEPS" : "TRK", 14);
+        else if (row == 2u) str_cpy(val, al_clip_ok ? "CLIP" : "READY", 14);
+        else if (row == 3u) str_cpy(val, al_clip_ok ? "READY" : "EMPTY", 14);
+        else if (row == 4u) { fmt_int(val, *(t->p + P_SLEN)); str_cpy(val + str_len(val), " ST", 4); }
+        else if (row == 10u) { fmt_int(val, *(t->p + P_SGATE) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
+        else if (row == 11u) { fmt_int(val, *(t->p + P_APROB) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
+        else if (row >= 5u && row <= 13u) str_cpy(val, has_sel ? "STEPS" : "TRK", 14);
         else if (row == 14u) str_cpy(val, *(AL_NOTE_NAMES + (*(t->p + P_ROOT) % 12)), 14);
         else if (row == 15u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
     } else if (scr == UI_GLO) {
-        static const char *const AL_THM[8] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
+        static const char *const AL_THM[4 + 4] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
         str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
-
         if (row == 0u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
         else if (row == 3u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
         else if (row == 5u) str_cpy(val, "OPEN", 14);
@@ -1535,7 +1540,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         fmt_int(lbl + 5, (int32_t)row + 1);
         str_cpy(val, ui.save_op ? "LOAD" : "SAVE", 14);
     } else if (scr == UI_ARP) {
-        static const char *const AL_SCOPE_N[5] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
+        static const char *const AL_SCOPE_N[3 + 2] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
         if (row == 0u) {
             str_cpy(lbl, "AUTONOMOUS ENG", 18);
             str_cpy(val, audilune_infinite_on ? "ON" : "OFF", 14);
@@ -1548,6 +1553,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         } else if (row == 3u) {
             str_cpy(lbl, "MORPH AMOUNT", 18);
             fmt_int(val, (int32_t)audilune_gen_morph);
+
             str_cpy(val + str_len(val), "%", 4);
         } else if (row == 4u) {
             str_cpy(lbl, "GENRE", 18);
