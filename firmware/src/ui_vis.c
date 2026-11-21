@@ -352,7 +352,7 @@ static void vis_world_terrain(uint32_t bq, uint32_t biome, int32_t jag, int32_t 
     } else if (biome == 2u) {
         for (k = 0; k < 2u; k++)
             for (i = 0; i < 240u; i += 4u)
-                cv_rect((int32_t)i, 204 + (int32_t)k * 14 + ((isin((uint32_t)(i * 6u + vs.phase * (4u + k * 2u))) * (4 + vs.lvl[ 4 ] / 180)) >> 15), 3, 1, k ? C_WHITE : C_ACCENT);
+                cv_rect((int32_t)i, 204 + (int32_t)k * 14 + ((isin((uint32_t)(i * 6u + vs.phase * (4u + k * 2u))) * (4 + vs.lvl[ 2 + 2 ] / 180)) >> 15), 3, 1, k ? C_WHITE : C_ACCENT);
     }
     if (drops > 26u) drops = 26u;
     for (i = 0; i < drops; i++) {
@@ -362,9 +362,76 @@ static void vis_world_terrain(uint32_t bq, uint32_t biome, int32_t jag, int32_t 
     }
 }
 
-/* Full-screen render (Bottom HUD explicitly hidden) */
-static void vis_draw(void)
+static void vis_living_world(void)
+{
+    uint32_t bq = vis_beat_q8(), i, k;
+    const track_t *at = TSEL;
+    uint32_t biome = (vs.world_seed + (uint32_t)(at->p[P_SCALE] % 3)) % 3u;
+    int32_t jag = clamp(at->p[P_DIST], 0, 127) / 4;
+    int32_t sway = (isin((vs.phase * (uint32_t)(1 + clamp(at->p[P_LRATE], 0, 127) / 24)) & 1023u) * (6 + at->p[P_CHOR] / 12)) >> 15;
+    vis_world_terrain(bq, biome, jag, sway);
+    for (i = 0; i < 4u; i++) {
+        const track_t *mt = &trk[i];
+        uint8_t genre = audilune_trk_genre[i] % 6u;
+        int32_t dir, cx, cy, rx, ry, ed;
+        uint16_t bc = (i == (uint32_t)song.sel) ? C_WHITE : C_ACCENT;
+        if (!mt->seq_active && vs.lvl[i] <= 20 && i != (uint32_t)song.sel) continue;
+        if (!vs.mvx[i]) { vs.mx[i] = (int16_t)(34 + i * 54); vs.mvx[i] = (int8_t)((i & 1u) ? -1 : 1); }
+        if (!(ui.frame & 1u)) {
+            int32_t spd = 1 + (song.g[G_BPM] / 95) + (vs.lvl[i] > 350 ? 1 : 0);
+            vs.mx[i] = (int16_t)(vs.mx[i] + vs.mvx[i] * spd);
+            if (vs.mx[i] < 20) { vs.mx[i] = 20; vs.mvx[i] = 1; }
+            if (vs.mx[i] > 220) { vs.mx[i] = 220; vs.mvx[i] = -1; }
+            if (vs.lvl[i] > 280 && !vs.mhop[i]) vs.mhop[i] = 10u;
+            else if (vs.mhop[i]) vs.mhop[i]--;
+        }
+        dir = vs.mvx[i] >= 0 ? 1 : -1;
+        cx = vs.mx[i];
+        rx = 11 + vs.lvl[i] / 140 + (mt->p[P_DIST] / 26);
+        ry = clamp(10 + (vs.mhop[i] ? 3 : 0) - (vs.kick > 150 ? 2 : 0) + (vs.lvl[i] / 180), 7, 22);
+        cy = vis_ground_y(cx, biome, jag, sway) - ry - (int32_t)vs.mhop[i];
+        vis_ellipse(cx, cy, rx, ry, bc);
+        if (genre == 2u || genre == 5u) {
+            cv_line(cx - rx + 2, cy - ry + 2, cx - rx - 3, cy - ry - 6, C_WHITE);
+            cv_line(cx + rx - 2, cy - ry + 2, cx + rx + 3, cy - ry - 6, C_WHITE);
+        } else if (genre == 4u || genre == 3u) {
+            int32_t wob = (isin((vs.phase * 6u + i * 200u) & 1023u) * 3) >> 15;
+            cv_line(cx - 4, cy - ry, cx - 6 + wob, cy - ry - 7, C_WHITE);
+            cv_circle(cx - 6 + wob, cy - ry - 8, 2, C_ACCENT);
+            cv_line(cx + 4, cy - ry, cx + 6 + wob, cy - ry - 7, C_WHITE);
+            cv_circle(cx + 6 + wob, cy - ry - 8, 2, C_ACCENT);
+        } else {
+            vis_ellipse(cx - 5, cy + ry, 3, 2, C_DIM);
+            vis_ellipse(cx + 5, cy + ry, 3, 2, C_DIM);
+        }
+        ed = dir * 2;
+        if (((bq >> 5) + i * 7u) % 19u == 0u) {
+            cv_line(cx - 5 + ed, cy - 2, cx - 2 + ed, cy - 2, C_BLACK);
+            cv_line(cx + 2 + ed, cy - 2, cx + 5 + ed, cy - 2, C_BLACK);
+        } else {
+            vis_ellipse(cx - 4 + ed, cy - 2, 2, 3, C_BLACK);
+            vis_ellipse(cx + 4 + ed, cy - 2, 2, 3, C_BLACK);
+            cv_pset(cx - 4 + ed + dir, cy - 2, C_WHITE);
+            cv_pset(cx + 4 + ed + dir, cy - 2, C_WHITE);
+        }
+        if (vs.lvl[i] > 140 || mt->seq_n > 0u)
+            vis_ellipse(cx + dir, cy + 4, 3 + (at->p[P_TFLT] > 10 ? 1 : 0), 2 + vs.lvl[i] / 400, C_BLACK);
+        else
+            cv_line(cx - 3 + dir, cy + 4, cx + 3 + dir, cy + 4, C_BLACK);
+        for (k = i + 1u; k < 4u; k++) {
+            int32_t dx = vs.mx[k] - cx;
+            if (dx < 0) dx = -dx;
+            if (vs.mx[k] > 0 && dx < 28) {
+                int32_t sx = (cx + vs.mx[k]) / 2, sy = cy - ry - 8;
+                cv_line(sx - 2, sy, sx + 2, sy, C_WHITE);
+                cv_line(sx, sy - 2, sx, sy + 2, C_ACCENT);
+            }
+        }
+    }
+}
 
+/* Full-screen render (Header & Bottom HUD explicitly hidden) */
+static void vis_draw(void)
 {
     uint32_t pass;
     if (!vis_shown_last || ui.force) {
@@ -377,20 +444,21 @@ static void vis_draw(void)
     for (pass = 0; pass < 2u; pass++) {
         cv_begin(240, 120, C_BLACK);
         cv_oy = -(int32_t)(pass * 120u);
-        switch (vis_style % 4u) {
-        case 0: vis_scope(); break;
-        case 1: vis_spectrum(); break;
-        case 2: vis_moon_loop(); break;
+        switch (vis_style % VIS_N) {
+        case 0: vis_living_world(); break;
+        case 1: vis_scope(); break;
+        case 2: vis_spectrum(); break;
+        case 3: vis_moon_loop(); break;
         default: vis_starfield(); break;
         }
         if (!pass && (vis_name_t || ui.msg_t)) {
-            char n[ 8 ];
-            const char *s = ui.msg_t ? ui.msg : VIS_NAME[vis_style % 4u];
+            char n[ 4 + 4 ];
+            const char *s = ui.msg_t ? ui.msg : VIS_NAME[vis_style % VIS_N];
             cv_rect(0, 0, 240, 20, C_BLACK);
             cv_text(120 - text_w(&FONT_S, s) / 2, 2, &FONT_S, s, C_WHITE);
             if (!ui.msg_t) {
-                fmt_int(n, (int32_t)(vis_style % 4u) + 1);
-                str_cpy(n + str_len(n), "/4", 4);
+                fmt_int(n, (int32_t)(vis_style % VIS_N) + 1);
+                str_cpy(n + str_len(n), "/5", 4);
                 cv_text(4, 2, &FONT_S, n, C_DIM);
             }
         }
@@ -403,7 +471,20 @@ static void vis_draw(void)
 
 static void vis_select(int32_t s)
 {
-    vis_style = (uint8_t)((vis_style + (s > 0 ? 1u : 3u)) % 4u);
+    if ((vis_style % VIS_N) == 0u && s > 0 && vs.world_seed < 2u) {
+        vs.world_seed++;
+        vis_name_t = 20;
+        ui.force = 1;
+        return;
+    }
+    if ((vis_style % VIS_N) == 0u && s < 0 && vs.world_seed > 0u) {
+        vs.world_seed--;
+        vis_name_t = 20;
+        ui.force = 1;
+        return;
+    }
+    vs.world_seed = 0u;
+    vis_style = (uint8_t)((vis_style + (s > 0 ? 1u : VIS_N - 1u)) % VIS_N);
     vis_name_t = 30;
     ui.force = 1;
     settings_later = 1;
