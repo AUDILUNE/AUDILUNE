@@ -1119,18 +1119,17 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         t->p[pid] = (int16_t)clamp(t->p[pid] + s * 3, 0, 127);
         audilune_hud_popup(AL_ENV_ROWS[row], t->p[pid] * 100 / 127, "%");
     } else if (ui.scr == UI_LFO) {
-        static const uint32_t LFO_P[4] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+        static const uint32_t LFO_P = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
         uint32_t pid = LFO_P[row];
         t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
         audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
     } else if (ui.scr == UI_EDIT) {
         static uint8_t clip_ok, clip_drum;
         static int16_t clip_len;
-        static step_t clip_st[NSTEP];
-        static dstep_t clip_dst[NSTEP];
-        static int8_t clip_micro[NSTEP];
-        static uint8_t clip_fill[NSTEP / 4];
-        uint32_t len = trk_len(t), i, j, has_sel = (ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3]) != 0u;
+        static union { step_t st; dstep_t dst; } clip_buf;
+        static int8_t clip_micro;
+        static uint8_t clip_fill;
+        uint32_t len = trk_len(t), i, j, has_sel = (ui.sel_step_mask | ui.sel_step_mask | ui.sel_step_mask | ui.sel_step_mask) != 0u;
         int32_t dir = s > 0 ? 1 : -1;
         if (row == 0u && k == 3u) {
             ui.edit_redo_dir = (uint8_t)(!ui.edit_redo_dir);
@@ -1139,8 +1138,10 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             clip_ok = 1u;
             clip_drum = (uint8_t)is_drum(t);
             clip_len = t->p[P_SLEN];
-            memcpy(clip_st, t->step, sizeof clip_st);
-            memcpy(clip_dst, t->dstep, sizeof clip_dst);
+            if (clip_drum)
+                memcpy(clip_buf.dst, t->dstep, sizeof clip_buf.dst);
+            else
+                memcpy(clip_buf.st, t->step, sizeof clip_buf.st);
             memcpy(clip_micro, t->micro, sizeof clip_micro);
             memcpy(clip_fill, t->fill, sizeof clip_fill);
             audilune_hud_text("COPY", "PATTERN");
@@ -1151,9 +1152,9 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 undo_mark(t, (undo_sess += 4u) | 3u);
                 fm1_irq_off();
                 if (is_drum(t) && clip_drum)
-                    memcpy(t->dstep, clip_dst, sizeof clip_dst);
+                    memcpy(t->dstep, clip_buf.dst, sizeof clip_buf.dst);
                 else if (!is_drum(t) && !clip_drum)
-                    memcpy(t->step, clip_st, sizeof clip_st);
+                    memcpy(t->step, clip_buf.st, sizeof clip_buf.st);
                 memcpy(t->micro, clip_micro, sizeof clip_micro);
                 memcpy(t->fill, clip_fill, sizeof clip_fill);
                 t->p[P_SLEN] = clip_len;
@@ -1172,7 +1173,8 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                     t->step[len + i] = t->step[i];
                     t->dstep[len + i] = t->dstep[i];
                     t->micro[len + i] = t->micro[i];
-                    step_fill_set(t, len + i, step_fill(t, i));
+                    step_fill_set(t, len + i, step_fill(t, i));,
+
                 }
                 t->p[P_SLEN] = (int16_t)(len * 2u);
                 fm1_irq_on();
