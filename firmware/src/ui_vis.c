@@ -301,8 +301,70 @@ static void vis_starfield(void)
     }
 }
 
+/* Style 0: Parameter-Locked Generative World & Entity Engine (Landscape & Weather) */
+static int32_t vis_ground_y(int32_t x, uint32_t biome, int32_t jag, int32_t sway)
+{
+    uint32_t ph = (uint32_t)(x * 4 + sway + (int32_t)(vs.world_seed * 73u));
+    if (biome == 0u) {
+        int32_t p1 = ((x + (int32_t)(vs.world_seed * 29u)) % 80) - 40;
+        int32_t p2 = ((x * 2 + (int32_t)(vs.world_seed * 17u)) % 48) - 24;
+        if (p1 < 0) p1 = -p1;
+        if (p2 < 0) p2 = -p2;
+        return 196 - ((40 - p1) * (16 + jag) / 36) - ((24 - p2) * jag / 40);
+    }
+    if (biome == 1u)
+        return 194 + ((isin(ph) * 6) >> 15);
+    return 188 + ((isin(ph + vs.phase * 3u) * (8 + jag / 2)) >> 15);
+}
+
+static void vis_world_terrain(uint32_t bq, uint32_t biome, int32_t jag, int32_t sway)
+{
+    const track_t *at = TSEL;
+    int32_t rev_wet = clamp(at->p[P_REV], 0, 140), dly_wet = clamp(at->p[P_DLY], 0, 140);
+    int32_t wind = clamp(at->p[P_TFLT], -64, 63) / 6 + at->p[P_PAN] / 8;
+    uint32_t i, k, drops = (uint32_t)((rev_wet + dly_wet + song.g[G_DUST]) / 14);
+    for (i = 0; i < 18u; i++) {
+        int32_t sx = (int32_t)((i * 47u + vs.world_seed * 31u) % 236u) + 2;
+        int32_t sy = (int32_t)((i * 29u + vs.world_seed * 19u) % 88u) + 6;
+        cv_pset(sx, sy, ((bq >> 6) + i) & 3u ? C_DIM : C_WHITE);
+    }
+    {
+        int32_t mx = 186 - (rev_wet * 36 / 140), mr = 16 + vs.kick * 4 / 255;
+        int32_t my = 40 - (dly_wet * 14 / 140) + ((isin((bq + vs.phase) & 1023u) * 4) >> 15);
+        vis_ellipse(mx, my, mr, mr, C_WHITE);
+        vis_ellipse(mx + mr * 42 / 100, my - mr * 16 / 100, mr * 84 / 100, mr * 84 / 100, C_BLACK);
+    }
+    cv_line(0, 152, 240, 152, C_DIM);
+    for (i = 0; i < 240u; i += 3u) {
+        int32_t gy = vis_ground_y((int32_t)i, biome, jag, sway);
+        cv_rect((int32_t)i, gy, 3, 240 - gy, biome == 2u ? C_DIM : C_LINE);
+        cv_rect((int32_t)i, gy, 3, 2, biome == 2u ? C_ACCENT : C_WHITE);
+    }
+    if (biome == 1u) {
+        for (i = 0; i < 7u; i++) {
+            int32_t tx = 16 + (int32_t)i * 34 + ((int32_t)(vs.world_seed * 13u) % 14);
+            int32_t ty = vis_ground_y(tx, biome, 8, sway);
+            int32_t th = 18 + (int32_t)((i * 7u + vs.world_seed) % 14u) + vs.lvl[i & 3u] / 90;
+            cv_line(tx, ty, tx + sway / 2, ty - th, C_WHITE);
+            cv_line(tx + sway / 2, ty - th, tx - 7 + sway / 3, ty - 5, C_ACCENT);
+            cv_line(tx + sway / 2, ty - th, tx + 7 + sway / 3, ty - 5, C_ACCENT);
+        }
+    } else if (biome == 2u) {
+        for (k = 0; k < 2u; k++)
+            for (i = 0; i < 240u; i += 4u)
+                cv_rect((int32_t)i, 204 + (int32_t)k * 14 + ((isin((uint32_t)(i * 6u + vs.phase * (4u + k * 2u))) * (4 + vs.lvl[ 4 ] / 180)) >> 15), 3, 1, k ? C_WHITE : C_ACCENT);
+    }
+    if (drops > 26u) drops = 26u;
+    for (i = 0; i < drops; i++) {
+        int32_t rx = (int32_t)((i * 53u + vs.phase * 3u + vs.world_seed * 17u) % 240u);
+        int32_t ry = (int32_t)((i * 37u + vs.phase * 7u) % 192u);
+        cv_line(rx, ry, rx + wind, ry + 7, (i & 1u) ? C_DIM : C_ACCENT);
+    }
+}
+
 /* Full-screen render (Bottom HUD explicitly hidden) */
 static void vis_draw(void)
+
 {
     uint32_t pass;
     if (!vis_shown_last || ui.force) {
