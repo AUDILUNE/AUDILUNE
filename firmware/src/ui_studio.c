@@ -1663,12 +1663,12 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
         pid = P_REV; song.g[G_RSIZE] = (int16_t)(30 + x * 97u / 127u);
         t->p[P_REV] = (int16_t)clamp((int32_t)(y + z) * 140 / 254, 0, 140);
     } else if (p == 2u) {
-        static const int16_t VC_CUT[] = {48, 118, 32, 96}, VC_RES[] = {24, 92, 68, 44};
+        static const int16_t VC_FLT[] = {-32, 48, -48, 24}, VC_LFO[] = {16, 96, 64, 32};
         uint32_t ix = 127u - x, iy = 127u - y, w0 = ix * iy, w1 = x * iy, w2 = ix * y, w3 = x * y;
-        uint32_t c0 = al_vec_corner[0] & 3u, c1 = al_vec_corner[1] & 3u, c2 = al_vec_corner[2] & 3u, c3 = al_vec_corner[3] & 3u;
-        pid = P_CUT;
-        t->p[P_CUT] = (int16_t)clamp((int32_t)((w0 * (uint32_t)VC_CUT[c0] + w1 * (uint32_t)VC_CUT[c1] + w2 * (uint32_t)VC_CUT[c2] + w3 * (uint32_t)VC_CUT[c3]) / 16129u) + ((int32_t)z - 64) / 2, 0, 127);
-        t->p[P_RES] = (int16_t)((w0 * (uint32_t)VC_RES[c0] + w1 * (uint32_t)VC_RES[c1] + w2 * (uint32_t)VC_RES[c2] + w3 * (uint32_t)VC_RES[c3]) / 16129u);
+        uint32_t c0 = *(al_vec_corner + 0) & 3u, c1 = *(al_vec_corner + 1) & 3u, c2 = *(al_vec_corner + 2) & 3u, c3 = *(al_vec_corner + 3) & 3u;
+        pid = P_TFLT;
+        t->p[P_TFLT] = (int16_t)clamp((int32_t)((w0 * (uint32_t)(VC_FLT[c0] + 64) + w1 * (uint32_t)(VC_FLT[c1] + 64) + w2 * (uint32_t)(VC_FLT[c2] + 64) + w3 * (uint32_t)(VC_FLT[c3] + 64)) / 16129u) - 64 + ((int32_t)z - 64) / 2, -64, 63);
+        t->p[P_LD_FLT] = (int16_t)((w0 * (uint32_t)VC_LFO[c0] + w1 * (uint32_t)VC_LFO[c1] + w2 * (uint32_t)VC_LFO[c2] + w3 * (uint32_t)VC_LFO[c3]) / 16129u);
     } else if (p == 3u) {
         pid = P_DIST; t->p[P_DIST] = (int16_t)(x * z / 127u); song.g[G_DUST] = (int16_t)(y * z / 127u);
     } else if (p == 4u) {
@@ -1686,8 +1686,8 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
             int32_t deg = (int32_t)(x / 18u) * 2 + (int32_t)(y / 42u) * 12;
             uint8_t note = (uint8_t)clamp(48 + t->p[P_ROOT] + deg, 24, 108);
             last_zone = zone;
-            audition_note(song.sel, note, (uint8_t)clamp(48 + (int32_t)z / 2, 32, 127));
-            if (rec_on) { step_set(&t->step[step], note, 100, 12); t->seq_active = 1; }
+            synth_note_on(song.sel, note, (uint8_t)clamp(48 + (int32_t)z / 2, 32, 127));
+            if (rec_on) { *(t->step[step].note + 0) = note; t->step[step].n = 1; t->step[step].vel = 100; t->step[step].gate = 12; t->seq_active = 1; }
         }
     }
     if (rec_on && pid >= 0) lock_set(t, step, (uint32_t)pid, t->p[pid]);
@@ -1703,6 +1703,7 @@ UI_SMALL static void audilune_page_draw(void)
 
     uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i;
     audilune_in_arp_page = (uint8_t)(!ui.home && ui.scr == UI_ARP);
+
     audilune_active_trk = song.sel;
     te_header(ui.scr >= UI_FX && ui.scr <= UI_SETUP ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
     if (ui.scr == UI_CHOP_WAVE) {
