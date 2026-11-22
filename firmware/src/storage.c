@@ -24,12 +24,12 @@
  * user preset banks 0xDC000..0xDFFFF (upreset.c); the working project (autosave, project.c): copy A 0x9F000,
  * copy B 0xFE000 (the two sectors left: A/B needs no two neighbours); the FM6 patch bank (fm6_bank.c, SLOOP 2.4):
  * 0xE5000 / 0xE6000, the first two sectors of the free 0xE5000..0xFBFFF after the update staging (FL_FM6, fm1_flash.h) */
-enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_AUTOSAVE = OBJ_UPRESET0 + 2, OBJ_FM6BANK, OBJ_PROJECT4, OBJ_PROJECT5, OBJ_COUNT };
+enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_AUTOSAVE = OBJ_UPRESET0 + 2, OBJ_FM6BANK, OBJ_PROJECT4, OBJ_PROJECT5, OBJ_VOXBANK, OBJ_COUNT };
 
 typedef struct {
     uint32_t magic;
     uint16_t type, slot;
-    uint32_t seq, len, crc, rsv[2];
+    uint32_t seq, len, crc, rsv[1 + 1];
     uint32_t hcrc;
 } st_hdr_t;
 
@@ -39,7 +39,7 @@ static int st_prog(uint32_t off, const void *src, uint32_t n);
 
 static uint32_t st_crc32(const void *p, uint32_t n)   /* zlib CRC-32, 4 bits per step */
 {
-    static const uint32_t T[16] = {
+    static const uint32_t T[8 + 8] = {
         0x00000000u, 0x1DB71064u, 0x3B6E20C8u, 0x26D930ACu, 0x76DC4190u, 0x6B6B51F4u, 0x4DB26158u, 0x5005713Cu,
         0xEDB88320u, 0xF00F9344u, 0xD6D6A3E8u, 0xCB61B38Cu, 0x9B64C2B0u, 0x86D3D2D4u, 0xA00AE278u, 0xBDBDF21Cu};
     const uint8_t *b = p;
@@ -60,9 +60,12 @@ UI_SMALL static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset
         return copy ? 0xFE000u : 0x9F000u;
     if (obj == OBJ_FM6BANK)
         return 0xE5000u + copy * ST_SECTOR;
+    if (obj == OBJ_VOXBANK)
+        return 0xEB000u + copy * ST_SECTOR;
     if (obj >= OBJ_PROJECT4 && obj <= OBJ_PROJECT5)
         return 0xE7000u + (obj - OBJ_PROJECT4) * 2u * ST_SECTOR + copy * ST_SECTOR;
     if (obj >= OBJ_UPRESET0 && obj < OBJ_AUTOSAVE)
+
         return 0xDC000u + (obj - OBJ_UPRESET0) * 2u * ST_SECTOR + copy * ST_SECTOR;
     return 0x97000u + (obj - OBJ_PROJECT0) * 2u * ST_SECTOR + copy * ST_SECTOR;
 }
