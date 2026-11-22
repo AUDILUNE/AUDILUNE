@@ -296,21 +296,52 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
 
 }
 /* --------------------------------------------------------------- TRACKS --- */
-/* swing, MPC style: "62%" */
-UI_SMALL static void swing_str(char *b, int32_t v)            /* 0 straight .. 100 the most (params.c F_SWING) */
+/* Persistent 14px Active-Selection Track & Live Step/Waveform Strip (y = 41..55) */
+UI_SMALL static void audilune_sel_strip(uint32_t *cache)
 {
-    fmt_int(b, clamp(v, 0, 100));
+    uint32_t mask = (ui.sel_trk_mask & 0x3Fu) | (1u << (song.sel % 6u));
+    uint32_t i, j, pos = TSEL->seq_idx % 16u, sig = mask * 977u + pos * 31u + song.playing * 7u;
+    for (i = 0; i < NTRK; i++)
+        if ((mask >> i) & 1u)
+            for (j = 0; j < 16u; j++)
+                sig = sig * 3u + (uint32_t)trk_step_on(&trk[i], j);
+    if (!ui.force && sig == *cache)
+        return;
+    *cache = sig;
+    cv_begin(240, 14, C_BLACK);
+    for (i = 0; i < 6u; i++) {
+        char n[] = {(char)('1' + i), 0};
+        uint32_t on = (mask >> i) & 1u;
+        int32_t bx = 2 + (int32_t)i * 13;
+        cv_rect(bx, 1, 11, 11, on ? C_WHITE : TE_G1);
+        cv_text(bx + 3, 0, &FONT_S, n, on ? C_BLACK : TE_G3);
+    }
+    for (j = 0; j < 16u; j++) {
+        uint32_t hit = 0u;
+        for (i = 0; i < NTRK; i++)
+            if (((mask >> i) & 1u) && trk_step_on(&trk[i], j))
+                hit = 1u;
+        cv_rect(84 + (int32_t)j * 6, 3, 4, 7, (song.playing && j == pos) ? C_WHITE : hit ? HUD_ACCENT : TE_G1);
+    }
+    for (j = 0; j < 26u; j++) {
+        uint32_t p = (pos + j) & 15u;
+        int32_t h = (song.playing && trk_step_on(TSEL, p)) ? (int32_t)(3 + ((j * 7u + pos) % 7u)) : 1;
+        cv_rect(184 + (int32_t)j * 2, 6 - h / 2, 1, h, C_WHITE);
+    }
+    cv_rect(0, 13, 240, 1, TE_G1);
+    cv_blit(0, 41);
 }
 
 UI_SMALL static void studio_tracks_draw(void)
 {
-    static uint32_t head, rows[6], footer;
+    static uint32_t head, strip, rows[6], footer;
     static const char *const GEN_SHORT[6] = {"AMBIENT", "DOWNTMP", "GLITCH", "PUNCHY", "EXPERIM", "INDUST"};
     uint32_t i, j, disp_trks = NTRK < 6u ? 6u : NTRK;
-    int32_t row_h = (int32_t)(172u / disp_trks);
+    int32_t row_h = (int32_t)(156u / disp_trks);
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     audilune_in_arp_page = 0u;
     te_header("AUDILUNE", C_WHITE, &head, sect);
+    audilune_sel_strip(&strip);
     for (i = 0; i < disp_trks; i++) {
         uint32_t has_trk = i < NTRK;
         track_t *t = has_trk ? &trk[i] : &trk[0];
@@ -343,6 +374,7 @@ UI_SMALL static void studio_tracks_draw(void)
 
         h = studio_hash(selected + locked * 31u + gidx * 17u + level * 7u + silent * 997u + rec * 1999u +
                         solo * 4999u + len * 37u + song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b[0] ? b : e);
+
         if (has_trk)
             for (j = 0; j < len; j++) h = h * 31u + (uint32_t)trk_step_on(t, j);
         if (!ui.force && h == rows[i]) continue;
