@@ -1065,11 +1065,11 @@ static const char *const AL_EDIT_ROWS[] = {
 };
 static const char *const AL_ENV_ROWS[] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
 static const char *const AL_LFO_ROWS[] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
-static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
+static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "HELPER NOTES", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
 static const char *const AL_SETUP_ROWS[] = {
-    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "FREQ LAYER",
-    "AUTO POWER OFF", "SESSION TIMER", "TEMPO", "ROOT NOTE",
-    "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"
+    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "TIMING / GRAVITY",
+    "FREQ LAYER", "HELPER NOTES", "AUTO POWER OFF", "SESSION TIMER",
+    "TEMPO", "ROOT NOTE", "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"
 };
 static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "STUDY FOCUS", "CHILL", "DANCE"};
 static const char *const AL_TIMER_NAMES[] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
@@ -1080,22 +1080,23 @@ static uint8_t al_pad_idx, al_pad_list_mode, al_pad_latch;
 static uint8_t al_pad_x[] = {64, 64, 64, 64, 64, 64, 64, 0}, al_pad_y[] = {64, 64, 64, 64, 64, 64, 64, 64};
 static uint8_t al_pad_z[] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[] = {0, 1, 2, 3};
 static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
+static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_chop_trim_s = 0u, al_chop_trim_e = 100u;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
 static uint8_t audilune_theme_idx, al_arp_mode[NTRK], al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
-    if (scr == UI_FX) return 10u;
+    if (scr == UI_FX) return al_pad_list_mode ? 1u : 18u;
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
     if (scr == UI_EDIT) return 16u;
     if (scr == UI_ARP) return 7u;
-    if (scr == UI_GLO) return 7u;
+    if (scr == UI_GLO) return 8u;
     if (scr == UI_SAVE) return 6u;
     if (scr == UI_SEQ) return 8u;
-    if (scr == UI_CHOP_SRC) return 3u;
-    if (scr == UI_CHOP_WAVE) return 18u;
+    if (scr == UI_CHOP_SRC) return 4u;
+    if (scr == UI_CHOP_WAVE) return 21u;
     if (scr == UI_ALGO) return 6u + DRUM_KITS;
-    if (scr == UI_SETUP) return 11u;
+    if (scr == UI_SETUP) return 13u;
     return 0u;
 }
 
@@ -1120,6 +1121,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
             int32_t delta = st - (int32_t)last_st;
             last_st = (int8_t)st;
             if (has_step && !is_drum(t)) {
+
                 for (si = 0; si < len; si++)
                     if (((ui.sel_step_mask[si >> 5] >> (si & 31u)) & 1u) && step_on(&t->step[si]))
                         for (nj = 0; nj < t->step[si].n && nj < 4u; nj++)
