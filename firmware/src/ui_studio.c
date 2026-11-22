@@ -1686,8 +1686,9 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
             int32_t deg = (int32_t)(x / 18u) * 2 + (int32_t)(y / 42u) * 12;
             uint8_t note = (uint8_t)clamp(48 + t->p[P_ROOT] + deg, 24, 108);
             last_zone = zone;
-            synth_note_on(song.sel, note, (uint8_t)clamp(48 + (int32_t)z / 2, 32, 127));
-            if (rec_on) { *(t->step[step].note + 0) = note; t->step[step].n = 1; t->step[step].vel = 100; t->step[step].gate = 12; t->seq_active = 1; }
+            pid = P_TFLT;
+            t->p[P_TFLT] = (int16_t)clamp(((int32_t)x - 64), -64, 63);
+            if (rec_on) { *(t->step[step].note + 0) = note; t->step[step].n = 1; t->step[step].vel = 100; t->step[step].len = 12; t->seq_active = 1; }
         }
     }
     if (rec_on && pid >= 0) lock_set(t, step, (uint32_t)pid, t->p[pid]);
@@ -1698,6 +1699,7 @@ UI_SMALL static void audilune_page_draw(void)
     static uint32_t head, footer;
     static const char *const TITLES[] = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP", "ALGO / KITS", "STUDIO SETUP"};
     uint32_t rows = audilune_page_rows(ui.scr);
+
     uint32_t sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
 
