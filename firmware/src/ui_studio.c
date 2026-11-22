@@ -1688,7 +1688,7 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
             last_zone = zone;
             pid = P_TFLT;
             t->p[P_TFLT] = (int16_t)clamp(((int32_t)x - 64), -64, 63);
-            if (rec_on) { *(t->step[step].note + 0) = note; t->step[step].n = 1; t->step[step].vel = 100; t->step[step].len = 12; t->seq_active = 1; }
+            if (rec_on) { *(t->step[step].note + 0) = note; t->step[step].n = 1; t->step[step].vel = 100; t->seq_active = 1; }
         }
     }
     if (rec_on && pid >= 0) lock_set(t, step, (uint32_t)pid, t->p[pid]);
@@ -1697,6 +1697,7 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
 UI_SMALL static void audilune_page_draw(void)
 {
     static uint32_t head, footer;
+
     static const char *const TITLES[] = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP", "ALGO / KITS", "STUDIO SETUP"};
     uint32_t rows = audilune_page_rows(ui.scr);
 
