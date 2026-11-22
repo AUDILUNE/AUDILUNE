@@ -1002,52 +1002,60 @@ UI_SMALL static void rec_screen_draw(void)
 }
 
 /* ------------------------------------------- AUDILUNE 14-PAGE LISTS --- */
-static const char *const AL_FX_ROWS[10] = {
+static const char *const AL_FX_ROWS[] = {
     "TIME / GROOVE", "PITCH / FORMANT", "STUTTER / GLITCH", "GRANULAR / FRZ",
     "SPATIAL DELAY", "LUSH REVERB", "MOD / STEREO", "FILTER / EQ",
     "DRIVE / LO-FI", "PUNCH / DUCK"
 };
-static const char *const AL_SCALE_NAMES[22] = {
+static const char *const AL_PAD_NAMES[] = {
+    "DELAY PAD", "REVERB PAD", "4-CORNER VECTOR", "DRIVE & GRIT",
+    "MODULATION PAD", "PITCH & TIME", "GRANULAR CLOUD", "HARMONIC STRUM"
+};
+static const char *const AL_FREQ_NAMES[] = {"AUTO", "OFF", "LOW", "MED"};
+static const char *const AL_SCALE_NAMES[] = {
     "CHROMATIC", "MAJOR", "NAT MINOR", "HARM MINOR", "MEL MINOR", "DORIAN",
     "PHRYGIAN", "LYDIAN", "MIXOLYDIAN", "MAJ PENT", "MIN PENT", "BLUES",
     "HIRAJOSHI", "IN-SEN", "PHRYG DOM", "DBL HARM", "WHOLE TONE", "DIM H-W",
     "PROMETHEUS", "ENIGMATIC", "TRITONE HEX", "LUNAR ECLPS"
 };
-static const char *const AL_EDIT_ROWS[14 + 2] = {
+static const char *const AL_EDIT_ROWS[] = {
     "UNDO / REDO", "CLEAR", "COPY", "PASTE", "DUPLICATE", "QUANTIZE",
     "HUMANIZE", "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY",
     "RATCHET", "REVERSE", "ROOT NOTE", "SCALE TYPE"
 };
-static const char *const AL_ENV_ROWS[2 + 2] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
-static const char *const AL_LFO_ROWS[2 + 2] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
-static const char *const AL_GLO_ROWS[3 + 3] = {"COLOR THEME", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
-static const char *const AL_SETUP_ROWS[10] = {
-    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "AUTO POWER OFF",
-    "SESSION TIMER", "TEMPO", "ROOT NOTE", "SCALE TYPE",
-    "PATTERN LENGTH", "MIDI / CLOCK SYNC"
+static const char *const AL_ENV_ROWS[] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
+static const char *const AL_LFO_ROWS[] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
+static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
+static const char *const AL_SETUP_ROWS[] = {
+    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "FREQ LAYER",
+    "AUTO POWER OFF", "SESSION TIMER", "TEMPO", "ROOT NOTE",
+    "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"
 };
-static const char *const AL_SESS_NAMES[6] = {"STUDIO", "SLEEP", "MEDITATE", "STUDY FOCUS", "CHILL", "DANCE"};
-static const char *const AL_TIMER_NAMES[7] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
-static const char *const AL_NOTE_NAMES[6 + 6] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-static const char *const AL_CHOP_MODES[3 + 2] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
+static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "STUDY FOCUS", "CHILL", "DANCE"};
+static const char *const AL_TIMER_NAMES[] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
+static const char *const AL_NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+static const char *const AL_CHOP_MODES[] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
+static uint8_t al_pad_idx, al_pad_list_mode, al_pad_latch;
+static uint8_t al_pad_x[] = {64, 64, 64, 64, 64, 64, 64, 0}, al_pad_y[] = {64, 64, 64, 64, 64, 64, 64, 64};
+static uint8_t al_pad_z[] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[] = {0, 1, 2, 3};
+static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
-static uint8_t audilune_theme_idx;
-static uint8_t al_arp_mode[NTRK];
-static uint8_t al_clip_ok;
+static uint8_t audilune_theme_idx, al_arp_mode[NTRK], al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 10u;
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
     if (scr == UI_EDIT) return 16u;
-    if (scr == UI_ARP) return 6u;
-    if (scr == UI_GLO || scr == UI_SAVE) return 6u;
+    if (scr == UI_ARP) return 7u;
+    if (scr == UI_GLO) return 7u;
+    if (scr == UI_SAVE) return 6u;
     if (scr == UI_SEQ) return 8u;
     if (scr == UI_CHOP_SRC) return 3u;
     if (scr == UI_CHOP_WAVE) return 18u;
     if (scr == UI_ALGO) return 6u + DRUM_KITS;
-    if (scr == UI_SETUP) return 10u;
+    if (scr == UI_SETUP) return 11u;
     return 0u;
 }
 
@@ -1058,6 +1066,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     int32_t pid = -1;
 
     if (row == 0u || row == 2u || row == 3u) {
+
         static const int8_t T_PF[4 + 4] = {PX_HALF, PX_LOOP8, PX_STOP, PX_REV, PX_OCT, PX_RWD, PX_LOOP8T, PX_STUT};
         static const int8_t G_PF[4 + 4] = {PX_LOOP16, PX_LOOP32, PX_LOOP8T, PX_STUT, PX_CRUSH, PX_DOWN, PX_GATE, PX_FREEZE};
         punch.req = val ? (row == 0u ? *(T_PF + (sub & 7u)) : row == 2u ? *(G_PF + (sub & 7u)) : PX_FREEZE) : -1;
