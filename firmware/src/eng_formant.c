@@ -129,7 +129,7 @@ UI_SMALL static int vox_save(void)
 }
 
 /* Genre-locked combinatorial poetic/scientific phrase builder (4,000+ combinations, 0 B SRAM) */
-static void vox_build_phrase(uint32_t slot, uint32_t genre, uint32_t seed)
+static void vox_build_phrase(uint32_t vi, uint32_t slot, uint32_t custom, uint32_t genre, uint32_t seed)
 {
     static const uint8_t ADJ[6][4][8] = {
         {{11,8,14,10,0},{19,6,11,6,0},{15,4,11,3,14,22,0},{2,15,22,12,6,0}},   /* AMBIENT: lunar, hollow, silent, astro */
@@ -140,6 +140,7 @@ static void vox_build_phrase(uint32_t slot, uint32_t genre, uint32_t seed)
         {{23,1,12,21,9,14,0},{13,3,22,9,11,0},{14,7,11,0},{21,12,6,22,6,14,0}} /* INDUST: carbon, metal, null, proton */
     };
     static const uint8_t NOUN[6][4][8] = {
+
         {{19,6,12,1,20,14,0},{18,10,0},{22,1,5,22,0},{12,4,14,0}},            /* horizon, ether, tide, ring */
         {{22,12,4,17,22,0},{14,6,22,0},{6,12,21,4,22,0},{17,6,11,22,0}},       /* drift, node, orbit, fault */
         {{15,4,23,14,9,11,0},{21,7,11,15,0},{23,6,22,0},{17,3,20,0}},         /* signal, pulse, code, phase */
@@ -147,23 +148,23 @@ static void vox_build_phrase(uint32_t slot, uint32_t genre, uint32_t seed)
         {{15,21,3,23,22,12,9,0},{17,12,3,23,0},{1,15,18,9,12,0},{14,3,21,7,11,9,0}},/* spectra, freq, aether, nebula */
         {{12,5,2,23,22,10,0},{22,10,21,4,14,0},{15,22,5,11,0},{23,12,4,22,0}} /* reactor, turbine, steel, grid */
     };
-    static const uint8_t VERB[4][8] = {
+    static const uint8_t VERB[2 + 2][4 + 4] = {
         {22,12,4,17,22,15,0},{15,16,4,17,22,15,0},{21,7,11,15,4,20,0},{17,3,20,4,20,0} /* drifts, shifts, pulses, phases */
     };
     uint32_t g = genre % 6u, a = seed & 3u, n = (seed >> 2) & 3u, vb = (seed >> 4) & 3u, p = 0, j;
     const uint8_t *w;
     vox_load();
-    if (vox_bank[slot & 7u][0]) {
-        for (j = 0; j < 63u && vox_bank[slot & 7u][j]; j++) vox_seq[slot & 3u][p++] = vox_bank[slot & 7u][j];
-        vox_len[slot & 3u] = (uint8_t)p;
+    if (custom && vox_bank[slot & 7u][0]) {
+        for (j = 0; j < 63u && vox_bank[slot & 7u][j]; j++) vox_seq[vi & 3u][p++] = vox_bank[slot & 7u][j];
+        vox_len[vi & 3u] = (uint8_t)p;
         return;
     }
-    w = ADJ[g][a]; for (j = 0; w[j] && p < 62u; j++) vox_seq[slot & 3u][p++] = w[j];
-    vox_seq[slot & 3u][p++] = 0;
-    w = NOUN[g][n]; for (j = 0; w[j] && p < 62u; j++) vox_seq[slot & 3u][p++] = w[j];
-    vox_seq[slot & 3u][p++] = 0;
-    w = VERB[vb]; for (j = 0; w[j] && p < 62u; j++) vox_seq[slot & 3u][p++] = w[j];
-    vox_len[slot & 3u] = (uint8_t)p;
+    w = ADJ[g][a]; for (j = 0; w[j] && p < 62u; j++) vox_seq[vi & 3u][p++] = w[j];
+    vox_seq[vi & 3u][p++] = 0;
+    w = NOUN[g][n]; for (j = 0; w[j] && p < 62u; j++) vox_seq[vi & 3u][p++] = w[j];
+    vox_seq[vi & 3u][p++] = 0;
+    w = VERB[vb]; for (j = 0; w[j] && p < 62u; j++) vox_seq[vi & 3u][p++] = w[j];
+    vox_len[vi & 3u] = (uint8_t)p;
 }
 
 /* Klatt resonator coefficients (Q30) for F, BW in Hz * 16 */
@@ -189,10 +190,10 @@ static void formant_note_on(track_t *t, voice_t *v)
     formant_nz ^= formant_nz << 5;
     v->s[7] = (int32_t)(((uint32_t)formant_nz >> 25) << 25);   /* TALK starts over, random vowel kept */
     if (t->preset >= 7u) {
-        uint32_t g = (uint32_t)(t - trk) < NTRK ? audilune_trk_genre[(uint32_t)(t - trk)] : audilune_genre;
-        uint32_t slot = t->preset >= 10u ? (uint32_t)(t->preset - 10u) : vi;
-        if (t->preset < 10u) vox_bank[slot & 7u][0] = 0;
-        vox_build_phrase(slot, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
+        uint32_t ti = (uint32_t)(t - trk);
+        uint32_t g = ti < NTRK ? ui.algo_genre[ti] : ui.algo_genre[song.sel];
+        uint32_t slot = t->preset >= 10u ? (uint32_t)(t->preset - 10u) : 0u;
+        vox_build_phrase(vi, slot, t->preset >= 10u, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
         vox_idx[vi] = 0;
         vox_tmr[vi] = 0;
     } else {
