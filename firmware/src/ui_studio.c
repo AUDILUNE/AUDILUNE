@@ -296,6 +296,12 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
 
 }
 /* --------------------------------------------------------------- TRACKS --- */
+/* swing, MPC style: "62%" */
+UI_SMALL static void swing_str(char *b, int32_t v)            /* 0 straight .. 100 the most (params.c F_SWING) */
+{
+    fmt_int(b, clamp(v, 0, 100));
+}
+
 /* Persistent 14px Active-Selection Track & Live Step/Waveform Strip (y = 41..55) */
 UI_SMALL static void audilune_sel_strip(uint32_t *cache)
 {
@@ -310,7 +316,7 @@ UI_SMALL static void audilune_sel_strip(uint32_t *cache)
     *cache = sig;
     cv_begin(240, 14, C_BLACK);
     for (i = 0; i < 6u; i++) {
-        char n[] = {(char)('1' + i), 0};
+        char n[2] = {(char)('1' + i), 0};
         uint32_t on = (mask >> i) & 1u;
         int32_t bx = 2 + (int32_t)i * 13;
         cv_rect(bx, 1, 11, 11, on ? C_WHITE : TE_G1);
@@ -343,6 +349,7 @@ UI_SMALL static void studio_tracks_draw(void)
     te_header("AUDILUNE", C_WHITE, &head, sect);
     audilune_sel_strip(&strip);
     for (i = 0; i < disp_trks; i++) {
+
         uint32_t has_trk = i < NTRK;
         track_t *t = has_trk ? &trk[i] : &trk[0];
         char b[24], e[24];
