@@ -218,7 +218,29 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         k = (int32_t)(g >> 9);                          /* Q15 */
         k = (k * (65536 - k)) >> 15;                    /* ease out: the mouth opens fast, then settles */
     }
-    {   /* RAND: both vowels move towards this note's random vowel (0 = off, 127 = fully random) */
+    uint32_t vi = (uint32_t)(v - t->v) & 3u, vox_on = (t->preset >= 7u && vox_len[vi] > 0u);
+    int32_t vox_gv = 32767, vox_gn = 0, vox_burst = 0;
+    if (vox_on) {
+        uint32_t step_b = (uint32_t)(18u - (p[P_E2] >> 3));
+        uint32_t cur_i = vox_idx[vi] < vox_len[vi] ? vox_idx[vi] : 0u;
+        uint32_t nxt_i = (cur_i + 1u) < vox_len[vi] ? (cur_i + 1u) : cur_i;
+        const vox_ph_t *pa = &VOX_PH[vox_seq[vi][cur_i] % 24u], *pb = &VOX_PH[vox_seq[vi][nxt_i] % 24u];
+        int32_t frac = step_b ? (int32_t)(((uint32_t)vox_tmr[vi] << 15) / step_b) : 0;
+        if (frac > 32767) frac = 32767;
+        fa[0] = ((int32_t)pa->f1 + (((int32_t)pb->f1 - (int32_t)pa->f1) * frac >> 15)) << 4;
+        fa[1] = ((int32_t)pa->f2 + (((int32_t)pb->f2 - (int32_t)pa->f2) * frac >> 15)) << 4;
+        fa[2] = ((int32_t)pa->f3 + (((int32_t)pb->f3 - (int32_t)pa->f3) * frac >> 15)) << 4;
+        fb[0] = fa[0]; fb[1] = fa[1]; fb[2] = fa[2];
+        ba[0] = 85 << 4; ba[1] = 105 << 4; ba[2] = 165 << 4;
+        bb[0] = ba[0]; bb[1] = ba[1]; bb[2] = ba[2];
+        vox_gv = (pa->flg & 2u) ? 0 : (int32_t)pa->vox * 258;
+        vox_gn = (pa->flg & 2u) ? 0 : (int32_t)pa->nz * 258;
+        if ((pa->flg & 1u) && vox_tmr[vi] < 2u) vox_burst = 14000;
+        if (++vox_tmr[vi] >= step_b) {
+            vox_tmr[vi] = 0;
+            vox_idx[vi] = (uint8_t)((cur_i + 1u) % vox_len[vi]);
+        }
+    } else {   /* RAND: both vowels move towards this note's random vowel (0 = off, 127 = fully random) */
         int32_t rv = (int32_t)(((uint32_t)v->s[7] >> 25) << 8), v0 = p[P_E0] << 8, v1 = p[P_E1] << 8;
         v0 += ((rv - v0) * p[P_E7] * 258) >> 15;
         v1 += ((rv - v1) * p[P_E7] * 258) >> 15;
@@ -254,8 +276,8 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     tp = (te >> 8) * 166u;                              /* opening: 65 % of it, closing 35 % */
     rp = (1u << 30) / ((tp >> 16) | 1u);
     rn = (1u << 30) / (((te - tp) >> 16) | 1u);
-    gv = 32767 - p[P_E5] * p[P_E5] * 2;                 /* BREATH: voicing fades at the top */
-    gn = p[P_E5] * 258;                                 /* noise: Q15, up to 1.0 */
+    gv = vox_on ? vox_gv : (32767 - p[P_E5] * p[P_E5] * 2);   /* BREATH: voicing fades at the top */
+    gn = vox_on ? clamp(vox_gn + (p[P_E5] * 128), 0, 32767) : (p[P_E5] * 258);   /* noise: Q15, up to 1.0 */
     og = 13000 - ((p[P_E6] - 64) * 50);                 /* output: narrower bands ring louder */
     og = (int32_t)(((int64_t)og * fmt_ratio((60 * 16 - v->pitch_cur) / 4)) >> 16);   /* 1.5 dB / oct: low notes are sparse pulses */
     ogk = (og >> 2) * (4 + (buzz >> 10));               /* presence k = 1 .. 4.9 */
@@ -268,6 +290,8 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
             e = -sine_i(((ph - tp) >> 16) * rn);
         else
             e = 0;
+        if (vox_burst && i < 4u) e += vox_burst;
+
         e += blep(ph - te, inc) >> 1;                   /* the closure step, band-limited */
         lp += ((e - lp) * tilt) >> 14;
         x = (lp * gv) >> 15;
