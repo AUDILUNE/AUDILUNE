@@ -99,25 +99,25 @@ static const uint8_t LANE_OF_GM[81 - 35 + 1] = {
     /* 65 */ 13, 13, 13, 13, 14, 14, 14, 14, 15, 15,
     /* 75 */ 11, 11, 11, 15, 15, 13, 13};
 /* Auxiliary & experimental GM / synth percussion notes for black keys (left -> far-right strangest hits) */
-static const uint8_t BLACK_KEY_NOTE[11] = {44, 58, 60, 61, 63, 64, 67, 68, 73, 78, 81};
+static const uint8_t BLACK_KEY_NOTE[] = {44, 58, 60, 61, 63, 64, 67, 68, 73, 78, 81};
 static int is_black_key(uint32_t k)
 {
-    static const uint8_t B[12] = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0};      /* from F: F# G# A# C# D# */
+    static const uint8_t B[] = {0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0};      /* from F: F# G# A# C# D# */
 
     return B[k % 12u] != 0;
 }
 static uint8_t black_key_note(uint32_t k)
-
+{
     uint32_t oct = k / 12u, rem = k % 12u;
     uint32_t idx = oct * 5u + (rem == 1u ? 0u : rem == 3u ? 1u : rem == 5u ? 2u : rem == 8u ? 3u : 4u);
-    uint32_t rev = idx < 11u ? (10u - idx) : 0u;
-    return BLACK_KEY_NOTE[rev];
+    return BLACK_KEY_NOTE[idx < 11u ? idx : 10u];
 }
 /* SLOOP 2.7, the DRUMS screen's SOUND page: each of the 16 sounds' TUNE (-8 .. +7 semitones) and DECAY (-4 .. +3,
  * 0 as the kit has it), on every kit; kept with the project and each section (project.c: in the drum track's free
  * engine values) */
 #define DRUM_TUNE_MIN (-8)
 #define DRUM_TUNE_MAX 7
+
 #define DRUM_DEC_MIN (-4)
 #define DRUM_DEC_MAX 3
 static int8_t drum_tune[DRUM_LANES], drum_dec[DRUM_LANES];
