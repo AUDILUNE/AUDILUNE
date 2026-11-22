@@ -94,7 +94,7 @@ static const vox_ph_t VOX_PH[24] = {
     {300, 1800, 2600, 40, 85, 1},/* 22: T/D plosive */
     {300, 1400, 2200, 40, 80, 1} /* 23: K/G plosive */
 };
-static uint8_t vox_seq[2 + 2][16 + 16], vox_len[2 + 2], vox_idx[2 + 2], vox_tmr[2 + 2];
+static uint8_t vox_seq[16 + 16], vox_len, vox_idx, vox_tmr;
 
 UI_SMALL static const uint8_t *vox_slot_xip(uint32_t slot)
 {
@@ -140,18 +140,19 @@ static void vox_build_phrase(uint32_t vi, uint32_t slot, uint32_t custom, uint32
     };
     uint32_t g = genre % 6u, a = seed & 3u, n = (seed >> 2) & 3u, vb = (seed >> 4) & 3u, p = 0, j;
     const uint8_t *w;
+    (void)vi;
     if (custom) {
         w = vox_slot_xip(slot);
-        for (j = 0; j < 31u && w[j]; j++) vox_seq[vi & 3u][p++] = w[j];
-        vox_len[vi & 3u] = (uint8_t)p;
+        for (j = 0; j < 31u && w[j]; j++) vox_seq[p++] = w[j];
+        vox_len = (uint8_t)p;
         return;
     }
-    w = ADJ[g][a]; for (j = 0; w[j] && p < 30u; j++) vox_seq[vi & 3u][p++] = w[j];
-    vox_seq[vi & 3u][p++] = 0;
-    w = NOUN[g][n]; for (j = 0; w[j] && p < 30u; j++) vox_seq[vi & 3u][p++] = w[j];
-    vox_seq[vi & 3u][p++] = 0;
-    w = VERB[vb]; for (j = 0; w[j] && p < 30u; j++) vox_seq[vi & 3u][p++] = w[j];
-    vox_len[vi & 3u] = (uint8_t)p;
+    w = ADJ[g][a]; for (j = 0; w[j] && p < 30u; j++) vox_seq[p++] = w[j];
+    vox_seq[p++] = 0;
+    w = NOUN[g][n]; for (j = 0; w[j] && p < 30u; j++) vox_seq[p++] = w[j];
+    vox_seq[p++] = 0;
+    w = VERB[vb]; for (j = 0; w[j] && p < 30u; j++) vox_seq[p++] = w[j];
+    vox_len = (uint8_t)p;
 }
 
 /* Klatt resonator coefficients (Q30) for F, BW in Hz * 16 */
@@ -168,6 +169,7 @@ static void fres_coef(fres_t *r, uint32_t f16, uint32_t bw16)
     r->b = (int32_t)(((int64_t)e * cs) >> 29);          /* 2 r cos */
     r->c = -(int32_t)(((int64_t)e * e) >> 30);          /* -r^2 */
     r->a = (1 << 30) - r->b - r->c;
+
 }
 
 static uint8_t audilune_vox_genre[NTRK];
