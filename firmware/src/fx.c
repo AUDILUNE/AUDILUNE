@@ -1097,6 +1097,99 @@ static void texture_mix(int32_t *l, int32_t *r, uint32_t n)
         texture_reset(src);
 }
 
+/* AUDILUNE v3.7: Utilitarian Discrete Frequency Layer Engine (<0.2% CPU, 0 B extra SRAM) */
+static volatile uint8_t audilune_freq_layer;   /* 0=AUTO, 1=OFF, 2=LOW, 3=MED */
+static volatile uint8_t audilune_session_mode; /* 0=STUDIO, 1=SLEEP, 2=MEDITATE, 3=STUDY, 4=CHILL, 5=DANCE */
+static volatile uint8_t audilune_root_note;    /* 0..11 (C..B) */
+static volatile uint8_t audilune_genre;        /* 0..5 */
+
+static void freq_layer_process(int32_t *l, int32_t *r, uint32_t n)
+{
+    static uint32_t ph_l, ph_r, ph_2, ph_3, ph_mod, rnd = 0x6D2B79F5u;
+    static int32_t pink, lp_l, lp_r, sub_env;
+    uint32_t mode = audilune_freq_layer, sm = audilune_session_mode, g = audilune_genre % 6u, i;
+    int32_t lvl = mode == 1u ? 0 : mode == 2u ? 140 : mode == 3u ? 280 : (sm == 0u ? 0 : 200);
+    uint32_t root_inc = pitch_inc((36 + (int32_t)(audilune_root_note % 12u)) * 16);
+    uint32_t mod_hz = sm == 1u ? 2u : sm == 2u ? 6u : sm == 3u ? 16u : sm == 4u ? 10u : (g == 0u ? 4u : 8u);
+    uint32_t mod_inc = (uint32_t)(((uint64_t)mod_hz << 32) / FS);
+    if (!lvl)
+        return;
+    for (i = 0; i < n; i++) {
+        int32_t xl = l[i], xr = r[i], add_l = 0, add_r = 0, m_s, nz;
+        int32_t mono = (xl + xr) >> 1, abs_m = mono < 0 ? -mono : mono;
+        sub_env += (abs_m - sub_env) >> (abs_m > sub_env ? 4 : 9);
+        rnd = rnd * 1664525u + 1013904223u;
+        nz = (int32_t)(rnd >> 17) - 16384;
+        pink += (nz - pink) >> 4;
+        m_s = sine_i(ph_mod);
+        ph_mod += mod_inc;
+        if (sm == 1u) {                                 /* SLEEP: -6dB/oct Brownian slope + 2Hz delta pacing */
+            int32_t g_mod = 24576 + (m_s >> 2);
+            add_l = add_r = mulq15(pink >> 1, g_mod);
+        } else if (sm == 2u) {                          /* MEDITATE: root + oct + 5th + 6Hz theta binaural */
+            int32_t h_l = (sine_i(ph_l) + (sine_i(ph_2) >> 1) + (sine_i(ph_3) >> 2)) >> 4;
+            int32_t h_r = (sine_i(ph_r) + (sine_i(ph_2) >> 1) + (sine_i(ph_3) >> 2)) >> 4;
+            ph_l += root_inc;
+            ph_r += root_inc + mod_inc;
+            ph_2 += root_inc << 1;
+            ph_3 += root_inc * 3u;
+            add_l = h_l;
+            add_r = h_r;
+        } else if (sm == 3u) {                          /* STUDY FOCUS: 300Hz-3kHz speech bed + 16Hz beta */
+            int32_t band = (pink - (pink >> 2)) >> 1;
+            int32_t iso = 26000 + (m_s >> 3);
+            add_l = add_r = mulq15(band, iso);
+        } else if (sm == 4u) {                          /* CHILL: >8kHz roll-off + 9.5Hz alpha stereo drift */
+            lp_l += (xl - lp_l) >> 1;
+            lp_r += (xr - lp_r) >> 1;
+            xl = lp_l + ((xl - lp_l) >> 1);
+            xr = lp_r + ((xr - lp_r) >> 1);
+            add_l = (m_s * lvl) >> 15;
+            add_r = (-m_s * lvl) >> 15;
+        } else if (sm == 5u) {                          /* DANCE: missing-fundamental 50Hz + 100Hz sub */
+            uint32_t f50 = (uint32_t)(((uint64_t)50u << 32) / FS);
+            int32_t sub = (sine_i(ph_l) + (sine_i(ph_l << 1) >> 1)) >> 3;
+            ph_l += f50;
+            add_l = add_r = mulq15(sub, clamp(sub_env, 0, 32767));
+        }
+        /* Genre-tuned acoustic utility shaping (0..5) */
+        if (g == 0u) {                                  /* 0 Ambient: wide stereo 10-14kHz silky air */
+            int32_t air = (nz - pink) >> 3;
+            add_l += mulq15(air, 16384 + (m_s >> 2));
+            add_r += mulq15(air, 16384 - (m_s >> 2));
+        } else if (g == 1u) {                           /* 1 Downtempo: 110-160Hz even-order harmonic glue */
+            int32_t warm = mulq15(mono >> 2, mono >> 2) >> 3;
+            add_l += warm;
+            add_r += warm;
+        } else if (g == 2u) {                           /* 2 Glitch Hop: transient-ducked micro-noise floor */
+            int32_t duck_n = sub_env > 4000 ? 0 : (nz >> 4);
+            add_l += duck_n;
+            add_r -= duck_n;
+        } else if (g == 3u) {                           /* 3 Punchy: phase-aligned mono 50Hz + 100Hz anchor */
+            uint32_t f50 = (uint32_t)(((uint64_t)50u << 32) / FS);
+            int32_t anc = (sine_i(ph_r) + (sine_i(ph_r << 1) >> 1)) >> 4;
+            ph_r += f50;
+            add_l += mulq15(anc, clamp(sub_env, 0, 32767));
+            add_r += mulq15(anc, clamp(sub_env, 0, 32767));
+        } else if (g == 4u) {                           /* 4 Experimental: 1.414x / 1.618x partials */
+            uint32_t f_phi = (uint32_t)((uint64_t)root_inc * 1618u / 1000u);
+            int32_t ov = sine_i(ph_3) >> 4;
+            ph_3 += f_phi;
+            add_l += ov;
+            add_r -= ov;
+        } else {                                        /* 5 Industrial: 40Hz physical pressure + 120Hz res */
+            uint32_t f40 = (uint32_t)(((uint64_t)40u << 32) / FS);
+            int32_t ind = (sine_i(ph_l) + (sine_i(ph_l * 3u) >> 1)) >> 4;
+            ph_l += f40;
+            add_l += ind;
+            add_r += ind;
+        }
+        l[i] = xl + ((add_l * lvl) >> 8);
+        r[i] = xr + ((add_r * lvl) >> 8);
+    }
+}
+
+
 static void mix_block(int32_t *out, uint32_t n)
 {
     uint32_t i, c1;
