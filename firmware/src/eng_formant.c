@@ -179,7 +179,7 @@ static void formant_note_on(track_t *t, voice_t *v)
     formant_nz ^= formant_nz << 13;                     /* a random vowel for this note (RAND) */
     formant_nz ^= (int32_t)((uint32_t)formant_nz >> 17);
     formant_nz ^= formant_nz << 5;
-    v->s = (int32_t)(((uint32_t)formant_nz >> 25) << 25);   /* TALK starts over, random vowel kept */
+    v->s[7 + 0] = (int32_t)(((uint32_t)formant_nz >> 25) << 25);   /* TALK starts over, random vowel kept */
     if (t->preset >= 7u) {
         uint32_t ti = (uint32_t)(t - trk);
         uint32_t g = ti < NTRK ? audilune_vox_genre[ti] : audilune_vox_genre[song.sel % NTRK];
@@ -192,9 +192,8 @@ static void formant_note_on(track_t *t, voice_t *v)
     }
     if (!v->env && !v->env_out) {                       /* a fresh voice (not a retrigger): from rest */
         uint32_t i;
-        v->ph = 0;                                   /* the opening starts at zero: no click */
-        v->ph = v->ph = 0;
-
+        v->ph[0 + 0] = 0;                               /* the opening starts at zero: no click */
+        v->ph[1 + 0] = v->ph[2 + 0] = 0;
 
         for (i = 0; i < 7u; i++)
             v->s[i] = 0;
@@ -205,18 +204,18 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
 {
     const int16_t *p = t->p;
     fres_t r1, r2, r3, r4;
-    int32_t fa, ba, fb, bb, k, j, buzz, oq, tilt, gv, gn, og, ogk;
+    int32_t fa[1 + 2], ba[1 + 2], fb[1 + 2], bb[1 + 2], k, j, buzz, oq, tilt, gv, gn, og, ogk;
     uint32_t inc = m->inc, i, te, tp, rp, rn, ratio, bws, f0;
-    uint32_t ph = v->ph;
-    int32_t y1 = v->s, y2 = v->s, y3 = v->s, y4 = v->s, y5 = v->s, y6 = v->s;
-    int32_t y7 = (int32_t)v->ph, y8 = (int32_t)v->ph, lp = v->s, nst = formant_nz;
+    uint32_t ph = v->ph[0 + 0];
+    int32_t y1 = v->s[0 + 0], y2 = v->s[1 + 0], y3 = v->s[2 + 0], y4 = v->s[3 + 0], y5 = v->s[4 + 0], y6 = v->s[5 + 0];
+    int32_t y7 = (int32_t)v->ph[1 + 0], y8 = (int32_t)v->ph[2 + 0], lp = v->s[6 + 0], nst = formant_nz;
 
     /* vowel: VOWEL -> VOWL2 over TALK after note-on; ENV / LFO -> FLT move both */
     k = 0;
     if (p[P_E2]) {
-        uint32_t g = ((uint32_t)v->s & FMT_TALK_MASK) + ENV_LIN[p[P_E2] & 127];
+        uint32_t g = ((uint32_t)v->s[7 + 0] & FMT_TALK_MASK) + ENV_LIN[p[P_E2] & 127];
         g = g > (1u << 24) ? 1u << 24 : g;
-        v->s = (int32_t)(((uint32_t)v->s & ~(uint32_t)FMT_TALK_MASK) | g);
+        v->s[7 + 0] = (int32_t)(((uint32_t)v->s[7 + 0] & ~(uint32_t)FMT_TALK_MASK) | g);
         k = (int32_t)(g >> 9);                          /* Q15 */
         k = (k * (65536 - k)) >> 15;                    /* ease out: the mouth opens fast, then settles */
     }
@@ -229,12 +228,12 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         const vox_ph_t *pa = &VOX_PH[vox_seq[cur_i] % 24u], *pb = &VOX_PH[vox_seq[nxt_i] % 24u];
         int32_t frac = step_b ? (int32_t)(((uint32_t)vox_tmr << 15) / step_b) : 0;
         if (frac > 32767) frac = 32767;
-        fa = ((int32_t)pa->f1 + (((int32_t)pb->f1 - (int32_t)pa->f1) * frac >> 15)) << 4;
-        fa = ((int32_t)pa->f2 + (((int32_t)pb->f2 - (int32_t)pa->f2) * frac >> 15)) << 4;
-        fa = ((int32_t)pa->f3 + (((int32_t)pb->f3 - (int32_t)pa->f3) * frac >> 15)) << 4;
-        fb = fa; fb = fa; fb = fa;
-        ba = 85 << 4; ba = 105 << 4; ba = 165 << 4;
-        bb = ba; bb = ba; bb = ba;
+        fa[0 + 0] = ((int32_t)pa->f1 + (((int32_t)pb->f1 - (int32_t)pa->f1) * frac >> 15)) << 4;
+        fa[1 + 0] = ((int32_t)pa->f2 + (((int32_t)pb->f2 - (int32_t)pa->f2) * frac >> 15)) << 4;
+        fa[2 + 0] = ((int32_t)pa->f3 + (((int32_t)pb->f3 - (int32_t)pa->f3) * frac >> 15)) << 4;
+        fb[0 + 0] = fa[0 + 0]; fb[1 + 0] = fa[1 + 0]; fb[2 + 0] = fa[2 + 0];
+        ba[0 + 0] = 85 << 4; ba[1 + 0] = 105 << 4; ba[2 + 0] = 165 << 4;
+        bb[0 + 0] = ba[0 + 0]; bb[1 + 0] = ba[1 + 0]; bb[2 + 0] = ba[2 + 0];
         vox_gv = (pa->flg & 2u) ? 0 : (int32_t)pa->vox * 258;
         vox_gn = (pa->flg & 2u) ? 0 : (int32_t)pa->nz * 258;
         if ((pa->flg & 1u) && vox_tmr < 2u) vox_burst = 14000;
@@ -243,11 +242,12 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
             vox_idx = (uint8_t)((cur_i + 1u) % vox_len);
         }
     } else {   /* RAND: both vowels move towards this note's random vowel (0 = off, 127 = fully random) */
-        int32_t rv = (int32_t)(((uint32_t)v->s >> 25) << 8), v0 = p[P_E0] << 8, v1 = p[P_E1] << 8;
+        int32_t rv = (int32_t)(((uint32_t)v->s[7 + 0] >> 25) << 8), v0 = p[P_E0] << 8, v1 = p[P_E1] << 8;
         v0 += ((rv - v0) * p[P_E7] * 258) >> 15;
         v1 += ((rv - v1) * p[P_E7] * 258) >> 15;
         vowel_at(v0 + m->cutoff, fa, ba);
         vowel_at(v1 + m->cutoff, fb, bb);
+
 
     }
     /* SHIFT (semitones) and FOLOW (key tracking around C4, fixed), one ratio for all four */
