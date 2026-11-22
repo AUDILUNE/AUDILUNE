@@ -1705,43 +1705,69 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
 UI_SMALL static void audilune_page_draw(void)
 {
     static uint32_t head, footer;
-
     static const char *const TITLES[] = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP", "ALGO / KITS", "STUDIO SETUP"};
-    uint32_t rows = audilune_page_rows(ui.scr);
-
-    uint32_t sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
+    uint32_t rows = audilune_page_rows(ui.scr), sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
-
-    uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i;
+    uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 96u : 42u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i, j;
     audilune_in_arp_page = (uint8_t)(!ui.home && ui.scr == UI_ARP);
-
     audilune_active_trk = song.sel;
     te_header(ui.scr >= UI_FX && ui.scr <= UI_SETUP ? *(TITLES + (ui.scr - UI_FX)) : "AUDILUNE", C_WHITE, &head, sect);
-    if (ui.scr == UI_CHOP_WAVE) {
-        cv_begin(240, 52, C_BLACK);
-        cv_rect(2, 2, 236, 48, HUD_ACCENT);
-        cv_rect(3, 3, 234, 46, C_BLACK);
-        for (i = 0; i < 58u; i++) {
-
-            int32_t x = 6 + (int32_t)i * 4, h = 6 + (int32_t)(((i * 19u + 7u) % 17u) * 2u);
-            uint32_t sl = i * 16u / 58u;
-            cv_rect(x, 26 - h / 2, 2, h, sl == (ui.chop_sel & 15u) ? HUD_ACCENT : C_WHITE);
-            if ((i % 4u) == 0u) cv_rect(x, 4, 1, 44, TE_G2);
+    if (ui.scr == UI_FX && !al_pad_list_mode) {
+        uint32_t p = al_pad_idx & 7u;
+        int32_t cx = 8 + (int32_t)al_pad_x[p] * 222 / 127, cy = 152 - (int32_t)al_pad_y[p] * 124 / 127;
+        cv_begin(240, 170, C_BLACK);
+        if (sel == 0u) cv_rect(2, 0, 236, 18, C_WHITE);
+        cv_text(6, 1, &FONT_S, *(AL_PAD_NAMES + p), sel == 0u ? C_BLACK : HUD_ACCENT);
+        if (al_pad_latch) cv_text(182, 1, &FONT_S, "[LATCH]", sel == 0u ? C_BLACK : C_WHITE);
+        cv_rect(2, 22, 236, 136, HUD_ACCENT);
+        cv_rect(3, 23, 234, 134, C_BLACK);
+        for (i = 1u; i < 4u; i++) { cv_rect(2 + (int32_t)i * 59, 24, 1, 132, TE_G1); cv_rect(4, 22 + (int32_t)i * 34, 232, 1, TE_G1); }
+        if (p == 2u) { cv_text(8, 26, &FONT_S, "A", TE_G3); cv_text(222, 26, &FONT_S, "B", TE_G3); cv_text(8, 138, &FONT_S, "C", TE_G3); cv_text(222, 138, &FONT_S, "D", TE_G3); }
+        cv_rect(cx, 24, 1, 132, TE_G3);
+        cv_rect(4, cy, 232, 1, TE_G3);
+        cv_rect(cx - 4, cy - 4, 9, 9, C_WHITE);
+        cv_rect(cx - 2, cy - 2, 5, 5, HUD_ACCENT);
+        cv_blit(0, 42);
+    } else if (ui.scr == UI_SEQ && al_seq_ovw) {
+        track_t *ot = &trk[al_seq_ovw_trk < NTRK ? al_seq_ovw_trk : song.sel];
+        uint32_t olen = trk_len(ot), opos = ot->seq_idx % olen;
+        cv_begin(240, 170, C_BLACK);
+        for (i = 0u; i < 8u; i++) {
+            int32_t ry = 4 + (int32_t)i * 20;
+            for (j = 0u; j < 16u; j++) {
+                uint32_t st = i * 16u + j;
+                int32_t sx = 4 + (int32_t)j * 14 + (j >> 2);
+                uint16_t col = st >= olen ? C_BLACK : trk_step_on(ot, st) ? HUD_ACCENT : TE_G1;
+                cv_rect(sx, ry, 12, 16, st == al_seq_ovw_step ? C_WHITE : col);
+                if (song.playing && st == opos) cv_rect(sx, ry + 13, 12, 3, C_WHITE);
+            }
         }
         cv_blit(0, 42);
+    } else {
+        if (ui.scr == UI_CHOP_WAVE) {
+            cv_begin(240, 52, C_BLACK);
+            cv_rect(2, 2, 236, 48, HUD_ACCENT);
+            cv_rect(3, 3, 234, 46, C_BLACK);
+            for (i = 0; i < 58u; i++) {
+                int32_t x = 6 + (int32_t)i * 4, h = 6 + (int32_t)(((i * 19u + 7u) % 17u) * 2u);
+                uint32_t sl = i * 16u / 58u;
+                cv_rect(x, 26 - h / 2, 2, h, sl == (ui.chop_sel & 15u) ? HUD_ACCENT : C_WHITE);
+                if ((i % 4u) == 0u) cv_rect(x, 4, 1, 44, TE_G2);
+            }
+            cv_blit(0, 42);
+        }
+        cv_begin(240, 212u - y0, C_BLACK);
+        for (i = 0; i < vis && (top + i) < rows; i++) {
+            uint32_t r = top + i;
+            int32_t y = (int32_t)i * 22;
+            char lbl[22], val[16];
+            audilune_row_text(ui.scr, r, lbl, val);
+            if (r == sel) cv_rect(2, y + 1, 236, 20, C_WHITE);
+            cv_text(8, y + 3, &FONT_S, lbl, r == sel ? C_BLACK : C_WHITE);
+            if (val[0]) cv_text(232 - text_w(&FONT_S, val), y + 3, &FONT_S, val, r == sel ? C_BLACK : HUD_ACCENT);
+        }
+        cv_blit(0, y0);
     }
-    cv_begin(240, 212u - y0, C_BLACK);
-    for (i = 0; i < vis && (top + i) < rows; i++) {
-        uint32_t r = top + i;
-
-        int32_t y = (int32_t)i * 22;
-        char lbl[22], val[16];
-        audilune_row_text(ui.scr, r, lbl, val);
-        if (r == sel) cv_rect(2, y + 1, 236, 20, C_WHITE);
-        cv_text(8, y + 3, &FONT_S, lbl, r == sel ? C_BLACK : C_WHITE);
-        if (val[0]) cv_text(232 - text_w(&FONT_S, val), y + 3, &FONT_S, val, r == sel ? C_BLACK : HUD_ACCENT);
-    }
-    cv_blit(0, y0);
     {
         static const char *const HUD_L[4] = {"BPM", "CLICK", "VAL", "OPT"};
         static const char *const HUD_V[4] = {"", "", "", ""};
