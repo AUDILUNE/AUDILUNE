@@ -882,7 +882,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 audilune_genre_idx = row;
                 audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[row]);
             } else if (row < AUDILUNE_GENRE_COUNT + DRUM_KITS) {
-                uint8_t kidx = (uint8_t)(row - AUDILUNE_GENRE_COUNT);
+                  uint8_t kidx = (uint8_t)(row - AUDILUNE_GENRE_COUNT);
                 TSEL->synth_mode = 0;
                 TDRUM->p[P_E0] = (int16_t)kidx;
                 audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[kidx]);
@@ -892,7 +892,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             if (ui.list_sel == 0u) {
                 go_home();
                 if (ui.session_mode > 0u) {
-                       audilune_infinite_on = 1u;
+                    audilune_infinite_on = 1u;
                     if (!song.playing)
                         transport_req = 1;
                     ui_message("GENERATIVE LIVE");
@@ -901,15 +901,48 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 }
             }
         } else if (ui.scr == UI_SEQ) {
-            if (ui.list_sel >= 7u) {
+            if (al_seq_ovw) {
+                track_t *ot = &trk[al_seq_ovw_trk < NTRK ? al_seq_ovw_trk : song.sel];
+                uint32_t st = al_seq_ovw_step & 127u;
+                undo_mark(ot, (undo_sess += 4u) | 3u);
+                fm1_irq_off();
+                if (is_drum(ot)) {
+                    if (dstep_has(&ot->dstep[st], pen_lane)) dstep_clr(&ot->dstep[st], pen_lane);
+                    else { dstep_set(&ot->dstep[st], pen_lane, LV_NORM, 0); ot->seq_active = 1; }
+                } else if (step_on(&ot->step[st])) {
+                    memset(&ot->step[st], 0, sizeof ot->step[st]);
+                } else {
+                    memset(&ot->step[st], 0, sizeof ot->step[st]);
+                    ot->step[st].note[0] = last_note ? last_note : 60u;
+                    ot->step[st].n = 1; ot->step[st].vel = 100; ot->step[st].time = ST_NOTE; ot->seq_active = 1;
+                }
+                fm1_irq_on();
+                sync_reload = 1;
+                audilune_hud_popup("STEP", (int32_t)st + 1, "");
+            } else if (ui.list_sel >= 7u) {
                 ui.seq_grab = 0;
                 ui.scr = UI_CHOP_SRC;
                 ui.list_sel = 0;
                 ui.list_top = 0;
                 ui_message("CHOP SHOP");
+            } else if (ui.list_sel < 6u) {
+                al_seq_ovw = 1u;
+                al_seq_ovw_trk = ui.list_sel;
+                al_seq_ovw_step = 0u;
+                ui_message("128-STEP VIEW");
             } else {
                 ui.seq_grab = (uint8_t)(!ui.seq_grab);
                 ui_message(ui.seq_grab ? "GRABBED: K4 SHIFT" : "DROPPED");
+            }
+        } else if (ui.scr == UI_FX) {
+            if ((al_pad_idx & 7u) == 2u && !al_pad_list_mode) {
+                al_vec_sel = (uint8_t)((al_vec_sel + 1u) & 3u);
+                *(al_vec_corner + al_vec_sel) = (uint8_t)((*(al_vec_corner + al_vec_sel) + 1u) & 3u);
+                audilune_chaos_apply(TSEL);
+                audilune_hud_popup("CORNER", (int32_t)al_vec_sel + 1, "");
+            } else {
+                al_pad_latch = (uint8_t)(!al_pad_latch);
+                ui_message(al_pad_latch ? "PAD LATCH: ON" : "PAD LATCH: OFF");
             }
         } else if (ui.scr == UI_EDIT) {
             if (ui.list_sel == 0u) {
@@ -933,6 +966,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             if (ui.list_sel >= 2u) {
                 ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 4u);
                 ui_message(ui.chop_trim == 1u ? "GRAB WHOLE" : ui.chop_trim == 2u ? "GRAB START [" : ui.chop_trim == 3u ? "GRAB END ]" : "DROPPED");
+
             }
         } else if (ui.scr == UI_CHOP_SRC) {
             ui.scr = UI_CHOP_WAVE;
