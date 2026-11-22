@@ -94,18 +94,11 @@ static const vox_ph_t VOX_PH[24] = {
     {300, 1800, 2600, 40, 85, 1},/* 22: T/D plosive */
     {300, 1400, 2200, 40, 80, 1} /* 23: K/G plosive */
 };
-static uint8_t vox_bank[8][64], vox_bank_init;
-static uint8_t vox_seq[4][64], vox_len[4], vox_idx[4], vox_tmr[4];
+static uint8_t vox_seq[2 + 2][16 + 16], vox_len[2 + 2], vox_idx[2 + 2], vox_tmr[2 + 2];
 
-UI_SMALL static void vox_load(void)
+UI_SMALL static const uint8_t *vox_slot_xip(uint32_t slot)
 {
-    uint32_t i, j;
-    if (vox_bank_init) return;
-    vox_bank_init = 1;
-#if FELUCCA_FLASH
-    if (flash_ok && st_load(OBJ_VOXBANK, vox_bank, sizeof vox_bank) == (int)sizeof vox_bank) return;
-#endif
-    static const uint8_t DEF_PH[8][12] = {
+    static const uint8_t DEF_PH[4 + 4][6 + 6] = {
         {11,8,14,10,0,15,4,23,14,9,11,0}, /* LUNAR SIGNAL */
         {20,5,12,6,0,19,6,12,1,20,14,0},  /* ZERO HORIZON */
         {16,2,22,6,0,15,2,22,4,23,0,0},   /* SHADOW STATIC */
@@ -115,23 +108,18 @@ UI_SMALL static void vox_load(void)
         {22,10,13,9,11,0,21,7,11,15,0,0}, /* THERMAL PULSE */
         {14,7,11,0,17,5,11,22,0,0,0,0}    /* NULL FIELD */
     };
-    memset(vox_bank, 0, sizeof vox_bank);
-    for (i = 0; i < 8u; i++) for (j = 0; j < 12u; j++) vox_bank[i][j] = DEF_PH[i][j];
-}
-
-UI_SMALL static int vox_save(void)
-{
-#if FELUCCA_FLASH
-    return flash_ok ? st_save(OBJ_VOXBANK, vox_bank, sizeof vox_bank) : -1;
-#else
-    return -1;
+#if defined(ST_XIP_PTR) && FELUCCA_FLASH
+    uint32_t len = 0;
+    const uint8_t *xp = flash_ok ? (const uint8_t *)st_xip(OBJ_VOXBANK, &len) : 0;
+    if (xp && len >= 512u && xp[(slot & 7u) * 64u]) return xp + (slot & 7u) * 64u;
 #endif
+    return DEF_PH[slot & 7u];
 }
 
 /* Genre-locked combinatorial poetic/scientific phrase builder (4,000+ combinations, 0 B SRAM) */
 static void vox_build_phrase(uint32_t vi, uint32_t slot, uint32_t custom, uint32_t genre, uint32_t seed)
 {
-    static const uint8_t ADJ[6][4][8] = {
+    static const uint8_t ADJ[3 + 3][2 + 2][4 + 4] = {
         {{11,8,14,10,0},{19,6,11,6,0},{15,4,11,3,14,22,0},{2,15,22,12,6,0}},   /* AMBIENT: lunar, hollow, silent, astro */
         {{16,2,22,6,0},{3,23,6,0},{2,13,21,10,0},{14,6,23,22,10,14,0}},       /* DOWNTMP: shadow, echo, amber, nocturn */
         {{15,2,22,4,23,0},{17,12,2,23,22,9,11,0},{20,5,12,6,0},{21,4,14,12,5,0}},/* GLITCH: static, fractal, zero, binary */
@@ -139,8 +127,7 @@ static void vox_build_phrase(uint32_t vi, uint32_t slot, uint32_t custom, uint32
         {{18,12,3,16,6,11,22,0},{3,14,22,12,9,21,5,0},{11,8,13,9,14,0},{17,11,7,23,15,0}},/* EXPERIM: threshold, entropy, lumen, flux */
         {{23,1,12,21,9,14,0},{13,3,22,9,11,0},{14,7,11,0},{21,12,6,22,6,14,0}} /* INDUST: carbon, metal, null, proton */
     };
-    static const uint8_t NOUN[6][4][8] = {
-
+    static const uint8_t NOUN[3 + 3][2 + 2][4 + 4] = {
         {{19,6,12,1,20,14,0},{18,10,0},{22,1,5,22,0},{12,4,14,0}},            /* horizon, ether, tide, ring */
         {{22,12,4,17,22,0},{14,6,22,0},{6,12,21,4,22,0},{17,6,11,22,0}},       /* drift, node, orbit, fault */
         {{15,4,23,14,9,11,0},{21,7,11,15,0},{23,6,22,0},{17,3,20,0}},         /* signal, pulse, code, phase */
@@ -153,21 +140,22 @@ static void vox_build_phrase(uint32_t vi, uint32_t slot, uint32_t custom, uint32
     };
     uint32_t g = genre % 6u, a = seed & 3u, n = (seed >> 2) & 3u, vb = (seed >> 4) & 3u, p = 0, j;
     const uint8_t *w;
-    vox_load();
-    if (custom && vox_bank[slot & 7u][0]) {
-        for (j = 0; j < 63u && vox_bank[slot & 7u][j]; j++) vox_seq[vi & 3u][p++] = vox_bank[slot & 7u][j];
+    if (custom) {
+        w = vox_slot_xip(slot);
+        for (j = 0; j < 31u && w[j]; j++) vox_seq[vi & 3u][p++] = w[j];
         vox_len[vi & 3u] = (uint8_t)p;
         return;
     }
-    w = ADJ[g][a]; for (j = 0; w[j] && p < 62u; j++) vox_seq[vi & 3u][p++] = w[j];
+    w = ADJ[g][a]; for (j = 0; w[j] && p < 30u; j++) vox_seq[vi & 3u][p++] = w[j];
     vox_seq[vi & 3u][p++] = 0;
-    w = NOUN[g][n]; for (j = 0; w[j] && p < 62u; j++) vox_seq[vi & 3u][p++] = w[j];
+    w = NOUN[g][n]; for (j = 0; w[j] && p < 30u; j++) vox_seq[vi & 3u][p++] = w[j];
     vox_seq[vi & 3u][p++] = 0;
-    w = VERB[vb]; for (j = 0; w[j] && p < 62u; j++) vox_seq[vi & 3u][p++] = w[j];
+    w = VERB[vb]; for (j = 0; w[j] && p < 30u; j++) vox_seq[vi & 3u][p++] = w[j];
     vox_len[vi & 3u] = (uint8_t)p;
 }
 
 /* Klatt resonator coefficients (Q30) for F, BW in Hz * 16 */
+
 static void fres_coef(fres_t *r, uint32_t f16, uint32_t bw16)
 {
     int32_t s = sine_i(f16 * 3044u);                    /* sin(pi F / FS), Q15 (2^32 / (2 FS) / 16) */
