@@ -444,7 +444,7 @@ UI_SMALL static void studio_tracks_draw(void)
             for (mx = 0; mx < mw; mx += 2)
                 cv_rect(198 + mx, row_h - 10, 1, 5, selected ? C_WHITE : acc);
         }
-        cv_blit(0, 41u + i * (uint32_t)row_h);
+        cv_blit(0, 56u + i * (uint32_t)row_h);
     }
     {
         static const char *const HUD_L[4] = {"BPM", "CLICK", "VAL", "OPT"};
@@ -463,6 +463,7 @@ UI_SMALL static uint16_t lvl_col(uint32_t lvl)                   /* a hit's colo
 }
 static uint16_t pad_lit[DRUM_LANES];                   /* pads and key LEDs: frames left lit */
 static uint8_t key_lit[27];                             /* menu NOTES, a synth track: frames its key stays lit */
+
 static uint8_t key_lit_trk = 0xFF;                      /* (the track key_lit is for) */
 UI_SMALL static void pads_tick(void)                             /* once a frame: the hits since the last one */
 {
