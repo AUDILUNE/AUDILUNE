@@ -138,22 +138,22 @@ static uint32_t lane_of_note(uint32_t note)
 {
     return note < 35u ? 0u : note > 81u ? 11u : LANE_OF_GM[note - 35u];
 }
-/* AUDILUNE v3.4: Right-to-left white-key lane lookup (k = 26 -> lane 0 .. k = 0 -> lane 15) */
+/* AUDILUNE v3.7: Left-to-right white-key lane lookup (k = 0 -> lane 0 .. k = 26 -> lane 15) */
 static uint32_t lane_of_key(uint32_t k)
 {
-    static const int8_t W[12] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6};   /* from F: F G A B C D E */
+    static const int8_t W[] = {0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6};   /* from F: F G A B C D E */
     int32_t i = W[k % 12u];
     uint32_t w_idx;
     if (i < 0)
         i = W[(k - 1u) % 12u];
     w_idx = (uint32_t)((int32_t)(k / 12u) * 7 + i);
-    return w_idx < 16u ? (15u - w_idx) : 0u;
+    return w_idx < 16u ? w_idx : 15u;
 }
-/* the white key of lane l (key index, right-to-left), for the key LEDs */
+/* the white key of lane l (key index, left-to-right), for the key LEDs */
 static uint32_t key_of_lane(uint32_t l)
 {
-    static const uint8_t K[7] = {0, 2, 4, 5, 7, 9, 11};      /* F G A B C D E */
-    uint32_t w_idx = 15u - (l & 15u);
+    static const uint8_t K[] = {0, 2, 4, 5, 7, 9, 11};      /* F G A B C D E */
+    uint32_t w_idx = l & 15u;
     return (w_idx / 7u) * 12u + K[w_idx % 7u];
 }
 
