@@ -1143,6 +1143,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         lock_set(t, step, (uint32_t)pid, t->p[pid]);
 }
 
+UI_SMALL static void audilune_chaos_apply(track_t *t);
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 {
     uint32_t rows = audilune_page_rows(ui.scr);
@@ -1153,6 +1154,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     ui.hot_col = (uint8_t)k;
     ui.hot_t = 40;
     if (ui.scr == UI_FX && !al_pad_list_mode) {
+
         uint32_t p = al_pad_idx & 7u;
         if (row == 0u && k == 3u) {
             al_pad_idx = (uint8_t)((p + (s > 0 ? 1u : 7u)) & 7u);
