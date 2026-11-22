@@ -79,11 +79,11 @@ static int32_t drum_set(void)
 }
 
 /* ------------------------------------------------------------ lanes --- */
-/* AUDILUNE v3.4: Right-to-Left Ergonomic Drum Kit Layout.
- * White Key 1 = far-right white key directly under black OP1 key, moving leftward toward knobs:
+/* AUDILUNE v3.7: Left-to-Right Ergonomic Drum Kit Layout.
+ * White Key 1 = far-left white key near the knobs, moving rightward:
  * 1–2 Kick A/B, 3–5 Floor/Mid/High Toms (3-key buffer), 6–7 Snare A/B,
  * 8–11 Closed/Open Hats & Crash/Ride, 12–16 Rimshot, Handclap, Cowbell, Shaker, Tambourine.
- * Black keys (11 keys, right-to-left) map to obscure/experimental hits (strangest toward far left). */
+ * Black keys (11 keys, left-to-right) map from least obscure auxiliary percussion to most obscure experimental hits. */
 static const uint8_t LANE_NOTE[DRUM_LANES] = {36, 35, 43, 47, 50, 38, 40, 42, 46, 49, 51, 37, 39, 56, 70, 54};
 static const char *const LANE_NAME[DRUM_LANES] = {
     "KICK A", "KICK B", "FLR TOM", "MID TOM", "HI TOM", "SNARE A", "SNARE B", "CLSD HAT",
@@ -98,7 +98,7 @@ static const uint8_t LANE_OF_GM[81 - 35 + 1] = {
     /* 55 */ 9, 13, 9, 14, 10, 11, 11, 12, 12, 12,
     /* 65 */ 13, 13, 13, 13, 14, 14, 14, 14, 15, 15,
     /* 75 */ 11, 11, 11, 15, 15, 13, 13};
-/* Obscure / experimental GM & synth percussion notes for black keys (right -> far-left strangest hits) */
+/* Auxiliary & experimental GM / synth percussion notes for black keys (left -> far-right strangest hits) */
 static const uint8_t BLACK_KEY_NOTE[11] = {44, 58, 60, 61, 63, 64, 67, 68, 73, 78, 81};
 static int is_black_key(uint32_t k)
 {
@@ -107,7 +107,7 @@ static int is_black_key(uint32_t k)
     return B[k % 12u] != 0;
 }
 static uint8_t black_key_note(uint32_t k)
-{
+
     uint32_t oct = k / 12u, rem = k % 12u;
     uint32_t idx = oct * 5u + (rem == 1u ? 0u : rem == 3u ? 1u : rem == 5u ? 2u : rem == 8u ? 3u : 4u);
     uint32_t rev = idx < 11u ? (10u - idx) : 0u;
