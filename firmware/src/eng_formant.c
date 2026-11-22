@@ -63,9 +63,108 @@ static void vowel_at(int32_t pos, int32_t *f, int32_t *b)
         b[j] = (VOWEL_B[i][j] << 4) + (((VOWEL_B[i + 1][j] - VOWEL_B[i][j]) * fr) >> 4);
     }
 }
-
 typedef struct { int32_t a, b, c; } fres_t;
 static int32_t formant_nz = 0x2545F491;                 /* breath noise, one xorshift for all voices */
+
+/* AUDILUNE DECtalk / Klatt Phoneme Table (F1, F2, F3 Hz; voice 0..127; noise 0..127; flags: 1=burst, 2=pause) */
+typedef struct { uint16_t f1, f2, f3; uint8_t vox, nz, flg; } vox_ph_t;
+static const vox_ph_t VOX_PH[24] = {
+    {0, 0, 0, 0, 0, 2},          /* 0: _ pause */
+    {750, 1250, 2500, 127, 8, 0},/* 1: AA (dark/star) */
+    {660, 1720, 2410, 127, 8, 0},/* 2: AE (static/matter) */
+    {530, 1840, 2480, 127, 8, 0},/* 3: EH (echo/event) */
+    {390, 1990, 2550, 127, 8, 0},/* 4: IH (signal/drift) */
+    {270, 2290, 3010, 127, 8, 0},/* 5: IY (deep/field) */
+    {570, 840, 2410, 127, 8, 0}, /* 6: AO (orbit/void) */
+    {440, 1020, 2240, 127, 8, 0},/* 7: UH (lunar/pulse) */
+    {300, 870, 2240, 127, 8, 0}, /* 8: UW (lumen/tube) */
+    {520, 1190, 2390, 127, 8, 0},/* 9: AX (schwa/a) */
+    {490, 1350, 1690, 127, 8, 0},/* 10: ER (earth/thermal) */
+    {310, 1050, 2880, 120, 4, 0},/* 11: L (light/low) */
+    {350, 1300, 1600, 120, 4, 0},/* 12: R (ray/ring) */
+    {280, 900, 2200, 115, 0, 0}, /* 13: M (mass/moon) */
+    {280, 1700, 2600, 115, 0, 0},/* 14: N (node/null) */
+    {320, 4800, 5600, 0, 110, 0},/* 15: S (solar/space) */
+    {320, 2600, 3400, 0, 115, 0},/* 16: SH (shadow/shift) */
+    {350, 1500, 2400, 0, 90, 0}, /* 17: F (flux/phase) */
+    {350, 1800, 2700, 0, 80, 0}, /* 18: TH (threshold/ether) */
+    {500, 1500, 2500, 20, 95, 0},/* 19: HH (horizon/hollow) */
+    {250, 2100, 2900, 70, 75, 0},/* 20: Z (zero/zone) */
+    {250, 900, 2100, 40, 60, 1}, /* 21: P/B plosive */
+    {300, 1800, 2600, 40, 85, 1},/* 22: T/D plosive */
+    {300, 1400, 2200, 40, 80, 1} /* 23: K/G plosive */
+};
+static uint8_t vox_bank[8][64], vox_bank_init;
+static uint8_t vox_seq[4][64], vox_len[4], vox_idx[4], vox_tmr[4];
+
+UI_SMALL static void vox_load(void)
+{
+    uint32_t i, j;
+    if (vox_bank_init) return;
+    vox_bank_init = 1;
+#if FELUCCA_FLASH
+    if (flash_ok && st_load(OBJ_VOXBANK, vox_bank, sizeof vox_bank) == (int)sizeof vox_bank) return;
+#endif
+    static const uint8_t DEF_PH[8][12] = {
+        {11,8,14,10,0,15,4,23,14,9,11,0}, /* LUNAR SIGNAL */
+        {20,5,12,6,0,19,6,12,1,20,14,0},  /* ZERO HORIZON */
+        {16,2,22,6,0,15,2,22,4,23,0,0},   /* SHADOW STATIC */
+        {23,6,14,22,9,13,0,17,5,11,22,0}, /* QUANTUM FIELD */
+        {2,15,22,12,6,0,22,12,4,17,22,0}, /* ASTRO DRIFT */
+        {15,6,11,10,0,5,23,11,4,21,15,0}, /* SOLAR ECLIPSE */
+        {22,10,13,9,11,0,21,7,11,15,0,0}, /* THERMAL PULSE */
+        {14,7,11,0,17,5,11,22,0,0,0,0}    /* NULL FIELD */
+    };
+    memset(vox_bank, 0, sizeof vox_bank);
+    for (i = 0; i < 8u; i++) for (j = 0; j < 12u; j++) vox_bank[i][j] = DEF_PH[i][j];
+}
+
+UI_SMALL static int vox_save(void)
+{
+#if FELUCCA_FLASH
+    return flash_ok ? st_save(OBJ_VOXBANK, vox_bank, sizeof vox_bank) : -1;
+#else
+    return -1;
+#endif
+}
+
+/* Genre-locked combinatorial poetic/scientific phrase builder (4,000+ combinations, 0 B SRAM) */
+static void vox_build_phrase(uint32_t slot, uint32_t genre, uint32_t seed)
+{
+    static const uint8_t ADJ[6][4][8] = {
+        {{11,8,14,10,0},{19,6,11,6,0},{15,4,11,3,14,22,0},{2,15,22,12,6,0}},   /* AMBIENT: lunar, hollow, silent, astro */
+        {{16,2,22,6,0},{3,23,6,0},{2,13,21,10,0},{14,6,23,22,10,14,0}},       /* DOWNTMP: shadow, echo, amber, nocturn */
+        {{15,2,22,4,23,0},{17,12,2,23,22,9,11,0},{20,5,12,6,0},{21,4,14,12,5,0}},/* GLITCH: static, fractal, zero, binary */
+        {{23,6,14,22,9,13,0},{22,10,13,9,11,0},{15,6,11,10,0},{13,2,23,14,3,22,0}},/* PUNCHY: quantum, thermal, solar, magnet */
+        {{18,12,3,16,6,11,22,0},{3,14,22,12,9,21,5,0},{11,8,13,9,14,0},{17,11,7,23,15,0}},/* EXPERIM: threshold, entropy, lumen, flux */
+        {{23,1,12,21,9,14,0},{13,3,22,9,11,0},{14,7,11,0},{21,12,6,22,6,14,0}} /* INDUST: carbon, metal, null, proton */
+    };
+    static const uint8_t NOUN[6][4][8] = {
+        {{19,6,12,1,20,14,0},{18,10,0},{22,1,5,22,0},{12,4,14,0}},            /* horizon, ether, tide, ring */
+        {{22,12,4,17,22,0},{14,6,22,0},{6,12,21,4,22,0},{17,6,11,22,0}},       /* drift, node, orbit, fault */
+        {{15,4,23,14,9,11,0},{21,7,11,15,0},{23,6,22,0},{17,3,20,0}},         /* signal, pulse, code, phase */
+        {{17,5,11,22,0},{23,6,12,0},{13,2,15,0},{1,12,23,0}},                 /* field, core, mass, arc */
+        {{15,21,3,23,22,12,9,0},{17,12,3,23,0},{1,15,18,9,12,0},{14,3,21,7,11,9,0}},/* spectra, freq, aether, nebula */
+        {{12,5,2,23,22,10,0},{22,10,21,4,14,0},{15,22,5,11,0},{23,12,4,22,0}} /* reactor, turbine, steel, grid */
+    };
+    static const uint8_t VERB[4][8] = {
+        {22,12,4,17,22,15,0},{15,16,4,17,22,15,0},{21,7,11,15,4,20,0},{17,3,20,4,20,0} /* drifts, shifts, pulses, phases */
+    };
+    uint32_t g = genre % 6u, a = seed & 3u, n = (seed >> 2) & 3u, vb = (seed >> 4) & 3u, p = 0, j;
+    const uint8_t *w;
+    vox_load();
+    if (vox_bank[slot & 7u][0]) {
+        for (j = 0; j < 63u && vox_bank[slot & 7u][j]; j++) vox_seq[slot & 3u][p++] = vox_bank[slot & 7u][j];
+        vox_len[slot & 3u] = (uint8_t)p;
+        return;
+    }
+    w = ADJ[g][a]; for (j = 0; w[j] && p < 62u; j++) vox_seq[slot & 3u][p++] = w[j];
+    vox_seq[slot & 3u][p++] = 0;
+    w = NOUN[g][n]; for (j = 0; w[j] && p < 62u; j++) vox_seq[slot & 3u][p++] = w[j];
+    vox_seq[slot & 3u][p++] = 0;
+    w = VERB[vb]; for (j = 0; w[j] && p < 62u; j++) vox_seq[slot & 3u][p++] = w[j];
+    vox_len[slot & 3u] = (uint8_t)p;
+}
 
 /* Klatt resonator coefficients (Q30) for F, BW in Hz * 16 */
 static void fres_coef(fres_t *r, uint32_t f16, uint32_t bw16)
@@ -84,15 +183,26 @@ static void fres_coef(fres_t *r, uint32_t f16, uint32_t bw16)
 
 static void formant_note_on(track_t *t, voice_t *v)
 {
-    (void)t;
+    uint32_t vi = (uint32_t)(v - t->v) & 3u;
     formant_nz ^= formant_nz << 13;                     /* a random vowel for this note (RAND) */
     formant_nz ^= (int32_t)((uint32_t)formant_nz >> 17);
     formant_nz ^= formant_nz << 5;
     v->s[7] = (int32_t)(((uint32_t)formant_nz >> 25) << 25);   /* TALK starts over, random vowel kept */
+    if (t->preset >= 7u) {
+        uint32_t g = (uint32_t)(t - trk) < NTRK ? audilune_trk_genre[(uint32_t)(t - trk)] : audilune_genre;
+        uint32_t slot = t->preset >= 10u ? (uint32_t)(t->preset - 10u) : vi;
+        if (t->preset < 10u) vox_bank[slot & 7u][0] = 0;
+        vox_build_phrase(slot, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
+        vox_idx[vi] = 0;
+        vox_tmr[vi] = 0;
+    } else {
+        vox_len[vi] = 0;
+    }
     if (!v->env && !v->env_out) {                       /* a fresh voice (not a retrigger): from rest */
         uint32_t i;
         v->ph[0] = 0;                                   /* the opening starts at zero: no click */
         v->ph[1] = v->ph[2] = 0;
+
         for (i = 0; i < 7u; i++)
             v->s[i] = 0;
     }
