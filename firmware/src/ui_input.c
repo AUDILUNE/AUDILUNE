@@ -1342,7 +1342,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
                 song.g[G_CLICK] = 70;
             rec_hud_pick = (uint8_t)(rec_wait != 0u);
             ui_message(rec_wait ? "REC: ACTIVE TRK" : song.rec ? "REC LIVE" : "REC DISARMED");
-            ui.force = 1;
+              ui.force = 1;
         }
         rc_on = 0;
     }
@@ -1376,13 +1376,11 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
             sel_on = 0; sel_disarmed = 0;
         }
     }
-
-        if (!scl_down) { sel_on = 0; sel_disarmed = 0; }
-    }
     {
         static uint8_t sv_on, sv_held;
         static uint32_t sv_t0;
         uint32_t sb = 1u << panel.btn[B_SAVE], sv_down = (fm1_in.buttons & sb) != 0u;
+
         if (pressed & sb) { sv_t0 = now_ms; sv_on = 1; sv_held = 0; }
 
         if (sv_down && sv_on && !sv_held && now_ms - sv_t0 >= 3000u) { sv_held = 1; ui.hold_kind = 0; audilune_save_latch = 2u; ui_message("LOAD: TAP OP1-6"); ui.force = 1; }
