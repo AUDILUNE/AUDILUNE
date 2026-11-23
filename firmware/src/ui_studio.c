@@ -505,7 +505,7 @@ UI_SMALL static void drum_screen_draw(void)
     if (drum_cursor >= len) drum_cursor = (uint8_t)(len - 1u);
     bank = drum_cursor / 16u;
     {
-        char st[16], nm[9];
+        char st[8 + 8], nm[8 + 1];
         const char *style = DRUM_KIT_STYLES[kit];
         if (kit >= DRUM_SYN) {                          /* SYN1..4: the name you gave it (editor DRUM SYNTH) */
             memcpy(nm, dsu_kit(kit - DRUM_SYN)->name, 8);
@@ -514,8 +514,8 @@ UI_SMALL static void drum_screen_draw(void)
                 style = nm;
         }
         te_lower(st, style, sizeof st);
-
         st[12] = 0;
+
         te_header(st, TE_DRUM, &head, -1);
     }
     sig = kit * 131u + drum_page * 7u + drum_lane * 977u + bank * 31u + len + (uint32_t)drum_tweaked() * 7919u;   /* title band */
