@@ -753,6 +753,8 @@ UI_SMALL static void drum_sheet_do(void)                 /* OCT+ tapped in the s
 }
 UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t notes)
 {
+    (void)pressed; (void)home; (void)notes;
+    return;
     uint32_t k, b;
     int32_t s;
     if (song.sel != TRK_DRUM || home == 1u) {
@@ -763,6 +765,7 @@ UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t
         uint32_t ev, ob = 1u << panel.btn[B_OCTDN];
         pressed = octp_filter(pressed, &ev);
         if (ev == 2u && !ui.sheet)
+
             ui.sheet = (uint8_t)(1u + ui.sheet_last);      /* (2.8.1) reopen on the row last used */
         else if (ev == 1u && ui.sheet)
             drum_sheet_do();
