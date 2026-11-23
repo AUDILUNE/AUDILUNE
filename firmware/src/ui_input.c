@@ -1668,25 +1668,26 @@ UI_SMALL static void ui_input(void)
         vis_open();
         return;
     }
-     if ((s = panel_enc(EN_SELECT)) != 0 && !rec_wait && !ft_on) {
+    if (rec_hud_pick && pressed) {
+        rec_hud_pick = 0;
+        ui.force = 1;
+    }
+    if ((s = panel_enc(EN_SELECT)) != 0 && !ft_on) {
         ui_input_ms = fm1_ms;
+        if (rec_hud_pick) {
+            static const char *const RN[5] = {"ACTIVE TRK", "LOCKED TRKS", "SAMPLE USR", "USB USR", "WHOLE SONG"};
+            rec_hud_mode = (uint8_t)((rec_hud_mode + (s > 0 ? 1u : 4u)) % 5u);
+            audilune_hud_text("REC", *(RN + rec_hud_mode));
+            ui.force = 1;
+            return;
+        }
         if (audilune_pit_latch) { int32_t p = clamp((int32_t)TSEL->p[P_TRANS] + s, -24, 24); TSEL->p[P_TRANS] = (int16_t)p; audilune_hud_popup("LIVE PITCH", p, " ST"); return; }
-        if (ui.scr == UI_FX && !al_pad_list_mode) {
+        if (ui.scr == UI_FX && al_pad_list_mode) {
             uint32_t p = al_pad_idx & 7u;
-            if (ui.list_sel == 0u && s > 0) {
-                ui.list_sel = 1u;
-                audilune_hud_popup("PAD Y", (int32_t)al_pad_y[p] * 100 / 127, "%");
-            } else if (ui.list_sel > 0u) {
-                int32_t ny = (int32_t)al_pad_y[p] - s * 4;
-                if (ny > 127 && s < 0) {
-                    ui.list_sel = 0u;
-                    audilune_hud_text("PAD", *(AL_PAD_NAMES + p));
-                } else {
-                    al_pad_y[p] = (uint8_t)clamp(ny, 0, 127);
-                    audilune_chaos_apply(TSEL);
-                    audilune_hud_popup("PAD Y", (int32_t)al_pad_y[p] * 100 / 127, "%");
-                }
-            }
+            int32_t ny = clamp((int32_t)*(al_pad_y + p) - s * 4, 0, 127);
+            *(al_pad_y + p) = (uint8_t)ny;
+            audilune_chaos_apply(TSEL);
+            audilune_hud_popup("PAD Y", ny * 100 / 127, "%");
             ui.force = 1;
         } else if (ui.scr == UI_SEQ && al_seq_ovw) {
             al_seq_ovw_step = (uint8_t)((al_seq_ovw_step + (s > 0 ? 16u : 112u)) & 127u);
@@ -1694,6 +1695,7 @@ UI_SMALL static void ui_input(void)
             ui.force = 1;
         } else if (ui.scr >= UI_FX) {
             int32_t next_row = (int32_t)ui.list_sel + (s > 0 ? 1 : -1);
+
             if (next_row < 0) next_row = 0;
             ui.seq_grab = 0;
             ui.chop_trim = 0;
