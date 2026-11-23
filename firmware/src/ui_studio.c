@@ -1575,23 +1575,31 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_session_mode = ui.session_mode;
             audilune_hud_text("MODE", *(AL_SESS_NAMES + ui.session_mode));
         } else if (row == 3u) {
+            al_gravity = (al_gravity == 0u) ? 50u : 0u;
+            audilune_gravity_apply(al_gravity);
+            audilune_hud_text("GRAVITY", al_gravity ? "UNQUANTIZED" : "QUANTIZED");
+        } else if (row == 4u) {
             audilune_freq_layer = (uint8_t)((audilune_freq_layer + (s > 0 ? 1u : 3u)) & 3u);
             audilune_hud_text("FREQ LYR", *(AL_FREQ_NAMES + audilune_freq_layer));
-        } else if (row == 4u) {
+        } else if (row == 5u) {
+            al_helper_notes = (uint8_t)(!al_helper_notes);
+            audilune_hud_text("HELPER", al_helper_notes ? "ON" : "OFF");
+        } else if (row == 6u) {
             ui.auto_power_off = (uint8_t)((ui.auto_power_off + (s > 0 ? 1u : 6u)) % 7u);
             audilune_hud_text("AUTO OFF", *(AL_TIMER_NAMES + ui.auto_power_off));
-        } else if (row == 5u) {
+        } else if (row == 7u) {
             ui.session_timer = (uint8_t)((ui.session_timer + (s > 0 ? 1u : 6u)) % 7u);
             audilune_hud_text("TIMER", *(AL_TIMER_NAMES + ui.session_timer));
-        } else if (row == 6u) {
+        } else if (row == 8u) {
             song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + s, GP[G_BPM].min, GP[G_BPM].max);
             audilune_hud_popup("TEMPO", song.g[G_BPM], "");
-        } else if (row == 7u) {
+        } else if (row == 9u) {
             int32_t nr = ((*(trk + 0)).p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
             audilune_root_note = (uint8_t)nr;
             for (ti = 0; ti < NTRK; ti++) trk[ti].p[P_ROOT] = (int16_t)nr;
             audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
-        } else if (row == 8u) {
+        } else if (row == 10u) {
+
             int32_t ns = ((*(trk + 0)).p[P_SCALE] + (s > 0 ? 1 : 21)) % 22;
             for (ti = 0; ti < NTRK; ti++) trk[ti].p[P_SCALE] = (int16_t)ns;
             audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
