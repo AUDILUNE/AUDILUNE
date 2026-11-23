@@ -1164,16 +1164,16 @@ UI_SMALL static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes b
         track_t *t;
         if (na < 3u || a[0] >= NTRK || a[1] >= NSTEP)
             return;
-        t = &trk[a];
+        t = &trk[*(a + 0)];
         fm1_irq_off();
-        step_fill_set(t, a, a % 3u);
+        step_fill_set(t, *(a + 1), *(a + 2) % 3u);
         fm1_irq_on();
         ui.force = 1;
-        if (a == song.sel)
-            ed_w.st[a] = ed_step_sig(t, a);
-        ed_b(a);
-        ed_b(a);
-        ed_b(step_fill(t, a));
+        if (*(a + 0) == song.sel)
+            ed_w.st[*(a + 1)] = ed_step_sig(t, *(a + 1));
+        ed_b(*(a + 0));
+        ed_b(*(a + 1));
+        ed_b(step_fill(t, *(a + 1)));
         break;
     }
     default:
@@ -1224,15 +1224,15 @@ UI_SMALL static void al_smp_cap_service(void)
             h->magic = SMP_USER_MAGIC;
             h->version = 1u;
             h->nz = 1u;
-            h->name = 'C'; h->name = 'A'; h->name = 'P'; h->name = ' ';
-            h->name = (char)('1' + k);
+            *(h->name + 0) = 'C'; *(h->name + 1) = 'A'; *(h->name + 2) = 'P'; *(h->name + 3) = ' ';
+            *(h->name + 4) = (char)('1' + k);
             h->data_len = cap_off;
             h->crc = st_crc32(smp_user_xip(k) + SMP_USER_DATA, cap_off);
-            h->zone.n = cap_off * 2u;
-            h->zone.le = cap_off * 2u - 1u;
-            h->zone.rate = 21845u;
-            h->zone.root16 = 60 * 16;
-            h->zone.hi = 127u;
+            (*(h->zone + 0)).n = cap_off * 2u;
+            (*(h->zone + 0)).le = cap_off * 2u - 1u;
+            (*(h->zone + 0)).rate = 21845u;
+            (*(h->zone + 0)).root16 = 60 * 16;
+            (*(h->zone + 0)).hi = 127u;
             fl_write(ed_smp_slot(k), ed_smp_buf, sizeof(smp_user_hdr_t));
             ed_smp_inval(k);
             smp_user_scan(k);
@@ -1252,10 +1252,10 @@ UI_SMALL static void ed_service(void)
     uint32_t n;
     al_smp_cap_service();
     ed_sync();                                             /* v2 pushes (while watched) */
-    if (!ota_frame_get(&p, &n) || n < 4u || p != ED_HDR0 || p != ED_HDR1 || p != ED_HDR2)
+    if (!ota_frame_get(&p, &n) || n < 4u || *(p + 0) != ED_HDR0 || *(p + 1) != ED_HDR1 || *(p + 2) != ED_HDR2)
         return;
     ed_w.last_ms = fm1_ms;                                 /* any request keeps WATCH alive */
-    if (p >= ED_SMP_BEGIN) {                            /* large frames: handled in place, then freed */
+    if (*(p + 3) >= ED_SMP_BEGIN) {                        /* large frames: handled in place, then freed */
         ed_handle(p, n);
         ota_frame_done();
         return;
@@ -1264,7 +1264,7 @@ UI_SMALL static void ed_service(void)
         static uint8_t f[32 + 32];
         uint32_t k = n > sizeof f ? sizeof f : n, i;
         for (i = 0; i < k; i++)
-            f[i] = p[i];
+            *(f + i) = *(p + i);
         ota_frame_done();                                  /* free the frame buffer before replying */
         ed_handle(f, k);
     }
