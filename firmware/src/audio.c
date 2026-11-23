@@ -33,6 +33,8 @@ static void audio_block(int32_t *out, uint32_t n)       /* mix (fx.c), then Q15 
     uac_tap(usb_full_now ? usb_out : out, n);           /* the USB audio input: the master output, or at full level */
 #endif
     for (i = 0; i < n; i++) {
+        if (al_cap.state == 1u || al_cap.state == 2u)
+            al_smp_cap_push((int16_t)(((int32_t)vis_tap[2u * i] + (int32_t)vis_tap[2u * i + 1u]) >> 1));
         if (i & 1u)
         {
             scope_bufr[scope_w & (SCOPE_N - 1u)] = vis_tap[2u * i + 1u];   /* (fx.c: MASTER all the way up) */
@@ -42,6 +44,7 @@ static void audio_block(int32_t *out, uint32_t n)       /* mix (fx.c), then Q15 
         out[2u * i + 1u] <<= OUT_SHIFT;
     }
 }
+
 
 /* overload: shed_voice (voice.c) */
 static volatile uint8_t shed_req;
