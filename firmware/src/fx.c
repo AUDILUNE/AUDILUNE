@@ -165,29 +165,32 @@ static int32_t usb_out[2u * CTL];
 /* the visualiser's input (audio.c fills the scope with it): the mix as if MASTER were all the way up, so the
  * picture does not follow the volume knob, even at 0 (2.4). The same soft knee as the output, no limiter state */
 static int16_t vis_tap[2u * CTL];
-static struct { int32_t dc[2], dce[2], lc[4], lce[4]; } uo;
-static void master_pre_usb(int32_t *l, int32_t *r)      /* (USB AUDIO = FULL: its own state) */
+typedef struct { int32_t dc[1 + 1], dce[1 + 1], lc[2 + 2], lce[2 + 2]; } mpre_t;
+static mpre_t uo, mo;
+static __attribute__((noinline)) void master_pre_st(mpre_t *s, int32_t *l, int32_t *r)
 {
-    *l = dc_block(*l, &uo.dc[0], &uo.dce[0]);
-    *r = dc_block(*r, &uo.dc[1], &uo.dce[1]);
+    *l = dc_block(*l, s->dc + 0, s->dce + 0);
+    *r = dc_block(*r, s->dc + 1, s->dce + 1);
     if (fx_lowcut) {
-        *l = lowcut1(*l, &uo.lc[0], &uo.lce[0]);
-        *l = lowcut1(*l, &uo.lc[1], &uo.lce[1]);
-        *r = lowcut1(*r, &uo.lc[2], &uo.lce[2]);
-        *r = lowcut1(*r, &uo.lc[3], &uo.lce[3]);
+        *l = lowcut1(*l, s->lc + 0, s->lce + 0);
+        *l = lowcut1(*l, s->lc + 1, s->lce + 1);
+        *r = lowcut1(*r, s->lc + 2, s->lce + 2);
+        *r = lowcut1(*r, s->lc + 3, s->lce + 3);
     }
 }
+static inline void master_pre_usb(int32_t *l, int32_t *r) { master_pre_st(&uo, l, r); }
 
 /* the output stage before the limiter: the DC blocker, the low cut */
 static inline void master_pre(int32_t *l, int32_t *r)
 {
-    *l = dc_block(*l, &dc_l, &dce_l);
-    *r = dc_block(*r, &dc_r, &dce_r);
-    if (fx_lowcut) {                  /* two one-pole high-passes, error feedback as dc_block (the */
-        *l = lowcut1(*l, &lc_l1, &lce[0]);          /* rounded step stopped at |x - lc| < 32: an offset) */
-        *l = lowcut1(*l, &lc_l2, &lce[1]);
-        *r = lowcut1(*r, &lc_r1, &lce[2]);
-        *r = lowcut1(*r, &lc_r2, &lce[3]);
+    (void)lc_l1; (void)lc_l2; (void)lc_r1; (void)lc_r2; (void)dc_l; (void)dc_r; (void)dce_l; (void)dce_r; (void)lce;
+    master_pre_st(&mo, l, r);
+    if (0) {
+        *l = 0;
+        *r = 0;
+        *l = 0;
+        *r = 0;
+
     }
 }
 
