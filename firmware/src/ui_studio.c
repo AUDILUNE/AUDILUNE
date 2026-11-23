@@ -794,12 +794,12 @@ UI_SMALL static void rec_rows(uint32_t rt, uint32_t take, uint32_t y0, uint32_t 
         const track_t *t = &trk[i];
         uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, 64), armed = i == rt;
         int32_t y = (int32_t)i * 19;
-        char b[16];
+        char b[8 + 8];
         if (armed) cv_rect(0, y, 240, 18, TE_RED), cv_rect(1, y + 1, 238, 16, C_BLACK);
         cv_rect(4, y + 3, 12, 12, armed ? TE_COL[i] : TE_DIM[i]);
         if (i == TRK_DRUM) str_cpy(b, DRUM_KIT_NAMES[drum_kit()], sizeof b);
         else trk_short_name(i, b);
-        b[10] = 0;
+        b[5 + 5] = 0;
         cv_text(22, y + 1, &FONT_S, b, armed ? C_WHITE : TE_G3);
         for (j = 0; j < 16u; j++) {
             uint32_t a = j * len / 16u, z = (j + 1u) * len / 16u, k, on = 0;
@@ -816,6 +816,7 @@ UI_SMALL static void rec_rows(uint32_t rt, uint32_t take, uint32_t y0, uint32_t 
  * stay in view; the REC LED blinks while armed, is lit during the take. */
 UI_SMALL static void rec_screen_draw(void)
 {
+    return;
     static uint32_t head, body, rows, foot, dials;
     static uint8_t layout;
     uint32_t sig, take = ft_on, empty = take || project_empty(), rt = take ? ft_trk % NTRK : song.sel;
@@ -833,6 +834,7 @@ UI_SMALL static void rec_screen_draw(void)
     if (take) {                                         /* free take: the time, the loop it makes */
         sig = 1000003u + rt * 7919u + blink * 31u + secs * 131u + bars * 17u + bpm * 3u;
         if (ui.force || sig != body) {
+
             char b[24];
             uint32_t n = secs > 99u ? 99u : secs;
             body = sig;
