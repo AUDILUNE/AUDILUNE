@@ -992,16 +992,14 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 ui.seq_grab = (uint8_t)(!ui.seq_grab);
                 ui_message(ui.seq_grab ? "GRABBED: K4 SHIFT" : "DROPPED");
             }
-          } else if (ui.scr == UI_FX) {
+         } else if (ui.scr == UI_FX) {
             if (!al_pad_list_mode) {
                 if (ui.list_sel < 8u) {
                     al_pad_idx = ui.list_sel;
                     al_pad_list_mode = 1u;
                     ui_message(*(AL_PAD_NAMES + (al_pad_idx & 7u)));
                 } else {
-                    uint32_t bit = 1u << ((ui.list_sel - 8u) & 15u);
-                    al_fx_on ^= (uint16_t)bit;
-                    ui_message((al_fx_on & bit) ? "FX: ON" : "FX: OFF");
+                    audilune_list_knob(3u, 1);
                 }
             } else {
                 uint8_t p = (uint8_t)(al_pad_idx & 7u);
@@ -1010,6 +1008,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
                     al_vec_sel = (uint8_t)((al_vec_sel + 1u) & 3u);
                     *(al_vec_corner + al_vec_sel) = (uint8_t)((*(al_vec_corner + al_vec_sel) + 1u) & 3u);
                 }
+
                 al_pad_latch ^= bit;
                 audilune_chaos_apply(TSEL);
                 ui_message((al_pad_latch & bit) ? "PAD: ON/LATCH" : "PAD: OFF");
