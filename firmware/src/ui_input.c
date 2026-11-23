@@ -1245,32 +1245,24 @@ UI_SMALL static void audilune_clear_selected(void)
         }
         ui.force = 1;
         return;
+    }
     if ((!ui.home && cur_page()->scope == SC_STEP) ||
         (ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3])) {
         track_t *t = TSEL;
         uint32_t any_step = ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3];
         undo_mark(t, (undo_sess += 4u) | 3u);
         fm1_irq_off();
-        if (any_step) {
-            for (i = 0; i < NSTEP; i++)
-                if ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u) {
-                    memset(&t->step[i], 0, sizeof t->step[i]);
-                    memset(&t->dstep[i], 0, sizeof t->dstep[i]);
-                    t->micro[i] = 0;
-                }
-            memset(ui.sel_step_mask, 0, sizeof ui.sel_step_mask);
-            ui_message("STEPS CLEARED");
-        } else {
-            memset(&t->step[ui.cursor], 0, sizeof t->step[ui.cursor]);
-            memset(&t->dstep[ui.cursor], 0, sizeof t->dstep[ui.cursor]);
-            t->micro[ui.cursor] = 0;
-            ui_message("STEP CLEARED");
-        }
+        for (i = 0; i < NSTEP; i++)
+            if (any_step ? ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u) : (i == ui.cursor)) {
+                memset(&t->step[i], 0, sizeof t->step[i]);
+                memset(&t->dstep[i], 0, sizeof t->dstep[i]);
+                t->micro[i] = 0;
+            }
+        memset(ui.sel_step_mask, 0, sizeof ui.sel_step_mask);
         fm1_irq_on();
+        ui_message(any_step ? "STEPS CLEARED" : "STEP CLEARED");
         ui.force = 1;
         return;
-    }
-
     }
     if (ui.scr == UI_SEQ && ui.list_sel < NTRK) {
         track_t *t = &trk[ui.list_sel];
@@ -1306,6 +1298,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
 {
     uint32_t rb = 1u << panel.btn[B_REC], rc_down = (fm1_in.buttons & rb) != 0u;
     static uint8_t rc_on, rc_held;
+
     static uint32_t rc_t0;
     if (on_song_page()) {
         pressed &= ~rb;
