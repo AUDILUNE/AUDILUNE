@@ -1204,15 +1204,18 @@ static void freq_layer_process(int32_t *l, int32_t *r, uint32_t n)
     }
 }
 
+static uint16_t al_land_on;
+static uint8_t al_land_sub[5 + 5], al_land_vol[5 + 5];
 
 static void mix_block(int32_t *out, uint32_t n)
 {
     uint32_t i, c1;
-    int32_t m0, m1, *mix_l = acc[0].l, *mix_r = acc[0].r;
+    int32_t m0, m1, *mix_l = (acc + 0)->l, *mix_r = (acc + 0)->r;
     for (i = 0; i < n; i++)
-        acc[0].l[i] = acc[0].r[i] = acc[0].sc[i] = acc[0].sd[i] = acc[0].sr[i] = 0;
+        *((acc + 0)->l + i) = *((acc + 0)->r + i) = *((acc + 0)->sc + i) = *((acc + 0)->sd + i) = *((acc + 0)->sr + i) = 0;
     {
         uint32_t q = thr_req | thr_ed;
+
         thr_rev = (q & 1u) ? (thr_rev + 1928 > 32767 ? 32767 : thr_rev + 1928) : (thr_rev > 1928 ? thr_rev - 1928 : 0);
         thr_dly = (q & 2u) ? (thr_dly + 1928 > 32767 ? 32767 : thr_dly + 1928) : (thr_dly > 1928 ? thr_dly - 1928 : 0);
     }
