@@ -306,23 +306,27 @@ UI_SMALL static void ui_leds(void)
     fm1_led_bg_ns = LIGHTS_NS[lights_lvl % LIGHTS_N];
 }
 /* ---------------------------------------------------------- input --- */
-#define ACC_GAP 60u
-#define ACC_RATE 80u
+#define ACC_SLOW_MS 120u
+#define ACC_FAST_MS 45u
 UI_SMALL static int32_t accel(uint32_t role, int32_t s, int32_t range)
 {
-    uint32_t now = fm1_ms & 0xFFFFFFu, st = ui.enc_t[role], up = s > 0, pi = st >> 25, a, i, m = 1;
+    uint32_t now = fm1_ms & 0xFFFFFFu, st = ui.enc_t[role], up = s > 0, prev_m = (st >> 25) & 7u, a, dt, m = 1u;
     if (knob_accel_off || range <= 16 || !s)
         return s;
     a = (uint32_t)(s < 0 ? -s : s);
-    i = ((now - st) & 0xFFFFFFu) / a;
-    if (!st || ((st >> 24) & 1u) != up || i >= ACC_GAP)
-        i = 127u;
-    else if (pi < ACC_GAP) {
-        m = ACC_RATE / (i > pi ? i : pi ? pi : 1u);
-        a = range > 100 ? 16u : range > 64 ? 8u : range > 32 ? 4u : 2u;
-        m = m < 1u ? 1u : m > a ? a : m;
+    dt = st ? (((now - st) & 0xFFFFFFu) / a) : ACC_SLOW_MS;
+    if (!st || ((st >> 24) & 1u) != up || dt >= ACC_SLOW_MS) {
+        m = 1u;
+    } else if (dt < ACC_FAST_MS) {
+        uint32_t target = dt < 16u ? 6u : dt < 28u ? 4u : 2u;
+        uint32_t cap = range > 80 ? 6u : range > 40 ? 4u : 2u;
+        if (target > cap)
+            target = cap;
+        m = prev_m < target ? (prev_m == 1u ? 2u : prev_m == 2u ? 4u : 6u) : target;
+    } else {
+        m = prev_m > 2u ? 2u : 1u;
     }
-    ui.enc_t[role] = now | up << 24 | (i ? i : 1u) << 25;
+    ui.enc_t[role] = now | (up << 24) | ((m & 7u) << 25);
     return s * (int32_t)m;
 }
 
