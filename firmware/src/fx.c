@@ -1281,23 +1281,18 @@ static void mix_block(int32_t *out, uint32_t n)
                 master_pre_usb(&ul[i], &ur[i]);
             }
         }
-        lim_block(&lim_dac, ol, orr, n);
-        for (i = 0; i < n; i++) {
-            out[2u * i] = knee(ol[i]);
-            out[2u * i + 1u] = knee(orr[i]);
-        }
         if (usb_full_now && !usb_was) {
             memset(&lim_usb, 0, sizeof lim_usb);
-            lim_usb.env = LIM_T, lim_usb.g = 32768, lim_usb.hold = 0;
+            lim_usb.env = LIM_T, lim_usb.g = 32768;
         }
         usb_was = usb_full_now;
-        if (usb_full_now) {
-            lim_block(&lim_usb, ul, ur, n);
+        for (uint32_t ch = 0; ch <= (uint32_t)(usb_full_now != 0); ch++) {
+            int32_t *pl = ch ? ul : ol, *pr = ch ? ur : orr, *dst = ch ? usb_out : out;
+            lim_block(ch ? &lim_usb : &lim_dac, pl, pr, n);
             for (i = 0; i < n; i++) {
-                usb_out[2u * i] = knee(ul[i]);
-                usb_out[2u * i + 1u] = knee(ur[i]);
+                dst[2u * i] = knee(pl[i]);
+                dst[2u * i + 1u] = knee(pr[i]);
             }
         }
     }
 }
-
