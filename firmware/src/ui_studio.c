@@ -1252,7 +1252,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("GRAVITY", al_gravity ? "UNQUANTIZED" : "QUANTIZED");
         } else if (k == 3u) {
             al_pad_x[p] = (uint8_t)clamp((int32_t)al_pad_x[p] + s * 4, 0, 127);
-            audilune_chaos_apply(t);
+             audilune_chaos_apply(t);
             audilune_hud_popup("PAD X", (int32_t)al_pad_x[p] * 100 / 127, "%");
         } else if (p == 5u) {
             al_gravity = (uint8_t)clamp((int32_t)al_gravity + s * 4, 0, 100);
@@ -1293,6 +1293,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     } else if (ui.scr == UI_EDIT) {
 
         enum { CLIP_STEPS = 32u };
+
 
         static uint8_t clip_drum;
         static int16_t clip_len;
