@@ -929,15 +929,21 @@ UI_SMALL static void layer_tap(uint32_t layer)
         }
         ui.force = 1;
         break;
-
         break;
     case LY_ROLL:
         audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP PAGE");
         break;
     case LY_SCALE:
+        if (rec_hud_pick) {
+            rec_hud_pick = 0;
+            ui_message("REC TARGET SET");
+            ui.force = 1;
+            break;
+        }
         if (ui.scr == UI_ALGO) {
             uint8_t row = ui.list_sel;
             if (row < AUDILUNE_GENRE_COUNT) {
+
                 TSEL->synth_mode = 1;
                 ui.algo_genre[song.sel] = row;
                 audilune_genre_idx = row;
