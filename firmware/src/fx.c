@@ -199,9 +199,16 @@ static uint32_t delay_samples(void)
 /* process the three buses for one block; sends in, wet out (stereo). The LFOs (chorus, reverb line)
  * are computed per block and ramped: no sine per sample */
 #define HALF0(v) ((v) >= 0 ? (v) >> 1 : -(-(v) >> 1))   /* v / 2 towards zero */
+static inline int32_t fx_slew(int32_t *st, int32_t target)
+{
+    int32_t d = target - *st;
+    *st += (d >> 3) + (d > 0 ? 1 : (d < 0 ? -1 : 0));
+    return *st;
+}
 static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t *rev_in, int32_t *wet_l,
                      int32_t *wet_r, uint32_t n)
 {
+    static int32_t s_fb, s_col, s_dmix, s_g, s_lpk, s_cdep;
     uint32_t i, k, ti, dl = delay_samples();
     int32_t max_cho_send = 0, max_dly_send = 0, max_rev_send = 0;
     for (ti = 0; ti < NTRK; ti++) {
@@ -218,6 +225,7 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
     if (max_dly_send > 127) {                           /* 101%..110% expansion zone: warm self-oscillating cascade */
         int32_t cascade_fb = 29210 + (max_dly_send - 127) * 320;
         if (fb < cascade_fb)
+
             fb = cascade_fb;
     }
     int32_t dmix = song.g[G_DMIX] * 258;
