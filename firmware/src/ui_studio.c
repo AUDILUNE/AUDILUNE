@@ -1765,7 +1765,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, char *val)
 {
     const track_t *t = TSEL;
-    lbl[0] = 0; val[0] = 0;
+    lbl = 0; val = 0;
     if (scr == UI_FX) {
         if (row < 8u) {
             str_cpy(lbl, *(AL_PAD_NAMES + row), 18);
@@ -1775,6 +1775,20 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(lbl, *(AL_FX_ROWS + fxr), 18);
             fmt_int(val, *(al_fx_val + fxr));
             str_cpy(val + str_len(val), "%", 4);
+        }
+    } else if (scr == UI_PUNCH) {
+        str_cpy(lbl, al_nth_str(AL_PUNCH_STR, row), 18);
+        if (al_punch_active && al_punch_slot == (uint8_t)row) {
+            str_cpy(val, "[LIVE]", 14);
+        } else {
+            str_cpy(val, *(AL_PUNCH_DIVS + (al_punch_div[row] % 6u)), 14);
+        }
+    } else if (scr == UI_LANDSCAPE) {
+        str_cpy(lbl, al_nth_str(AL_LAND_STR, row), 18);
+        if ((al_land_on >> row) & 1u) {
+            str_cpy(val, al_land_sub_name(row, al_land_sub[row]), 14);
+        } else {
+            str_cpy(val, "[MUTE]", 14);
         }
     } else if (scr == UI_ENV) {
         str_cpy(lbl, *(AL_ENV_ROWS + row), 18);
@@ -1793,6 +1807,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 2u) str_cpy(val, al_clip_ok ? "CLIP" : "READY", 14);
         else if (row == 3u) str_cpy(val, al_clip_ok ? "READY" : "EMPTY", 14);
         else if (row == 4u) { fmt_int(val, *(t->p + P_SLEN)); str_cpy(val + str_len(val), " ST", 4); }
+
         else if (row == 10u) { fmt_int(val, *(t->p + P_SGATE) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
         else if (row == 11u) { fmt_int(val, *(t->p + P_APROB) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
         else if (row >= 5u && row <= 13u) str_cpy(val, has_sel ? "STEPS" : "TRK", 14);
