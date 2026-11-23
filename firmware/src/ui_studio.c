@@ -1766,14 +1766,16 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         if (row == 0u) { str_cpy(val, "SEL", 14); }
         else if (row == 1u) { if (ui.setup_vault == 0u) str_cpy(val, "BLANK", 14); else { str_cpy(val, "SLOT ", 14); fmt_int(val + 5, (int32_t)ui.setup_vault); } }
         else if (row == 2u) { str_cpy(val, *(AL_SESS_NAMES + (ui.session_mode % 6u)), 14); }
-        else if (row == 3u) { str_cpy(val, *(AL_FREQ_NAMES + (audilune_freq_layer & 3u)), 14); }
-        else if (row == 4u) { str_cpy(val, *(AL_TIMER_NAMES + (ui.auto_power_off % 7u)), 14); }
-        else if (row == 5u) { str_cpy(val, *(AL_TIMER_NAMES + (ui.session_timer % 7u)), 14); }
-        else if (row == 6u) { fmt_int(val, song.g[G_BPM]); }
-        else if (row == 7u) { str_cpy(val, *(AL_NOTE_NAMES + (*((*(trk + 0)).p + P_ROOT) % 12)), 14); }
-        else if (row == 8u) { str_cpy(val, *(AL_SCALE_NAMES + (*((*(trk + 0)).p + P_SCALE) % 22)), 14); }
-        else if (row == 9u) { fmt_int(val, *((*(trk + 0)).p + P_SLEN)); }
-        else if (row == 10u) { str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL", 14); }
+        else if (row == 3u) { str_cpy(val, al_gravity ? "UNQUANTIZED" : "QUANTIZED", 14); }
+        else if (row == 4u) { str_cpy(val, *(AL_FREQ_NAMES + (audilune_freq_layer & 3u)), 14); }
+        else if (row == 5u) { str_cpy(val, al_helper_notes ? "ON" : "OFF", 14); }
+        else if (row == 6u) { str_cpy(val, *(AL_TIMER_NAMES + (ui.auto_power_off % 7u)), 14); }
+        else if (row == 7u) { str_cpy(val, *(AL_TIMER_NAMES + (ui.session_timer % 7u)), 14); }
+        else if (row == 8u) { fmt_int(val, song.g[G_BPM]); }
+        else if (row == 9u) { str_cpy(val, *(AL_NOTE_NAMES + (*((*(trk + 0)).p + P_ROOT) % 12)), 14); }
+        else if (row == 10u) { str_cpy(val, *(AL_SCALE_NAMES + (*((*(trk + 0)).p + P_SCALE) % 22)), 14); }
+        else if (row == 11u) { fmt_int(val, *((*(trk + 0)).p + P_SLEN)); }
+        else if (row == 12u) { str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL", 14); }
     } else if (scr == UI_SEQ) {
         uint8_t grabbed = (ui.seq_grab && (uint32_t)ui.list_sel == row);
         if (row < 6u) {
@@ -1793,19 +1795,24 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(val, "SEL", 14);
         }
     } else if (scr == UI_CHOP_SRC) {
-        static const char *const SRC_L[] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE"};
+        static const char *const SRC_L[] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE", "CHOP VOICE"};
         str_cpy(lbl, *(SRC_L + row), 18);
         fmt_int(val, (int32_t)ui.chop_src_idx + 1);
     } else if (scr == UI_CHOP_WAVE) {
-        if (row == 0u) { str_cpy(lbl, "SLICE MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
-        else if (row == 1u) { str_cpy(lbl, "PLAY MODE", 18); str_cpy(val, al_chop_chrom ? "CHROMATIC" : "KIT", 14); }
+        static const char *const SRC_T[] = {"SONG", "TRACK", "SAMPLE", "VOICE"};
+        if (row == 0u) { str_cpy(lbl, "SOURCE TYPE", 18); str_cpy(val, *(SRC_T + (ui.chop_src_type & 3u)), 14); }
+        else if (row == 1u) { str_cpy(lbl, "TARGET", 18); fmt_int(val, (int32_t)ui.chop_src_idx + 1); }
+        else if (row == 2u) { str_cpy(lbl, "MASTER TRIM", 18); str_cpy(val, (uint32_t)ui.list_sel == 2u && ui.chop_trim == 1u ? "[START []" : (uint32_t)ui.list_sel == 2u && ui.chop_trim == 2u ? "[END ]]" : "GRAB", 14); }
+        else if (row == 3u) { str_cpy(lbl, "SLICE MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
+        else if (row == 4u) { str_cpy(lbl, "PLAY MODE", 18); str_cpy(val, al_chop_chrom ? "CHROMATIC" : "KIT", 14); }
         else {
             uint8_t act = ((uint32_t)ui.list_sel == row && ui.chop_trim > 0u);
             str_cpy(lbl, "CHOP ", 18);
-            fmt_int(lbl + 5, (int32_t)row - 1);
+            fmt_int(lbl + 5, (int32_t)row - 4);
             str_cpy(val, !act ? "GRAB" : ui.chop_trim == 1u ? "[WHOLE]" : ui.chop_trim == 2u ? "[START []" : "[END ]]", 14);
         }
     }
+
 }
 
 UI_SMALL static void audilune_chaos_apply(track_t *t)
