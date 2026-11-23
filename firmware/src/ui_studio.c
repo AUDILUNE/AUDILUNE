@@ -1261,6 +1261,33 @@ UI_SMALL static void audilune_gravity_apply(uint8_t gv)
     sync_reload = 1;
 }
 
+UI_SMALL static void audilune_punch_apply(uint32_t slot, int on)
+{
+    static const int8_t P_MAP[] = {
+        PX_LOOP16, PX_STOP, PX_REV, PX_RWD, PX_HALF, PX_DOWN, PX_OCT, PX_GATE,
+        PX_LOOP32, PX_LOOP8T, PX_STUT, PX_FREEZE, PX_CRUSH, PX_REV, PX_LOOP8, PX_STUT
+    };
+    uint32_t idx = slot & 15u;
+    al_punch_slot = (uint8_t)idx;
+    al_punch_active = (uint8_t)(on ? 1u : 0u);
+    punch.req = on ? *(P_MAP + idx) : -1;
+}
+
+UI_SMALL static void audilune_landscape_apply(void)
+{
+    uint32_t i, active = 0u, tot_vol = 0u;
+    for (i = 0u; i < 10u; i++) {
+        if (((al_land_on >> i) & 1u) && al_land_vol[i] > 0u) {
+            active++;
+            tot_vol += al_land_vol[i];
+        }
+    }
+    song.g[G_DUST] = (int16_t)clamp((int32_t)(tot_vol / (active ? active : 1u)) * 127 / 100, 0, 127);
+    if ((al_land_on & 1u) && al_land_sub[0] > 0u) {
+        TDRUM->p[P_REV] = (int16_t)clamp((int32_t)al_land_vol[0] * 120 / 100, 0, 127);
+    }
+}
+
 UI_SMALL static void audilune_chaos_apply(track_t *t);
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 {
@@ -1271,7 +1298,28 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         return;
     ui.hot_col = (uint8_t)k;
     ui.hot_t = 40;
-    if (ui.scr == UI_FX && al_pad_list_mode) {
+    if (ui.scr == UI_PUNCH) {
+        if (k == 3u) {
+            al_punch_div[row] = (uint8_t)((al_punch_div[row] + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_text("GRID", *(AL_PUNCH_DIVS + al_punch_div[row]));
+        } else {
+            int32_t nv = clamp((int32_t)al_punch_val[row] + s * 4, 0, 110);
+            al_punch_val[row] = (uint8_t)nv;
+            audilune_hud_popup(*(AL_PUNCH_NAMES + row), nv, "%");
+        }
+    } else if (ui.scr == UI_LANDSCAPE) {
+        if (k == 3u) {
+            al_land_sub[row] = (uint8_t)((al_land_sub[row] + (s > 0 ? 1u : 7u)) & 7u);
+            audilune_landscape_apply();
+            audilune_hud_text(*(AL_LAND_NAMES + row), AL_LAND_SUBS[row][al_land_sub[row] & 7u]);
+        } else {
+            int32_t nv = clamp((int32_t)al_land_vol[row] + s * 4, 0, 100);
+            al_land_vol[row] = (uint8_t)nv;
+            if (nv > 0) al_land_on |= (uint16_t)(1u << row);
+            audilune_landscape_apply();
+            audilune_hud_popup(*(AL_LAND_NAMES + row), nv, "%");
+        }
+    } else if (ui.scr == UI_FX && al_pad_list_mode) {
         uint32_t p = al_pad_idx & 7u;
         if (k == 3u && p == 5u) {
             al_gravity = (al_gravity == 0u) ? 50u : 0u;
@@ -1308,6 +1356,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 audilune_fx_apply(t, fxr, al_fx_sub[fxr], al_fx_val[fxr]);
                 audilune_hud_popup(AL_FX_ROWS[fxr], nv, "%");
             }
+
         }
     } else if (ui.scr == UI_ENV && k == 2u) {
         uint32_t pid = P_ATK + row;
