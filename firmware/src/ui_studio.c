@@ -1063,6 +1063,31 @@ static const char *const AL_EDIT_ROWS[] = {
     "HUMANIZE", "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY",
     "RATCHET", "REVERSE", "ROOT NOTE", "SCALE TYPE"
 };
+static const char *const AL_PUNCH_NAMES[] = {
+    "1/16 STUTTER", "TAPE/VNL BRAKE", "BUFFER REVERSE", "VINYL SPINBACK",
+    "HALF-TIME WARP", "SUB-OCTAVE SLAM", "OCTAVE-UP LIFT", "TRANCE GATE",
+    "TIME CRYSTAL", "GRAVITY SINGUL", "VOWEL MUTATOR", "SPECTRAL FREEZE",
+    "CIRCUIT BITE", "REV ECHO BLOOM", "DIM PHASE TEAR", "QUANTUM PROB"
+};
+static const char *const AL_PUNCH_DIVS[] = {"FREE", "1/4", "1/8", "1/16", "1/32", "TRIP"};
+static const char *const AL_LAND_NAMES[] = {
+    "HARMONIC DRONE", "WEATHER", "WATER & SEA", "EARTH & FIRE", "BIRDS & INSECT",
+    "CREATURE & BIO", "HUMAN & CROWD", "TRAFFIC & CITY", "MACHINES & SPC", "SPACE & MOTION"
+};
+static const char *const AL_LAND_SUBS[][8] = {
+    {"OFF", "WARM FIFTHS", "SUB MONOLITH", "SHIMMER PAD", "MYSTIC CHORD", "TAPE ORGAN", "WARM FIFTHS", "SUB MONOLITH"},
+    {"LIGHT RAIN", "HEAVY STORM", "HIGH WIND", "HOWLING GALE", "DIST THUNDER", "HAIL GLASS", "LIGHT RAIN", "HEAVY STORM"},
+    {"OCEAN SURF", "DEEP UNDERWTR", "FOREST CREEK", "WATERFALL", "HARBOR WAVES", "DRIPPING CAVE", "OCEAN SURF", "FOREST CREEK"},
+    {"CRACKLE FIRE", "RUMBLE EARTH", "CRUNCH GRAVEL", "DRY LEAVES", "ICE CREAKING", "VOLCANIC HUM", "CRACKLE FIRE", "ICE CREAKING"},
+    {"DAWN CHORUS", "NIGHT CRICKET", "SUMMER CICADA", "DISTANT OWLS", "SEAGULLS", "SWAMP FROGS", "DAWN CHORUS", "NIGHT CRICKET"},
+    {"WHALE SONG", "DEEP PURR", "WOLF HOWL", "BAT SONAR", "HEARTBEAT", "SWARM BUZZ", "WHALE SONG", "BAT SONAR"},
+    {"CAFE MURMUR", "DIST CHATTER", "FOOTSTEPS", "WHISPERING", "SUBWAY HALL", "APPLAUSE WASH", "CAFE MURMUR", "SUBWAY HALL"},
+    {"DIST HIGHWAY", "RAINY STREET", "PASSING CARS", "TRAIN RAILS", "SIREN FAR OFF", "CITY HUM", "DIST HIGHWAY", "TRAIN RAILS"},
+    {"TAPE HISS", "VINYL CRACKLE", "CLOCKWORK TCK", "HEAVY MACHINE", "METAL CLANG", "RADIO STATIC", "SOLAR WIND", "STARSHIP HUM"},
+    {"STATIC CENTER", "SLOW DRIFT", "WIDE BINAURAL", "WIND GUSTS", "DEEP CAVERN", "INFINITE WASH", "SLOW DRIFT", "INFINITE WASH"}
+};
+static uint8_t al_punch_div[16], al_punch_val[16], al_punch_active, al_punch_slot;
+static uint8_t al_land_on[10], al_land_sub[10], al_land_vol[10];
 static const char *const AL_ENV_ROWS[] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
 static const char *const AL_LFO_ROWS[] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
 static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "HELPER NOTES", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
@@ -1083,11 +1108,13 @@ static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
 static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_chop_trim_s = 0u, al_chop_trim_e = 100u;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
-static uint8_t audilune_theme_idx, al_arp_mode[NTRK], al_clip_ok;
+static uint8_t audilune_theme_idx, al_arp_mode[], al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return al_pad_list_mode ? 1u : 18u;
+    if (scr == UI_PUNCH) return 16u;
     if (scr == UI_ENV || scr == UI_LFO) return 4u;
+    if (scr == UI_LANDSCAPE) return 10u;
     if (scr == UI_EDIT) return 16u;
     if (scr == UI_ARP) return 7u;
     if (scr == UI_GLO) return 8u;
@@ -1113,6 +1140,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         punch.req = val ? (row == 0u ? *(T_PF + (sub & 7u)) : row == 2u ? *(G_PF + (sub & 7u)) : PX_FREEZE) : -1;
     } else if (row == 1u) {
         static int8_t last_st;
+
         uint32_t has_step = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         uint32_t trk_mask = ui.sel_trk_mask ? ui.sel_trk_mask : (1u << song.sel);
         uint32_t ti, si, nj, len = trk_len(t);
