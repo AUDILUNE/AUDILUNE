@@ -1480,7 +1480,9 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
         }
     } else if (ui.scr == UI_GLO) {
-        if (row == 0u) {
+        if (k == 2u) {
+            audilune_sel_vol(s);
+        } else if (row == 0u) {
             static const char *const AL_THM_H[] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
             palette_set(audilune_theme_idx);
@@ -1488,10 +1490,13 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         } else if (row == 1u) {
             audilune_freq_layer = (uint8_t)((audilune_freq_layer + (s > 0 ? 1u : 3u)) & 3u);
             audilune_hud_text("FREQ LYR", *(AL_FREQ_NAMES + audilune_freq_layer));
-        } else if (row == 4u) {
+        } else if (row == 2u) {
+            al_helper_notes = (uint8_t)(!al_helper_notes);
+            audilune_hud_text("HELPER", al_helper_notes ? "ON" : "OFF");
+        } else if (row == 5u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
-        } else if (row == 6u) {
+        } else if (row == 7u) {
             audilune_blank_studio_init();
             audilune_hud_text("STUDIO", "SETUP");
         }
@@ -1504,6 +1509,8 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 ui.chop_load_trk = (uint8_t)((ui.chop_load_trk + (s > 0 ? 1u : 6u)) % 7u);
                 audilune_hud_popup("LOAD TRK", (int32_t)ui.chop_load_trk, "");
             }
+        } else if (k == 2u) {
+            audilune_sel_vol(s);
         } else {
             ui.save_vault = (uint8_t)(row % 6u);
             if (k == 3u) ui.save_op = (uint8_t)(!ui.save_op);
@@ -1512,6 +1519,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     } else if (ui.scr == UI_ARP) {
         static const char *const AL_SCOPE_H[] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
         if (k == 2u || row == 3u) {
+
             int32_t nm = clamp((int32_t)audilune_gen_morph + s * 4, 0, 100);
             audilune_gen_morph = (uint8_t)nm;
             audilune_hud_popup("MORPH", nm, "%");
