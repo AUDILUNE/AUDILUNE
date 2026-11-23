@@ -1164,16 +1164,16 @@ UI_SMALL static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes b
         track_t *t;
         if (na < 3u || a[0] >= NTRK || a[1] >= NSTEP)
             return;
-        t = &trk[a[0]];
+        t = &trk[a];
         fm1_irq_off();
-        step_fill_set(t, a[1], a[2] % 3u);
+        step_fill_set(t, a, a % 3u);
         fm1_irq_on();
         ui.force = 1;
-        if (a[0] == song.sel)
-            ed_w.st[a[1]] = ed_step_sig(t, a[1]);
-        ed_b(a[0]);
-        ed_b(a[1]);
-        ed_b(step_fill(t, a[1]));
+        if (a == song.sel)
+            ed_w.st[a] = ed_step_sig(t, a);
+        ed_b(a);
+        ed_b(a);
+        ed_b(step_fill(t, a));
         break;
     }
     default:
@@ -1182,22 +1182,86 @@ UI_SMALL static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes b
     ed_send();
 }
 
+UI_SMALL static void al_smp_cap_service(void)
+{
+    static uint32_t cap_off, cap_erased;
+    uint32_t k = al_cap.slot % SMP_USER_SLOTS, took;
+    if (al_cap.state == 0u) {
+        cap_off = 0u;
+        cap_erased = 0u;
+        return;
+    }
+    if (!flash_ok) {
+        al_cap.state = 0u;
+        return;
+    }
+    if (!cap_erased) {
+        ed_smp_erase(k, 0u);
+        cap_erased = 1u;
+        cap_off = 0u;
+    }
+    while ((al_cap.wr - al_cap.rd >= 256u || (al_cap.state == 3u && al_cap.wr > al_cap.rd)) &&
+           cap_off + 256u <= SMP_USER_SIZE - SMP_USER_DATA) {
+        uint32_t avail = al_cap.wr - al_cap.rd, n = avail > 256u ? 256u : avail, i;
+        uint32_t off = SMP_USER_DATA + cap_off;
+        for (i = 0u; i < n; i++) {
+            *(ed_smp_buf + i) = *(al_cap_ring + (al_cap.rd & (AL_CAP_RING - 1u)));
+            al_cap.rd++;
+        }
+        for (; i < 256u; i++)
+            *(ed_smp_buf + i) = 0u;
+        if (!(off & 0xFFFu))
+            fl_erase4k_quiet(ed_smp_slot(k) + off, &took);
+        fl_write(ed_smp_slot(k) + off, ed_smp_buf, 256u);
+        cap_off += n;
+        fm1_wdt_feed();
+    }
+    if (al_cap.state == 3u && al_cap.wr == al_cap.rd) {
+        smp_user_hdr_t *h = (smp_user_hdr_t *)ed_smp_buf;
+        memset(ed_smp_buf, 0, sizeof ed_smp_buf);
+        ed_smp_inval(k);
+        if (cap_off >= 64u) {
+            h->magic = SMP_USER_MAGIC;
+            h->version = 1u;
+            h->nz = 1u;
+            h->name = 'C'; h->name = 'A'; h->name = 'P'; h->name = ' ';
+            h->name = (char)('1' + k);
+            h->data_len = cap_off;
+            h->crc = st_crc32(smp_user_xip(k) + SMP_USER_DATA, cap_off);
+            h->zone.n = cap_off * 2u;
+            h->zone.le = cap_off * 2u - 1u;
+            h->zone.rate = 21845u;
+            h->zone.root16 = 60 * 16;
+            h->zone.hi = 127u;
+            fl_write(ed_smp_slot(k), ed_smp_buf, sizeof(smp_user_hdr_t));
+            ed_smp_inval(k);
+            smp_user_scan(k);
+            ui_message("CAPTURED TO USR");
+        }
+        al_cap.state = 0u;
+        cap_off = 0u;
+        cap_erased = 0u;
+        ui.force = 1;
+    }
+}
+
 /* main loop: editor frames first; anything else stays for ota_service() */
 UI_SMALL static void ed_service(void)
 {
     const uint8_t *p;
     uint32_t n;
+    al_smp_cap_service();
     ed_sync();                                             /* v2 pushes (while watched) */
-    if (!ota_frame_get(&p, &n) || n < 4u || p[0] != ED_HDR0 || p[1] != ED_HDR1 || p[2] != ED_HDR2)
+    if (!ota_frame_get(&p, &n) || n < 4u || p != ED_HDR0 || p != ED_HDR1 || p != ED_HDR2)
         return;
     ed_w.last_ms = fm1_ms;                                 /* any request keeps WATCH alive */
-    if (p[3] >= ED_SMP_BEGIN) {                            /* large frames: handled in place, then freed */
+    if (p >= ED_SMP_BEGIN) {                            /* large frames: handled in place, then freed */
         ed_handle(p, n);
         ota_frame_done();
         return;
     }
     {
-        static uint8_t f[64];
+        static uint8_t f[32 + 32];
         uint32_t k = n > sizeof f ? sizeof f : n, i;
         for (i = 0; i < k; i++)
             f[i] = p[i];
