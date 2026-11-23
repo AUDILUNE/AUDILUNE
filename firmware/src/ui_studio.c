@@ -1185,6 +1185,54 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         lock_set(t, step, (uint32_t)pid, t->p[pid]);
 }
 
+UI_SMALL static void audilune_sel_vol(int32_t s)
+{
+    track_t *t = TSEL;
+    uint32_t len = trk_len(t), i, j, has_step = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
+    if (has_step) {
+        int32_t last_v = 0;
+        for (i = 0; i < len; i++) {
+            if (!((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u)) continue;
+            if (is_drum(t)) {
+                for (j = 0; j < DRUM_LANES; j++)
+                    if (dstep_has(&t->dstep[i], j)) {
+                        uint32_t r = (uint32_t)clamp((int32_t)lvl_rank(dstep_lvl(&t->dstep[i], j)) + (s > 0 ? 1 : -1), 0, 3);
+                        dstep_set(&t->dstep[i], j, LV_UP[r], dstep_rat(&t->dstep[i], j));
+                        last_v = (int32_t)(r + 1u) * 25;
+                    }
+            } else if (step_on(&t->step[i])) {
+                int32_t nv = clamp((int32_t)(t->step[i].vel ? t->step[i].vel : 96) + s * 4, 1, 127);
+                t->step[i].vel = (uint8_t)nv;
+                last_v = nv * 100 / 127;
+            }
+        }
+        audilune_hud_popup("STEP LVL", last_v, "%");
+    } else {
+        uint32_t m = (ui.sel_trk_mask & 0x3Fu) | (1u << (song.sel % 6u));
+        int32_t lv = 0;
+        for (i = 0; i < NTRK; i++)
+            if ((m >> i) & 1u) {
+                int16_t *vp = (!trk[i].synth_mode && i == TRK_DRUM) ? &song.g[G_DRLVL] : &trk[i].p[P_LEVEL];
+                *vp = (int16_t)clamp((int32_t)(*vp) + s * 3, 0, 127);
+                if (i == song.sel) lv = (int32_t)(*vp) * 100 / 127;
+            }
+        audilune_hud_popup("SEL LVL", lv, "%");
+    }
+}
+
+UI_SMALL static void audilune_gravity_apply(uint8_t gv)
+{
+    track_t *t = TSEL;
+    uint32_t len = trk_len(t), i, has_step = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
+    int32_t off = ((int32_t)gv - 50) * MICRO_MAX / 50;
+    for (i = 0; i < len; i++) {
+        if (has_step && !((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u)) continue;
+        int32_t spread = gv <= 50u ? 0 : ((int32_t)((i * 37u + 11u) % 25u) - 12) * ((int32_t)gv - 50) / 50;
+        t->micro[i] = (int8_t)clamp(has_step ? off : spread, MICRO_MIN, MICRO_MAX);
+    }
+    sync_reload = 1;
+}
+
 UI_SMALL static void audilune_chaos_apply(track_t *t);
 UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 {
@@ -1195,32 +1243,43 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         return;
     ui.hot_col = (uint8_t)k;
     ui.hot_t = 40;
-    if (ui.scr == UI_FX && !al_pad_list_mode) {
-
+    if (ui.scr == UI_FX && al_pad_list_mode) {
         uint32_t p = al_pad_idx & 7u;
-        if (row == 0u && k == 3u) {
-            al_pad_idx = (uint8_t)((p + (s > 0 ? 1u : 7u)) & 7u);
-            audilune_hud_text("PAD", *(AL_PAD_NAMES + al_pad_idx));
+        if (k == 3u && p == 5u) {
+            al_gravity = (al_gravity == 0u) ? 50u : 0u;
+            al_pad_x[p] = al_gravity ? 127u : 0u;
+            audilune_gravity_apply(al_gravity);
+            audilune_hud_text("GRAVITY", al_gravity ? "UNQUANTIZED" : "QUANTIZED");
         } else if (k == 3u) {
             al_pad_x[p] = (uint8_t)clamp((int32_t)al_pad_x[p] + s * 4, 0, 127);
             audilune_chaos_apply(t);
             audilune_hud_popup("PAD X", (int32_t)al_pad_x[p] * 100 / 127, "%");
+        } else if (p == 5u) {
+            al_gravity = (uint8_t)clamp((int32_t)al_gravity + s * 4, 0, 100);
+            al_pad_z[p] = (uint8_t)(al_gravity * 127u / 100u);
+            audilune_gravity_apply(al_gravity);
+            audilune_hud_popup("GRAVITY", (int32_t)al_gravity, "%");
         } else {
             al_pad_z[p] = (uint8_t)clamp((int32_t)al_pad_z[p] + s * 4, 0, 127);
             audilune_chaos_apply(t);
             audilune_hud_popup("WET/MIX", (int32_t)al_pad_z[p] * 110 / 127, "%");
         }
     } else if (ui.scr == UI_FX) {
-        if (k == 3u) {
-            al_fx_sub[row] = (uint8_t)((al_fx_sub[row] + (s > 0 ? 1u : 7u)) & 7u);
-            if (row == 1u && al_fx_sub[row] < 4u && al_fx_val[row] == 0u) al_fx_val[row] = 55u;
-            audilune_fx_apply(t, row, al_fx_sub[row], al_fx_val[row]);
-            audilune_hud_popup(AL_FX_ROWS[row], (int32_t)(al_fx_sub[row] + 1u), "");
+        if (row < 8u) {
+            if (k == 2u) audilune_sel_vol(s);
         } else {
-            int32_t nv = clamp((int32_t)al_fx_val[row] + s * 4, 0, 110);
-            al_fx_val[row] = (uint8_t)nv;
-            audilune_fx_apply(t, row, al_fx_sub[row], al_fx_val[row]);
-            audilune_hud_popup(AL_FX_ROWS[row], nv, "%");
+            uint32_t fxr = row - 8u;
+            if (k == 3u) {
+                al_fx_sub[fxr] = (uint8_t)((al_fx_sub[fxr] + (s > 0 ? 1u : 7u)) & 7u);
+                if (fxr == 1u && al_fx_sub[fxr] < 4u && al_fx_val[fxr] == 0u) al_fx_val[fxr] = 55u;
+                audilune_fx_apply(t, fxr, al_fx_sub[fxr], al_fx_val[fxr]);
+                audilune_hud_popup(AL_FX_ROWS[fxr], (int32_t)(al_fx_sub[fxr] + 1u), "");
+            } else {
+                int32_t nv = clamp((int32_t)al_fx_val[fxr] + s * 4, 0, 110);
+                al_fx_val[fxr] = (uint8_t)nv;
+                audilune_fx_apply(t, fxr, al_fx_sub[fxr], al_fx_val[fxr]);
+                audilune_hud_popup(AL_FX_ROWS[fxr], nv, "%");
+            }
         }
     } else if (ui.scr == UI_ENV && k == 2u) {
         uint32_t pid = P_ATK + row;
@@ -1240,6 +1299,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         static int8_t clip_micro[CLIP_STEPS + 0];
 
         static uint8_t clip_fill[CLIP_STEPS / 4];
+
         uint32_t len = trk_len(t), i, j, has_sel = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         int32_t dir = s > 0 ? 1 : -1;
         if (row == 0u && k == 3u) {
