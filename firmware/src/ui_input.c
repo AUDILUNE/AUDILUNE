@@ -1422,30 +1422,8 @@ UI_SMALL static void remote_poll(void)
 {
     static int16_t ch_was = -1;
 
-    static uint8_t usb_was;
-    uint32_t l, m = 0;
-    int drop = !song.g[G_RMCH] || (ch_was > 0 && song.g[G_RMCH] != ch_was) || (usb_was && !usb.config);
-    ch_was = song.g[G_RMCH];
-    usb_was = (uint8_t)(usb.config != 0);
-    if (drop) {
-        fm1_irq_off();
-        remote_lbl = remote_up = 0;
-        fm1_irq_on();
-        fm1_remote_btn = 0;
-        return;
-    }
-    for (l = 0; l < NB; l++) {
-        uint32_t b = 1u << panel.btn[l], lb = 1u << l;
-        if ((remote_up & lb) && (fm1_in.buttons & b)) {
-            fm1_irq_off();
-            remote_lbl &= ~lb;
-            remote_up &= ~lb;
-            fm1_irq_on();
-        }
-        if (remote_lbl & lb)
-            m |= b;
-    }
-    fm1_remote_btn = m;
+    (void)ch_was;
+    fm1_remote_btn = 0;
 }
 
 UI_SMALL static void ui_input(void)
@@ -1453,6 +1431,7 @@ UI_SMALL static void ui_input(void)
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
     uint32_t home = btn_hold_ms(&ui.home_t0, B_HOME, now, 1, 3000u);
     int32_t s;
+
     int layered;
     audilune_layer_mask = ui.sel_trk_mask;
     enc_hold = 0;
