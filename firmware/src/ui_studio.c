@@ -519,60 +519,9 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
 UI_SMALL static void drum_screen_draw(void)
 {
     return;
-    static uint32_t head, title_sig, body_sig, footer;
-    uint32_t i, j, len = (uint32_t)clamp(TDRUM->p[P_SLEN], 1, 64), kit = drum_kit(), sig, bank;
-    if (drum_cursor >= len) drum_cursor = (uint8_t)(len - 1u);
-    bank = drum_cursor / 16u;
     {
-        char st[8 + 8], nm[8 + 1];
-        const char *style = DRUM_KIT_STYLES[kit];
-        if (kit >= DRUM_SYN) {                          /* SYN1..4: the name you gave it (editor DRUM SYNTH) */
-            memcpy(nm, dsu_kit(kit - DRUM_SYN)->name, 8);
-            nm[8] = 0;
-            if (nm[0])
-                style = nm;
-        }
-        te_lower(st, style, sizeof st);
-        st[12] = 0;
+        {
 
-        te_header(st, TE_DRUM, &head, -1);
-    }
-    sig = kit * 131u + drum_page * 7u + drum_lane * 977u + bank * 31u + len + (uint32_t)drum_tweaked() * 7919u;   /* title band */
-    if (ui.force || sig != title_sig) {
-        char b[8];
-        title_sig = sig;
-        cv_begin(240, 44, C_BLACK);
-        cv_rect(2, 4, 34, 34, TE_DRUM);
-        fmt_int(b, (int32_t)kit + 1);
-        cv_text(19 - text_w(&FONT_S, b) / 2, 13, &FONT_S, b, C_BLACK);
-        cv_text(44, 6, &FONT_L, DRUM_KIT_NAMES[kit], C_WHITE);
-        cv_text(194, 1, &FONT_S, "grid", drum_page == 0 ? C_WHITE : TE_G3);
-        cv_text(194, 15, &FONT_S, "kit", drum_page == 1 ? C_WHITE : TE_G3);
-        cv_text(194, 29, &FONT_S, "sound", drum_page == 2 ? C_WHITE : TE_G3);
-        cv_rect(188, 5 + (int32_t)drum_page * 14, 3, 9, TE_DRUM);
-        cv_blit(0, 40);
-    }
-    sig = drum_page + drum_lane * 7u + drum_cursor * 101u + song.playing * 71u + len * 3u + ui.sheet * 7919u +
-          (uint32_t)(TDRUM->micro[drum_cursor] + 64) * 104729u + step_fill(TDRUM, drum_cursor) * 13u;
-    for (i = 0; i < DRUM_LANES; i++) sig = sig * 5u + (uint32_t)(drum_tune[i] + 8) * 9u + (uint32_t)(drum_dec[i] + 4);
-    if (song.playing) sig = sig * 31u + TDRUM->seq_idx;
-    for (i = 0; i < DRUM_LANES; i++) sig = sig * 3u + (pad_lit[i] != 0);
-    for (i = 0; i < len; i++) {
-        const dstep_t *s = &TDRUM->dstep[i];
-        sig = sig * 31u + dstep_mask(s);
-        sig = sig * 31u + s->lvl[0] + s->lvl[1] * 7u + s->lvl[2] * 49u + s->lvl[3] * 343u;
-        sig = sig * 31u + s->rat[0] + s->rat[1] * 7u + s->rat[2] * 49u + s->rat[3] * 343u;
-    }
-    if (ui.force || sig != body_sig) {
-        body_sig = sig;
-        cv_begin(240, 100, C_BLACK);
-        if (!drum_page) {                              /* GRID: the 16 lanes x 16 steps of this bank */
-            int32_t lp = ui.sheet ? 5 : 6, ch = lp - 1;   /* (2.8.1) the lanes squeeze up to free the bottom for the sheet bar */
-            for (i = 0; i < DRUM_LANES; i++) {
-                int32_t y = (int32_t)i * lp + 2;
-                cv_rect(2, y, 6, ch, pad_lit[i] ? C_WHITE : i == drum_lane ? TE_DRUM : TE_G2);
-                for (j = 0; j < 16u; j++) {
-                    uint32_t p = bank * 16u + j;
                     const dstep_t *s = &TDRUM->dstep[p < NSTEP ? p : 0];
                     uint16_t c;
                     if (p >= len) continue;
