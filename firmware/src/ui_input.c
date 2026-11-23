@@ -1363,7 +1363,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
                 ui_message("TIMER DISARMED");
                 ui.force = 1;
             }
-        }
+         }
         if (!scl_down) { sel_on = 0; sel_disarmed = 0; }
     }
     {
@@ -1377,22 +1377,29 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
         if (!sv_down && sv_on) { if (ui.hold_kind == 2u) ui.hold_kind = 0; if (!sv_held) { audilune_save_latch = audilune_save_latch ? 0u : 1u; ui_message(audilune_save_latch ? "SAVE: TAP OP1-6" : "SAVE CANCELLED"); } sv_on = 0; ui.force = 1; }
     }
     {
-        static uint8_t ed_on, ed_chop;
-        static uint32_t ed_t0;
+        static uint8_t ed_on, ed_chop, fx_on, fx_p, env_on, env_l;
+        static uint32_t ed_t0, fx_t0, env_t0;
         uint32_t eb = ly_bit[LY_ERASE], ed_down = (fm1_in.buttons & eb) != 0u;
+        uint32_t fb = ly_bit[LY_FX], fx_down = (fm1_in.buttons & fb) != 0u;
+        uint32_t nb = 1u << panel.btn[B_ENV], env_down = (fm1_in.buttons & nb) != 0u;
         if (ed_down && !ed_on) { ed_t0 = now_ms; ed_on = 1; ed_chop = 0; }
         if (ed_down && ed_on && !ed_chop && now_ms - ed_t0 >= 1200u) {
-            ed_chop = 1;
-            layer_unlock();
-            vis_on = 0;
-            ui.home = 0;
-            ui.scr = UI_CHOP_SRC;
-            ui.list_sel = 0;
-            ui.list_top = 0;
-            ui_message("CHOP SHOP: SOURCE");
-            ui.force = 1;
+            ed_chop = 1; layer_unlock(); vis_on = 0; ui.home = 0; ui.scr = UI_CHOP_SRC;
+            ui.list_sel = 0; ui.list_top = 0; ui_message("CHOP SHOP: SOURCE"); ui.force = 1;
         }
         if (!ed_down) { ed_on = 0; ed_chop = 0; }
+        if (fx_down && !fx_on) { fx_t0 = now_ms; fx_on = 1; fx_p = 0; }
+        if (fx_down && fx_on && !fx_p && now_ms - fx_t0 >= 700u) {
+            fx_p = 1; layer_unlock(); vis_on = 0; ui.home = 0; ui.scr = UI_PUNCH;
+            ui.list_sel = 0; ui.list_top = 0; ui_message("PUNCH-IN FX"); ui.force = 1;
+        }
+        if (!fx_down) { fx_on = 0; fx_p = 0; }
+        if (env_down && !env_on) { env_t0 = now_ms; env_on = 1; env_l = 0; }
+        if (env_down && env_on && !env_l && now_ms - env_t0 >= 700u) {
+            env_l = 1; layer_unlock(); vis_on = 0; ui.home = 0; ui.scr = UI_LANDSCAPE;
+            ui.list_sel = 0; ui.list_top = 0; ui_message("LANDSCAPER"); ui.force = 1;
+        }
+        if (!env_down) { env_on = 0; env_l = 0; }
     }
 }
 
