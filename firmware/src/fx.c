@@ -1221,33 +1221,63 @@ static void mix_block(int32_t *out, uint32_t n)
     c1 = cpu1_on() ? units_split() : 0;
     if (c1) {
         for (i = 0; i < n; i++)
-            acc[1].l[i] = acc[1].r[i] = acc[1].sc[i] = acc[1].sd[i] = acc[1].sr[i] = 0;
+            *((acc + 1)->l + i) = *((acc + 1)->r + i) = *((acc + 1)->sc + i) = *((acc + 1)->sd + i) = *((acc + 1)->sr + i) = 0;
         if (!cpu1_run(cpu1_units_job, c1 | n << 8))
             c1 = 0;
     }
-    mix_units(U_ALL & ~c1, n, &acc[0], part_buf[0]);
+    mix_units(U_ALL & ~c1, n, acc + 0, *(part_buf + 0));
     if (c1) {
         uint32_t w0 = cpu1_ticks();
         int late = cpu1_wait();
         cpu1_wait_ticks += cpu1_ticks() - w0;
         if (late) {
             for (i = 0; i < n; i++)
-                acc[1].l[i] = acc[1].r[i] = acc[1].sc[i] = acc[1].sd[i] = acc[1].sr[i] = 0;
+                *((acc + 1)->l + i) = *((acc + 1)->r + i) = *((acc + 1)->sc + i) = *((acc + 1)->sd + i) = *((acc + 1)->sr + i) = 0;
             cpu1_units_job(c1 | n << 8);
         }
         for (i = 0; i < n; i++) {
-            acc[0].l[i] += acc[1].l[i];
-            acc[0].r[i] += acc[1].r[i];
-            acc[0].sc[i] += acc[1].sc[i];
-            acc[0].sd[i] += acc[1].sd[i];
-            acc[0].sr[i] += acc[1].sr[i];
+            *((acc + 0)->l + i) += *((acc + 1)->l + i);
+            *((acc + 0)->r + i) += *((acc + 1)->r + i);
+            *((acc + 0)->sc + i) += *((acc + 1)->sc + i);
+            *((acc + 0)->sd + i) += *((acc + 1)->sd + i);
+            *((acc + 0)->sr + i) += *((acc + 1)->sr + i);
         }
     }
     texture_mix(mix_l, mix_r, n);
-    punch_freeze_feed(acc[0].sr, mix_l, mix_r, n);
-    fx_buses(acc[0].sc, acc[0].sd, acc[0].sr, wet_l, wet_r, n);
+    if (al_land_on) {
+        static uint32_t lp0, lp1, lp2, lrnd = 0x3A71C9E5u;
+        static int32_t llp, lbp, lenv;
+        uint32_t ri = pitch_inc((36 + (int32_t)(audilune_root_note % 12u)) * 16), k;
+        for (i = 0; i < n; i++) {
+            int32_t sl = 0, sr = 0, nz = (int32_t)(noise32(&lrnd) >> 17) - 16384;
+            llp += (nz - llp) >> 4;
+            lbp += ((nz - llp) - lbp) >> 2;
+            lp0 += ri;
+            lp1 += (ri * 3u) >> 1;
+            lp2 += 340000u;
+            lenv = (sine_i(lp2) + 32768) >> 1;
+            for (k = 0u; k < 10u; k++) {
+                int32_t v = *(al_land_vol + k), s = 0, d = 0;
+                if (!(((al_land_on >> k) & 1u) && v > 0)) continue;
+                if (k == 0u && *(al_land_sub + 0) > 0u) s = (sine_i(lp0) + (sine_i(lp1) >> 1)) >> 3;
+                else if (k <= 3u) s = mulq15(llp, 16384 + (lenv >> 1));
+                else if (k <= 5u) s = mulq15(sine_i(lp1 << 2) >> 3, lenv);
+                else if (k <= 8u) s = lbp >> 1;
+                else { d = mulq15(llp >> 2, sine_i(lp2)); }
+                s = (s * v) >> 7;
+                d = (d * v) >> 7;
+                sl += s + d;
+                sr += s - d;
+            }
+            *(mix_l + i) += sl;
+            *(mix_r + i) += sr;
+        }
+    }
+    punch_freeze_feed((acc + 0)->sr, mix_l, mix_r, n);
+    fx_buses((acc + 0)->sc, (acc + 0)->sd, (acc + 0)->sr, wet_l, wet_r, n);
     for (i = 0; i < n; i++) {
-        mix_l[i] += wet_l[i];
+        *(mix_l + i) += *(wet_l + i);
+
         mix_r[i] += wet_r[i];
     }
     dust_process(mix_l, mix_r, n);
