@@ -1086,8 +1086,9 @@ static const char *const AL_LAND_SUBS[][8] = {
     {"TAPE HISS", "VINYL CRACKLE", "CLOCKWORK TCK", "HEAVY MACHINE", "METAL CLANG", "RADIO STATIC", "SOLAR WIND", "STARSHIP HUM"},
     {"STATIC CENTER", "SLOW DRIFT", "WIDE BINAURAL", "WIND GUSTS", "DEEP CAVERN", "INFINITE WASH", "SLOW DRIFT", "INFINITE WASH"}
 };
-static uint8_t al_punch_div[16], al_punch_val[16], al_punch_active, al_punch_slot;
-static uint8_t al_land_on[10], al_land_sub[10], al_land_vol[10];
+static uint8_t al_punch_div[8 + 8], al_punch_val[8 + 8], al_punch_active, al_punch_slot;
+static uint16_t al_land_on;
+static uint8_t al_land_sub[5 + 5], al_land_vol[5 + 5];
 static const char *const AL_ENV_ROWS[] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
 static const char *const AL_LFO_ROWS[] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
 static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "HELPER NOTES", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
@@ -1108,7 +1109,7 @@ static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
 static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_chop_trim_s = 0u, al_chop_trim_e = 100u;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
-static uint8_t audilune_theme_idx, al_arp_mode[], al_clip_ok;
+static uint8_t audilune_theme_idx, al_arp_mode[3 + 3], al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return al_pad_list_mode ? 1u : 18u;
@@ -1123,6 +1124,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_CHOP_SRC) return 4u;
     if (scr == UI_CHOP_WAVE) return 21u;
     if (scr == UI_ALGO) return 6u + DRUM_KITS;
+
     if (scr == UI_SETUP) return 13u;
     return 0u;
 }
