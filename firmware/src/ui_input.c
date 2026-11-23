@@ -1306,18 +1306,28 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
             ui.force = 1;
         }
         if (!rc_held) {
-            ft_owns_press();
-            rec_toggle();
-            if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
-                song.g[G_CLICK] = 70;
-            rec_hud_pick = (uint8_t)(rec_wait != 0u);
-            ui_message(rec_wait ? "REC: ACTIVE TRK" : song.rec ? "REC LIVE" : "REC DISARMED");
-              ui.force = 1;
+            if (al_cap.state == 1u || al_cap.state == 2u) {
+                al_smp_cap_stop();
+                rec_hud_pick = 0;
+                rec_wait = 0;
+                ui_message("CAPTURE FINISHED");
+            } else {
+                ft_owns_press();
+                rec_toggle();
+                if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
+                    song.g[G_CLICK] = 70;
+                rec_hud_pick = (uint8_t)(rec_wait != 0u);
+                if (!rec_wait)
+                    al_smp_cap_stop();
+                ui_message(rec_wait ? "REC: ACTIVE TRK" : song.rec ? "REC LIVE" : "REC DISARMED");
+            }
+            ui.force = 1;
         }
         rc_on = 0;
     }
     {
         static uint8_t sel_on, sel_disarmed, punch_on;
+
         static uint32_t sel_t0;
         uint32_t scl_b = 1u << panel.btn[B_SCL], scl_down = (fm1_in.buttons & scl_b) != 0u;
         if (scl_down && !sel_on) {
