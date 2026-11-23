@@ -1316,24 +1316,25 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         } else {
             int32_t nv = clamp((int32_t)al_punch_val[row] + s * 4, 0, 110);
             al_punch_val[row] = (uint8_t)nv;
-            audilune_hud_popup(*(AL_PUNCH_NAMES + row), nv, "%");
+            audilune_hud_popup(al_nth_str(AL_PUNCH_STR, row), nv, "%");
         }
     } else if (ui.scr == UI_LANDSCAPE) {
         if (k == 3u) {
             al_land_sub[row] = (uint8_t)((al_land_sub[row] + (s > 0 ? 1u : 7u)) & 7u);
             audilune_landscape_apply();
-            audilune_hud_text(*(AL_LAND_NAMES + row), AL_LAND_SUBS[row][al_land_sub[row] & 7u]);
+            audilune_hud_text(al_nth_str(AL_LAND_STR, row), al_land_sub_name(row, al_land_sub[row]));
         } else {
             int32_t nv = clamp((int32_t)al_land_vol[row] + s * 4, 0, 100);
             al_land_vol[row] = (uint8_t)nv;
             if (nv > 0) al_land_on |= (uint16_t)(1u << row);
             audilune_landscape_apply();
-            audilune_hud_popup(*(AL_LAND_NAMES + row), nv, "%");
+            audilune_hud_popup(al_nth_str(AL_LAND_STR, row), nv, "%");
         }
     } else if (ui.scr == UI_FX && al_pad_list_mode) {
         uint32_t p = al_pad_idx & 7u;
         if (k == 3u && p == 5u) {
             al_gravity = (al_gravity == 0u) ? 50u : 0u;
+
             al_pad_x[p] = al_gravity ? 127u : 0u;
             audilune_gravity_apply(al_gravity);
             audilune_hud_text("GRAVITY", al_gravity ? "UNQUANTIZED" : "QUANTIZED");
