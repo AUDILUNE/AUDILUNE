@@ -1529,16 +1529,6 @@ UI_SMALL static void ui_input(void)
             panel_enc(EN_K1 + k);
         enc_hold |= 15u << EN_K1;
     }
-#if FELUCCA_ARRANGER
-    if (on_song_page()) {
-        song_screen_input(pressed, home);
-        return;
-    }
-    if (on_drum_page()) {
-        drum_screen_input(pressed, home, notes);
-        return;
-    }
-#endif
     if (home == BT_TAP) {
         pressed &= ~(1u << panel.btn[B_HOME]);
         if (ui.scr == UI_LIVE && !vis_on) {
@@ -1548,6 +1538,7 @@ UI_SMALL static void ui_input(void)
             ui_message("VISUALIZER");
         } else {
             vis_on = 0;
+
             go_home();
             ui_message("LIVE PLAY");
         }
