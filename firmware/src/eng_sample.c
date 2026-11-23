@@ -249,10 +249,91 @@ static void sample_spread(track_t *t, voice_t *v, uint32_t r)
                                                                  /* gave many voices the same start) */
 }
 
+/* AUDILUNE 5.0s Threshold-Triggered IMA-ADPCM Capture into USR1..USR6 (14.7 kHz Smart Fit = 36,750 B) */
+#define AL_CAP_MAX_BYTES 36750u
+#define AL_CAP_RING 4096u
+static struct {
+    volatile uint8_t state;   /* 0=idle, 1=armed (threshold wait), 2=recording, 3=finishing */
+    uint8_t slot, is_usb, dec_cnt, nib_hi, nib_buf;
+    int16_t pred;
+    int8_t idx;
+    volatile uint32_t wr, rd, total_bytes;
+} al_cap;
+static uint8_t al_cap_ring[2048 + 2048];
+
+static void al_smp_cap_arm(uint32_t slot, uint32_t is_usb)
+{
+    al_cap.state = 0u;
+    al_cap.slot = (uint8_t)(slot % SMP_USER_SLOTS);
+    al_cap.is_usb = (uint8_t)(is_usb ? 1u : 0u);
+    al_cap.dec_cnt = 0u;
+    al_cap.nib_hi = 0u;
+    al_cap.nib_buf = 0u;
+    al_cap.pred = 0;
+    al_cap.idx = 0;
+    al_cap.wr = 0u;
+    al_cap.rd = 0u;
+    al_cap.total_bytes = 0u;
+    al_cap.state = 1u;
+}
+
+static void al_smp_cap_stop(void)
+{
+    if (al_cap.state == 1u)
+        al_cap.state = 0u;
+    else if (al_cap.state == 2u)
+        al_cap.state = 3u;
+}
+
+static void al_smp_cap_push(int16_t pcm)
+{
+    int32_t diff, step, delta, vp;
+    uint32_t code = 0u;
+    if (al_cap.state == 0u || al_cap.state >= 3u)
+        return;
+    if (al_cap.state == 1u) {
+        if (pcm > -640 && pcm < 640)
+            return;
+        al_cap.state = 2u;
+    }
+    if (++al_cap.dec_cnt < 3u)
+        return;
+    al_cap.dec_cnt = 0u;
+    if (al_cap.total_bytes >= AL_CAP_MAX_BYTES) {
+        al_cap.state = 3u;
+        return;
+    }
+    step = *(IMA_STEP + (uint32_t)al_cap.idx);
+    diff = (int32_t)pcm - (int32_t)al_cap.pred;
+    if (diff < 0) { code = 8u; diff = -diff; }
+    delta = step >> 3;
+    if (diff >= step) { code |= 4u; diff -= step; delta += step; }
+    if (diff >= (step >> 1)) { code |= 2u; diff -= (step >> 1); delta += (step >> 1); }
+    if (diff >= (step >> 2)) { code |= 1u; delta += (step >> 2); }
+    vp = (int32_t)al_cap.pred + ((code & 8u) ? -delta : delta);
+    al_cap.pred = (int16_t)clamp(vp, -32768, 32767);
+    al_cap.idx = (int8_t)clamp((int32_t)al_cap.idx + *(IMA_IDX + (code & 7u)), 0, 88);
+    if (!al_cap.nib_hi) {
+        al_cap.nib_buf = (uint8_t)(code & 15u);
+        al_cap.nib_hi = 1u;
+    } else {
+        uint8_t b = (uint8_t)(al_cap.nib_buf | ((code & 15u) << 4));
+        al_cap.nib_hi = 0u;
+        if (al_cap.wr - al_cap.rd < AL_CAP_RING) {
+            *(al_cap_ring + (al_cap.wr & (AL_CAP_RING - 1u))) = b;
+            al_cap.wr++;
+        }
+        al_cap.total_bytes++;
+        if (al_cap.total_bytes >= AL_CAP_MAX_BYTES)
+            al_cap.state = 3u;
+    }
+}
+
 static const engine_t ENG_SAMPLE = {
     "SAMPLE", {"SET", "TONE"},
     {
         {"SET", F_ENUM, 0, SMP_NALL - 1, 0, SMP_ALL_NAMES, 0},
+
         {"TUNE", F_SEMI, -24, 24, 0, 0, 0},
         {"BITS", F_INT, 0, 127, 0, 0, 0},
         {"LOOP", F_ENUM, 0, 1, 1, N_ONOFF_E, 0},
