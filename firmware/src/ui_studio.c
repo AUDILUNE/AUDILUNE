@@ -1970,7 +1970,7 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
 UI_SMALL static void audilune_page_draw(void)
 {
     static uint32_t head, strip, footer;
-    static const char *const TITLES[] = {"EFFECTS", "ENVELOPE", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP", "ALGO / KITS", "STUDIO SETUP"};
+    static const char *const TITLES[] = {"EFFECTS", "PUNCH-IN FX", "ENVELOPE", "LANDSCAPER", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQUENCE", "CHOP SRC", "CHOP SHOP", "ALGO / KITS", "STUDIO SETUP"};
     uint32_t rows = audilune_page_rows(ui.scr), sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     uint32_t y0 = ui.scr == UI_CHOP_WAVE ? 110u : 56u, vis = ui.scr == UI_CHOP_WAVE ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i, j;
@@ -1983,6 +1983,7 @@ UI_SMALL static void audilune_page_draw(void)
         int32_t cx = 8 + (int32_t)al_pad_x[p] * 222 / 127, cy = 148 - (int32_t)al_pad_y[p] * 120 / 127;
         cv_begin(240, 156, C_BLACK);
         cv_text(6, 1, &FONT_S, *(AL_PAD_NAMES + p), HUD_ACCENT);
+
         cv_text(162, 1, &FONT_S, latched ? "[ON / LATCH]" : "[OFF]", latched ? C_WHITE : TE_G3);
         cv_rect(2, 20, 236, 134, HUD_ACCENT);
         cv_rect(3, 21, 234, 132, C_BLACK);
