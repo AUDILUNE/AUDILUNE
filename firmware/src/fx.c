@@ -219,16 +219,17 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
         if (trk[ti].p[P_REV] > max_rev_send)
             max_rev_send = trk[ti].p[P_REV];
     }
-    int32_t fb = song.g[G_DFDBK] * 230, col = 2000 + song.g[G_DCOLOR] * 240;
+      int32_t fb = song.g[G_DFDBK] * 230, col = 2000 + song.g[G_DCOLOR] * 240;
     if (thr_dly && fb < 89 * 230)                       /* ECHO THROW: FDBK at least 70 %, gliding with it (2.6) */
         fb += ((89 * 230 - fb) * thr_dly) >> 15;
     if (max_dly_send > 127) {                           /* 101%..110% expansion zone: warm self-oscillating cascade */
         int32_t cascade_fb = 29210 + (max_dly_send - 127) * 320;
         if (fb < cascade_fb)
-
             fb = cascade_fb;
     }
-    int32_t dmix = song.g[G_DMIX] * 258;
+    fb = fx_slew(&s_fb, fb);
+    col = fx_slew(&s_col, col);
+    int32_t dmix = fx_slew(&s_dmix, song.g[G_DMIX] * 258);
     int32_t g = 17000 + song.g[G_RSIZE] * 104, lpk = 32767 - song.g[G_RDAMP] * 200;   /* loop gain (RT60 ~0.4..4 s), damping */
     if (max_rev_send > 127) {                           /* 101%..110% shimmer bloom: lush feedback & bright harmonics */
         int32_t shim_g = 30208 + (max_rev_send - 127) * 180;
@@ -236,13 +237,16 @@ static void fx_buses(const int32_t *cho_in, const int32_t *dly_in, const int32_t
             g = shim_g > 32600 ? 32600 : shim_g;
         lpk += ((32767 - lpk) * (max_rev_send - 127)) / 13;
     }
+    g = fx_slew(&s_g, g);
+    lpk = fx_slew(&s_lpk, lpk);
     int32_t frnd = rev_frz ? 128 : 0;                  /* FREEZE: what is in the lines stays there (below: no
                                                          * loss, rounded to nearest; 0: as always, bit for bit) */
-    int32_t cdepth = song.g[G_CDEPTH] * 6 + (max_cho_send > 127 ? (max_cho_send - 127) * 28 : 0);
+    int32_t cdepth = fx_slew(&s_cdep, song.g[G_CDEPTH] * 6 + (max_cho_send > 127 ? (max_cho_send - 127) * 28 : 0));
     int32_t ca0, ca1, cb0, cb1, ma, mb, dca, dcb;
     const uint32_t L0 = REV_LINE[0] + REV_MOD + 2u, B1 = L0, B2 = B1 + REV_LINE[1], B3 = B2 + REV_LINE[2];
     {   /* the chorus' two read points (Q8 samples back) and line 0's extra length, at both ends of the block */
         int32_t s0 = osc_sine(fx.cho_ph), s1, m0 = osc_sine(fx.rev_ph), m1;
+
         fx.cho_ph += LFO_INC[song.g[G_CRATE] & 127];
         fx.rev_ph += LFO_INC[30];
         s1 = osc_sine(fx.cho_ph);
