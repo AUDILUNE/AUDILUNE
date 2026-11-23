@@ -866,13 +866,51 @@ UI_SMALL static void layer_tap(uint32_t layer)
 {
     switch (layer) {
     case LY_FX:
-        audilune_toggle_scr(UI_FX, FAM_FX, "EFFECTS");
+        vis_on = 0;
+        if (ui.scr == UI_FX && !ui.home && !al_pad_list_mode) {
+            if (ui.list_sel < 8u) al_pad_idx = ui.list_sel;
+            al_pad_list_mode = 1u;
+            ui.list_sel = 0;
+            ui_message(*(AL_PAD_NAMES + (al_pad_idx & 7u)));
+        } else if (ui.scr == UI_FX && !ui.home && al_pad_list_mode) {
+            al_pad_list_mode = 0u;
+            go_home();
+            ui_message("LIVE PLAY");
+        } else {
+            al_pad_list_mode = 0u;
+            ui.scr = UI_FX;
+            ui.list_sel = 0;
+            ui.list_top = 0;
+            open_family(FAM_FX);
+            ui_message("EFFECTS");
+        }
+        ui.force = 1;
         break;
     case LY_ERASE:
         audilune_toggle_scr(UI_EDIT, FAM_SEQ, "EDIT PAGE");
         break;
     case LY_STEP:
-        audilune_toggle_scr(UI_SEQ, FAM_SEQ, "SEQ PAGE");
+        vis_on = 0;
+        if (ui.scr == UI_SEQ && !ui.home && !al_seq_ovw) {
+            al_seq_ovw = 1u;
+            al_seq_ovw_trk = ui.list_sel < NTRK ? ui.list_sel : song.sel;
+            al_seq_ovw_step = 0u;
+            ui_message("128-STEP VIEW");
+        } else if (ui.scr == UI_SEQ && !ui.home && al_seq_ovw) {
+            al_seq_ovw = 0u;
+            go_home();
+            ui_message("LIVE PLAY");
+        } else {
+            al_seq_ovw = 0u;
+            ui.scr = UI_SEQ;
+            ui.list_sel = 0;
+            ui.list_top = 0;
+            open_family(FAM_SEQ);
+            ui_message("SEQ PAGE");
+        }
+        ui.force = 1;
+        break;
+
         break;
     case LY_ROLL:
         audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP PAGE");
