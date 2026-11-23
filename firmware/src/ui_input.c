@@ -1316,12 +1316,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
 {
     uint32_t rb = 1u << panel.btn[B_REC], rc_down = (fm1_in.buttons & rb) != 0u;
     static uint8_t rc_on, rc_held;
-
     static uint32_t rc_t0;
-    if (on_song_page()) {
-        pressed &= ~rb;
-        rc_down = 0u;
-    }
     if (pressed & rb) {
         rc_t0 = now_ms;
         rc_on = 1;
@@ -1345,16 +1340,24 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
             rec_toggle();
             if ((song.rec || rec_wait) && song.g[G_CLICK] <= 0)
                 song.g[G_CLICK] = 70;
-            ui_message((song.rec || rec_wait) ? "REC ARMED" : "REC DISARMED");
+            rec_hud_pick = (uint8_t)(rec_wait != 0u);
+            ui_message(rec_wait ? "REC: ACTIVE TRK" : song.rec ? "REC LIVE" : "REC DISARMED");
+            ui.force = 1;
         }
         rc_on = 0;
     }
     {
-
-        static uint8_t sel_on, sel_disarmed;
+        static uint8_t sel_on, sel_disarmed, punch_on;
         static uint32_t sel_t0;
         uint32_t scl_b = 1u << panel.btn[B_SCL], scl_down = (fm1_in.buttons & scl_b) != 0u;
-        if (scl_down && !sel_on) { sel_t0 = now_ms; sel_on = 1; sel_disarmed = 0; }
+        if (scl_down && !sel_on) {
+            sel_t0 = now_ms; sel_on = 1; sel_disarmed = 0;
+            if (ui.scr == UI_PUNCH && !rec_hud_pick) {
+                punch_on = 1;
+                audilune_punch_apply(ui.list_sel, 1);
+                ui.force = 1;
+            }
+        }
         if (scl_down && sel_on && !sel_disarmed && now_ms - sel_t0 >= 1000u) {
             sel_disarmed = 1;
             if (audilune_timer_alert) {
@@ -1363,7 +1366,17 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
                 ui_message("TIMER DISARMED");
                 ui.force = 1;
             }
-         }
+        }
+        if (!scl_down) {
+            if (punch_on) {
+                punch_on = 0;
+                audilune_punch_apply(ui.list_sel, 0);
+                ui.force = 1;
+            }
+            sel_on = 0; sel_disarmed = 0;
+        }
+    }
+
         if (!scl_down) { sel_on = 0; sel_disarmed = 0; }
     }
     {
