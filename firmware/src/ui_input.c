@@ -1242,18 +1242,18 @@ UI_SMALL static void audilune_clear_selected(void)
             ui_message("USR SLOT CLEARED");
         } else {
             ui_message("SLICE CLEARED");
-        }
+           }
         ui.force = 1;
         return;
     }
     if ((!ui.home && cur_page()->scope == SC_STEP) ||
-        (ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3])) {
+        (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3))) {
         track_t *t = TSEL;
-        uint32_t any_step = ui.sel_step_mask[0] | ui.sel_step_mask[1] | ui.sel_step_mask[2] | ui.sel_step_mask[3];
+        uint32_t any_step = *(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3);
         undo_mark(t, (undo_sess += 4u) | 3u);
         fm1_irq_off();
         for (i = 0; i < NSTEP; i++)
-            if (any_step ? ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u) : (i == ui.cursor)) {
+            if (any_step ? ((*(ui.sel_step_mask + (i >> 5)) >> (i & 31u)) & 1u) : (i == ui.cursor)) {
                 memset(&t->step[i], 0, sizeof t->step[i]);
                 memset(&t->dstep[i], 0, sizeof t->dstep[i]);
                 t->micro[i] = 0;
@@ -1273,6 +1273,7 @@ UI_SMALL static void audilune_clear_selected(void)
         ui_message("SEQ TRK CLEARED");
         ui.force = 1;
         return;
+
     }
     if (ui.sel_trk_mask) {
         fm1_irq_off();
