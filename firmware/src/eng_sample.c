@@ -251,7 +251,7 @@ static void sample_spread(track_t *t, voice_t *v, uint32_t r)
 
 /* AUDILUNE 5.0s Threshold-Triggered IMA-ADPCM Capture into USR1..USR6 (14.7 kHz Smart Fit = 36,750 B) */
 #define AL_CAP_MAX_BYTES 36750u
-#define AL_CAP_RING 4096u
+#define AL_CAP_RING 512u
 static struct {
     volatile uint8_t state;   /* 0=idle, 1=armed (threshold wait), 2=recording, 3=finishing */
     uint8_t slot, is_usb, dec_cnt, nib_hi, nib_buf;
@@ -259,13 +259,14 @@ static struct {
     int8_t idx;
     volatile uint32_t wr, rd, total_bytes;
 } al_cap;
-static uint8_t al_cap_ring[2048 + 2048];
+static uint8_t al_cap_ring[256 + 256] __attribute__((section(".pool")));
 
 static void al_smp_cap_arm(uint32_t slot, uint32_t is_usb)
 {
     al_cap.state = 0u;
     al_cap.slot = (uint8_t)(slot % SMP_USER_SLOTS);
     al_cap.is_usb = (uint8_t)(is_usb ? 1u : 0u);
+
     al_cap.dec_cnt = 0u;
     al_cap.nib_hi = 0u;
     al_cap.nib_buf = 0u;
