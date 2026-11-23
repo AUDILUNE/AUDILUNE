@@ -992,16 +992,33 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 ui.seq_grab = (uint8_t)(!ui.seq_grab);
                 ui_message(ui.seq_grab ? "GRABBED: K4 SHIFT" : "DROPPED");
             }
-        } else if (ui.scr == UI_FX) {
-            if ((al_pad_idx & 7u) == 2u && !al_pad_list_mode) {
-                al_vec_sel = (uint8_t)((al_vec_sel + 1u) & 3u);
-                *(al_vec_corner + al_vec_sel) = (uint8_t)((*(al_vec_corner + al_vec_sel) + 1u) & 3u);
-                audilune_chaos_apply(TSEL);
-                audilune_hud_popup("CORNER", (int32_t)al_vec_sel + 1, "");
+          } else if (ui.scr == UI_FX) {
+            if (!al_pad_list_mode) {
+                if (ui.list_sel < 8u) {
+                    al_pad_idx = ui.list_sel;
+                    al_pad_list_mode = 1u;
+                    ui_message(*(AL_PAD_NAMES + (al_pad_idx & 7u)));
+                } else {
+                    uint32_t bit = 1u << ((ui.list_sel - 8u) & 15u);
+                    al_fx_on ^= (uint16_t)bit;
+                    ui_message((al_fx_on & bit) ? "FX: ON" : "FX: OFF");
+                }
             } else {
-                al_pad_latch = (uint8_t)(!al_pad_latch);
-                ui_message(al_pad_latch ? "PAD LATCH: ON" : "PAD LATCH: OFF");
+                uint8_t p = (uint8_t)(al_pad_idx & 7u);
+                uint8_t bit = (uint8_t)(1u << p);
+                if (p == 2u) {
+                    al_vec_sel = (uint8_t)((al_vec_sel + 1u) & 3u);
+                    *(al_vec_corner + al_vec_sel) = (uint8_t)((*(al_vec_corner + al_vec_sel) + 1u) & 3u);
+                }
+                al_pad_latch ^= bit;
+                audilune_chaos_apply(TSEL);
+                ui_message((al_pad_latch & bit) ? "PAD: ON/LATCH" : "PAD: OFF");
             }
+        } else if (ui.scr == UI_LANDSCAPE) {
+            uint16_t bit = (uint16_t)(1u << (ui.list_sel % 10u));
+            al_land_on ^= bit;
+            audilune_landscape_apply();
+            ui_message((al_land_on & bit) ? "LAYER: ON" : "LAYER: MUTE");
         } else if (ui.scr == UI_EDIT) {
             if (ui.list_sel == 0u) {
                 ui_message(undo_swap(ui.edit_redo_dir) ? (ui.edit_redo_dir ? "REDO" : "UNDO") : "NOTHING TO UNDO");
@@ -1033,6 +1050,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             ui.chop_trim = 0;
             ui_message("CHOP SHOP");
         } else {
+
             ui.sel_trk_mask ^= (uint8_t)(1u << (song.sel % NTRK));
             ui_message((ui.sel_trk_mask & (1u << (song.sel % NTRK))) ? "SEL: LOCKED" : "SEL: UNLOCKED");
         }
