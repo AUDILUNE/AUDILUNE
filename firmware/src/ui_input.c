@@ -457,29 +457,7 @@ UI_SMALL static void note_sheet_knob(uint32_t slot, int32_t steps)
 
 UI_SMALL static void note_sheet_do(void)
 {
-    track_t *t = TSEL;
-    uint32_t row = ui.sheet - 1u;
-    note_mark();
-    if (row == 0u) {
-        t->step[ui.cursor].flags ^= SF_SLIDE;
-        audilune_hud_text("SLIDE", (t->step[ui.cursor].flags & SF_SLIDE) ? "ON" : "OFF");
-    } else if (row == 4u) {
-        int32_t to = note_shift(t, ui.cursor, 1, 1), k = ui.note_k;
-        if (to < 0) {
-            ui_message(step_on(&t->step[ui.cursor]) ? "NO ROOM" : "NO NOTE");
-            return;
-        }
-        cursor_set(to);
-        ui.note_k = (uint8_t)k;
-        ui.sheet = 4;
-        ui_message("COPIED");
-    } else if (row == 5u) {
-        note_del(t, ui.cursor, ui.note_k);
-        cursor_fix();
-        ui.sheet = 0;
-        ui_message("NOTE DELETED");
-    }
-    sync_reload = 1;
+    (void)0;
 }
 
 /* Edit Note Mode Knobs (with ENV / LFO modifiers per AUDILUNE Block 3 spec):
@@ -518,6 +496,7 @@ UI_SMALL static void step_edit(uint32_t slot, int32_t steps)
         audilune_hud_popup("STEP NOTE", st->note[ui.note_k], "");
         break;
     case 1:
+
         if (env_mod) {
             int32_t v = clamp((int32_t)t->p[P_DEC] + accel(EN_K2, steps, 100), 0, 100);
             t->p[P_DEC] = (int16_t)v;
