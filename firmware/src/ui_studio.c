@@ -105,14 +105,16 @@ UI_SMALL static void te_text_c(int32_t cx, int32_t y, const char *s, uint16_t c)
 UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *const val[4], int32_t sect, uint32_t *cache)
 {
     char line[36], nb[12];
-    uint32_t hot = ui.hot_t > 0 && ui.hot_col < 4u && lab[ui.hot_col][0] != 0;
+    uint32_t hot = ui.hot_t > 0 && ui.hot_col < 4u && *(lab + ui.hot_col)[0] != 0;
+    uint32_t arm_hud = !song.rec && (rec_hud_pick || rec_wait);
     uint32_t sig = studio_hash((uint32_t)song.sel * 17u + (uint32_t)song.g[G_BPM] * 31u +
                                (uint32_t)(sect + 1) * 97u + hot * 5003u + (uint32_t)ui.hot_col * 131u +
-                               audilune_timer_alert * 7919u,
+                               audilune_timer_alert * 7919u + arm_hud * 104729u +
+                               (uint32_t)rec_hud_mode * 313u + (uint32_t)rec_hud_usr * 617u,
                                ui.msg_t ? ui.msg : "");
     if (hot) {
-        sig = studio_hash(sig, lab[ui.hot_col]);
-        sig = studio_hash(sig, val[ui.hot_col]);
+        sig = studio_hash(sig, *(lab + ui.hot_col));
+        sig = studio_hash(sig, *(val + ui.hot_col));
     }
     if (!ui.force && sig == *cache)
         return;
@@ -126,11 +128,23 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *cons
     } else if (audilune_timer_alert) {
         cv_rect(1, 1, 238, 24, C_WHITE);
         te_text_c(120, 6, "TIME UP - HOLD SEL: DISARM", C_BLACK);
+    } else if (arm_hud) {
+        static const char REC_HUD_STR[] =
+            "REC: ACTIVE TRK (PLAY)\0REC: LOCKED TRKS\0REC: SAMPLE USR\0REC: USB USR\0REC: WHOLE SONG";
+        uint32_t m = rec_hud_mode % 5u;
+        str_cpy(line, al_nth_str(REC_HUD_STR, m), sizeof line);
+        if (m == 2u || m == 3u) {
+            uint32_t p = str_len(line);
+            fmt_int(nb, (int32_t)(rec_hud_usr % 6u) + 1);
+            str_cpy(line + p, nb, sizeof line - p);
+        }
+        cv_rect(1, 1, 238, 24, C_WHITE);
+        te_text_c(120, 6, line, C_BLACK);
     } else if (hot) {
         char up_l[16], up_v[16];
         uint32_t p = 0;
-        te_upper(up_l, lab[ui.hot_col], sizeof up_l);
-        te_upper(up_v, val[ui.hot_col], sizeof up_v);
+        te_upper(up_l, *(lab + ui.hot_col), sizeof up_l);
+        te_upper(up_v, *(val + ui.hot_col), sizeof up_v);
         str_cpy(line, up_l, sizeof line);
         p = str_len(line);
         if (p + 2u < sizeof line) { line[p++] = ':'; line[p++] = ' '; line[p] = 0; }
@@ -142,6 +156,7 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[4], const char *cons
         str_cpy(line, "TRK ", sizeof line);
         p = str_len(line);
         fmt_int(nb, (int32_t)song.sel + 1);
+
         str_cpy(line + p, nb, sizeof line - p);
         p = str_len(line);
         if (p + 8u < sizeof line) {
