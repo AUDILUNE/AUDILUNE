@@ -499,6 +499,7 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
 }
 UI_SMALL static void drum_screen_draw(void)
 {
+    return;
     static uint32_t head, title_sig, body_sig, footer;
     uint32_t i, j, len = (uint32_t)clamp(TDRUM->p[P_SLEN], 1, 64), kit = drum_kit(), sig, bank;
     if (drum_cursor >= len) drum_cursor = (uint8_t)(len - 1u);
@@ -513,6 +514,7 @@ UI_SMALL static void drum_screen_draw(void)
                 style = nm;
         }
         te_lower(st, style, sizeof st);
+
         st[12] = 0;
         te_header(st, TE_DRUM, &head, -1);
     }
