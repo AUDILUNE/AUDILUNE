@@ -1709,6 +1709,16 @@ UI_SMALL static void ui_input(void)
             audilune_hud_popup("TRACK", (int32_t)(next_trk + 1u), "");
         }
     }
+    if (ui.scr == UI_CHOP_WAVE && ui.chop_mode == 4u && notes) {
+        for (k = 0; k < 16u; k++)
+            if ((notes >> key_of_white(k)) & 1u) {
+                ui.chop_sel = (uint8_t)k;
+                ui.list_sel = (uint8_t)(k + 2u);
+                audilune_hud_popup("MANUAL CUT", (int32_t)k + 1, "");
+                ui.force = 1;
+                break;
+            }
+    }
 
     for (k = 0; k < 4u; k++) {
         const page_t *pg = cur_page();
@@ -1721,7 +1731,11 @@ UI_SMALL static void ui_input(void)
             ui.hot_t = 40;
         }
 
-        if (ui.scr == UI_SEQ && al_seq_ovw && k == 3u) {
+        if (rec_hud_pick && k == 3u) {
+            rec_hud_usr = (uint8_t)((rec_hud_usr + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_popup("REC USR", (int32_t)rec_hud_usr + 1, "");
+            ui.force = 1;
+        } else if (ui.scr == UI_SEQ && al_seq_ovw && k == 3u) {
             al_seq_ovw_step = (uint8_t)((al_seq_ovw_step + (s > 0 ? 1u : 127u)) & 127u);
             audilune_hud_popup("STEP", (int32_t)al_seq_ovw_step + 1, "");
             ui.force = 1;
@@ -1733,6 +1747,7 @@ UI_SMALL static void ui_input(void)
         } else if (ui.scr >= UI_FX) {
             audilune_list_knob(k, s);
         } else {
+
             edit_param(k, s);
         }
     }
