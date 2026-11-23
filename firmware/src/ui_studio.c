@@ -1292,7 +1292,8 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
     } else if (ui.scr == UI_EDIT) {
 
-        enum { CLIP_STEPS = 64u };
+        enum { CLIP_STEPS = 32u };
+
         static uint8_t clip_drum;
         static int16_t clip_len;
         static union { step_t st[CLIP_STEPS + 0]; dstep_t dst[CLIP_STEPS + 0]; } clip_buf;
