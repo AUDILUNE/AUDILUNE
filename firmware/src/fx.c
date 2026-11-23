@@ -1248,14 +1248,15 @@ static void mix_block(int32_t *out, uint32_t n)
     }
     texture_mix(mix_l, mix_r, n);
     if (al_land_on) {
-        static uint32_t lp0, lp1, lp2, lrnd = 0x3A71C9E5u;
-        static int32_t llp, lbp, lenv;
+        static uint32_t lp0, lp1, lp2;
+        static int32_t lrnd = 0x3A71C9E5, llp, lbp, lenv;
         uint32_t ri = pitch_inc((36 + (int32_t)(audilune_root_note % 12u)) * 16), k;
         for (i = 0; i < n; i++) {
             int32_t sl = 0, sr = 0, nz = (int32_t)(noise32(&lrnd) >> 17) - 16384;
             llp += (nz - llp) >> 4;
             lbp += ((nz - llp) - lbp) >> 2;
             lp0 += ri;
+
             lp1 += (ri * 3u) >> 1;
             lp2 += 340000u;
             lenv = (sine_i(lp2) + 32768) >> 1;
