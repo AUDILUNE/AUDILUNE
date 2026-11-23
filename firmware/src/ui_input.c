@@ -915,7 +915,14 @@ UI_SMALL static void layer_tap(uint32_t layer)
     case LY_SCALE:
         if (rec_hud_pick) {
             rec_hud_pick = 0;
-            ui_message("REC TARGET SET");
+            if (rec_hud_mode == 2u || rec_hud_mode == 3u) {
+                rec_wait = 0u;
+                al_smp_cap_arm(rec_hud_usr, rec_hud_mode == 3u);
+                ui_message(rec_hud_mode == 3u ? "USB CAPTURE ARMED" : "SAMPLE CAP ARMED");
+            } else {
+                al_smp_cap_stop();
+                ui_message("REC TARGET SET");
+            }
             ui.force = 1;
             break;
         }
