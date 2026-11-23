@@ -886,9 +886,24 @@ UI_SMALL static void layer_tap(uint32_t layer)
         }
         ui.force = 1;
         break;
-    case LY_ERASE:
-        audilune_toggle_scr(UI_EDIT, FAM_SEQ, "EDIT PAGE");
+    case LY_ERASE: {
+        static uint32_t last_ed_ms;
+        uint32_t now = fm1_ms;
+        if (last_ed_ms && (now - last_ed_ms) < 300u) {
+            last_ed_ms = 0;
+            if (undo_swap(ui.edit_redo_dir)) {
+                ui_message(ui.edit_redo_dir ? "REDO" : "UNDO");
+                ui.edit_redo_dir ^= 1u;
+            } else {
+                ui_message("NOTHING TO UNDO");
+            }
+            ui.force = 1;
+        } else {
+            last_ed_ms = now ? now : 1u;
+            audilune_toggle_scr(UI_EDIT, FAM_SEQ, "EDIT PAGE");
+        }
         break;
+    }
     case LY_STEP:
         vis_on = 0;
         if (ui.scr == UI_SEQ && !ui.home && !al_seq_ovw) {
@@ -898,6 +913,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             ui_message("128-STEP VIEW");
         } else if (ui.scr == UI_SEQ && !ui.home && al_seq_ovw) {
             al_seq_ovw = 0u;
+
             go_home();
             ui_message("LIVE PLAY");
         } else {
