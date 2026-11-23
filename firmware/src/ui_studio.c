@@ -1673,9 +1673,15 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     const track_t *t = TSEL;
     lbl[0] = 0; val[0] = 0;
     if (scr == UI_FX) {
-        str_cpy(lbl, *(AL_FX_ROWS + row), 18);
-        fmt_int(val, *(al_fx_val + row));
-        str_cpy(val + str_len(val), "%", 4);
+        if (row < 8u) {
+            str_cpy(lbl, *(AL_PAD_NAMES + row), 18);
+            str_cpy(val, ((al_pad_latch >> row) & 1u) ? "[ON]" : "PAD", 14);
+        } else {
+            uint32_t fxr = row - 8u;
+            str_cpy(lbl, *(AL_FX_ROWS + fxr), 18);
+            fmt_int(val, *(al_fx_val + fxr));
+            str_cpy(val + str_len(val), "%", 4);
+        }
     } else if (scr == UI_ENV) {
         str_cpy(lbl, *(AL_ENV_ROWS + row), 18);
         fmt_int(val, *(t->p + P_ATK + row) * 100 / 127);
@@ -1703,8 +1709,9 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
         if (row == 0u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
         else if (row == 1u) str_cpy(val, *(AL_FREQ_NAMES + (audilune_freq_layer & 3u)), 14);
-        else if (row == 4u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
-        else if (row == 6u) str_cpy(val, "OPEN", 14);
+        else if (row == 2u) str_cpy(val, al_helper_notes ? "ON" : "OFF", 14);
+        else if (row == 5u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
+        else if (row == 7u) str_cpy(val, "OPEN", 14);
     } else if (scr == UI_SAVE) {
         str_cpy(lbl, "SLOT ", 18);
         fmt_int(lbl + 5, (int32_t)row + 1);
@@ -1722,6 +1729,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(val, *(AL_SCOPE_N + (audilune_gen_scope % 5u)), 14);
         } else if (row == 3u) {
             str_cpy(lbl, "MORPH AMOUNT", 18);
+
             fmt_int(val, (int32_t)audilune_gen_morph);
             str_cpy(val + str_len(val), "%", 4);
         } else if (row == 4u) {
