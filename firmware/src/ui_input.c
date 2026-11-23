@@ -14,12 +14,14 @@ static uint8_t audilune_genre_idx = 0;
 static uint8_t audilune_theme_idx = 0;
 static int8_t audilune_drum_octave = 0;
 static uint8_t audilune_save_latch = 0, audilune_pit_latch = 0;
+static uint8_t rec_hud_pick, rec_target, rec_usr_slot;
 
 /* Bare-metal HUD popup formatter (no stdio.h needed) for 1.5s status bar linger */
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit)
 {
 
     char buf[30 + 6], num[10 + 4];
+
     uint32_t p = 0, n = 0;
 
     int32_t v = val;
