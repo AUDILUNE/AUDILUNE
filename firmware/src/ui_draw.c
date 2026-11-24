@@ -141,65 +141,14 @@ UI_SMALL static void draw_tracks(void)
             uint32_t x0 = c * 60u + 4u;
             (void)x0;
 
-            int32_t fy = (int32_t)(TS_H - 2u) - (int32_t)lvl * (TS_H - 4) / 127;
-            ts.fader[ c ] = sig;
-            cv_begin(12, TS_H, C_BLACK);
-            cv_rect(3, 0, 1, TS_H, C_LINE);
-            if (lvl) {
-                cv_rect(2, fy, 3, TS_H - fy, C_DIM);
-                cv_rect(0, fy - 1, 7, 2, (sig & 131072u) ? C_WHITE : sel ? C_HI : C_GRAY);
-            } else {
-                cv_rect(0, TS_H - 2, 7, 2, C_DIM);
-            }
-            if (ts.meter[ c ]) {
-                int32_t my, mtop = TS_H - ts.meter[ c ];
-                for (my = TS_H - 1; my >= mtop; my -= 2)
-                    cv_rect(9, my, 3, 1, C_ACCENT);
-                cv_rect(9, mtop, 3, 1, C_WHITE);
-            }
-            cv_blit(x0, TS_Y);
-
-        }
-        sig = steps_hash(t) * 31u + len * 7u + sel;
-        if (ui.force || sig != ts.ov[ c ]) {
-            uint32_t i;
-            ts.ov[ c ] = sig;
-            cv_begin(34, TS_H, C_BLACK);
-            cv_rect(17, 0, 1, TS_H, C_LINE);
-            for (i = 0; i < len; i++) {
-                const step_t *s = &t->step[ i ];
-                int32_t r0 = (int32_t)(i * TS_H / len), r1 = (int32_t)((i + 1u) * TS_H / len), h = r1 - r0;
-                if (h > 2)
-                    h--;
-                if (h < 1)
-                    h = 1;
-                if (step_on(s)) {
-                    int32_t w = 2 + 6 * (int32_t)s->n;
-                    cv_rect(17 - w / 2, r0, w, h, (s->flags & SF_ACCENT) && sel ? C_WHITE : sel ? C_HI : C_GRAY);
-                } else if (s->time == ST_TIE) {
-                    cv_rect(16, r0, 3, r1 - r0, C_DIM);
-                }
-            }
-            cv_blit(x0 + 14u, TS_Y);
-        }
-        if (song.playing)
-            row = ((t->seq_idx % len) * 2u + 1u) * TS_H / (2u * len);
-        sig = 1u + row + (st == 1u) * 65536u;
-        if (ui.force || sig != ts.mark[ c ]) {
-            int32_t i;
-            ts.mark[ c ] = sig;
-            cv_begin(5, TS_H, C_BLACK);
-            if (row != 0xFFFFu)
-                for (i = -2; i <= 2; i++) {
-                    int32_t w = 5 - 2 * (i < 0 ? -i : i);
-                    cv_rect(5 - w, (int32_t)row + i, w, 1, st == 1u ? C_WHITE : C_ACCENT);
-                }
-            cv_blit(x0 + 49u, TS_Y);
+              (void)0;
         }
     }
 }
+
 UI_SMALL static void graph_big(void)
 {
+
     uint32_t c, n = 0;
     for (c = 0; c < 4u; c++)
         n += ui.big_l[ c ][ I0 ] != 0;
