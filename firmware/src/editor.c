@@ -649,15 +649,6 @@ UI_SMALL static int ed_backup(uint32_t cmd, const uint8_t *a, uint32_t na)   /* 
                 }
             }
 
-        } else if (op == 0u && na == 12u && (id <= 11u)) {  /* begin: id, length (5), CRC-32 (5) */
-            len = ed_bk_r32(a + 2);
-            if (id >= 2u || len) {                        /* (the working project and the settings are never empty) */
-                if (len <= sizeof proj_tmp) {
-                    ed_bk_put = 1;
-                    ed_bk_valid = 0;                      /* (the staging RAM is the snapshot's) */
-                    ed_bk_id = (uint8_t)id;
-                    ed_bk_len = len;
-                    ed_bk_crc = ed_bk_r32(a + 7);
                     ed_bk_pos = 0;
                     ed_bk_ms = fm1_ms;
                     rc = 0;
