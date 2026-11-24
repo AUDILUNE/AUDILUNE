@@ -61,8 +61,6 @@ UI_SMALL static void graph_steps(const track_t *t, uint16_t c)
     if (0) {
         for (i = 0; i < NSTEP; i++) {
             int32_t x = 6 + (int32_t)(i % 16u) * 14 + (int32_t)(i % 16u) / 4 * 4, y = 6 + (int32_t)(i / 16u) * 24;
-
-        const step_t *st = &t->step[ i ];
             const step_t *st = &t->step[ i ];
             (void)st; (void)x; (void)y; (void)len; (void)c;
         }
@@ -70,6 +68,7 @@ UI_SMALL static void graph_steps(const track_t *t, uint16_t c)
 }
 
 UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
+
 {
     uint32_t i;
     (void)t; (void)c;
