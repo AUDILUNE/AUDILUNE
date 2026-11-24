@@ -63,65 +63,19 @@ UI_SMALL static void graph_steps(const track_t *t, uint16_t c)
             int32_t x = 6 + (int32_t)(i % 16u) * 14 + (int32_t)(i % 16u) / 4 * 4, y = 6 + (int32_t)(i / 16u) * 24;
 
         const step_t *st = &t->step[ i ];
-        if (i >= len)
-            continue;
-        if (step_on(st))
-            cv_rect(x, y, 1, 14, c);
-        else if (st->time == ST_TIE)
-            cv_rect(x, y + 6, 1, 8, C_DIM);
-        else
-            cv_rect(x, y + 13, 1, 1, C_DIM);
-        if (st->flags & SF_ACCENT)
-            cv_rect(x - 1, y - 2, 3, 1, c);
-        if ((song.playing && i == t->seq_idx) || i == ui.cursor)
-            cv_rect(x - 1, y + 16, 3, 3, C_WHITE);
+            const step_t *st = &t->step[ i ];
+            (void)st; (void)x; (void)y; (void)len; (void)c;
+        }
     }
 }
+
 UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
 {
-    uint32_t len = trk_len(t), nv = NV_ZOOM[ clamp(1 + (int8_t)ui.zoom, 0, 3) ], v0, i, j;
-    int32_t lo = 127, hi = 0, x0 = 22, w = 240 - 22 - 2, top = 14, bot = H_GRAPH - 4 - (ui.sheet ? 18 : 0), rh, sel_note = last_note, cx;
-    const step_t *cs = &t->step[ ui.cursor ];
-    char b[ B12 ];
-    if (nv > len)
-        nv = len;
-    v0 = ui.cursor / nv * nv;
-    for (i = 0; i < len; i++)
-        for (j = 0; j < t->step[ i ].n; j++) {
-            if (t->step[ i ].note[ j ] < lo) lo = t->step[ i ].note[ j ];
-            if (t->step[ i ].note[ j ] > hi) hi = t->step[ i ].note[ j ];
-        }
-    if (step_on(cs))
-        sel_note = cs->note[ ui.note_k % cs->n ];
-    if (lo > hi)
-        lo = hi = sel_note;
-    if (hi - lo < 11) {
-        lo = clamp((lo + hi) / 2 - 6, 0, 115);
-        hi = lo + 11;
-    }
-    if (hi - lo > 17) {
-        lo = clamp(sel_note - 8, lo, hi - 17);
-        hi = lo + 17;
-    }
-    lo = clamp(lo - 1, 0, 127), hi = clamp(hi + 1, 0, 127);
-    rh = (bot - top) / (hi - lo + 1);
-    fmt_int(b, (int32_t)v0 + 1);
-    str_cpy(b + str_len(b), "-", 2);
-    fmt_int(b + str_len(b), (int32_t)(v0 + nv > len ? len : v0 + nv));
-    cv_text(2, 0, &FONT_S, b, C_GRAY);
-    str_cpy(b, "ZOOM ", 12);
-    fmt_int(b + 5, (int32_t)nv);
-    cv_text(238 - text_w(&FONT_S, b), 0, &FONT_S, b, C_DIM);
-    for (i = (uint32_t)lo; i <= (uint32_t)hi; i++) {
-        int32_t y = bot - ((int32_t)i - lo + 1) * rh;
-        uint32_t pc = i % 12u;
-        if ((0x54Au >> pc) & 1u)
-            cv_rect(x0, y, w, rh, TE_G1);
-        if (!pc) {
-            note_name(b, i);
-            cv_text(0, y + rh / 2 - 6, &FONT_S, b, C_DIM);
-            cv_rect(x0, y + rh - 1, w, 1, C_GRAY);
-        }
+    uint32_t i;
+    (void)t; (void)c;
+    if (0) {
+        for (i = 0; i < 1u; i++) {
+
     }
     for (i = 0; i <= nv; i++)
         if (i % 4u == 0u)
