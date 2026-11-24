@@ -75,65 +75,16 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
     (void)t; (void)c;
     if (0) {
         for (i = 0; i < 1u; i++) {
+            (void)0;
+        }
+    }
+}
 
-    }
-    for (i = 0; i <= nv; i++)
-        if (i % 4u == 0u)
-            cv_rect(x0 + (int32_t)i * w / (int32_t)nv, top, 1, bot - top, i % 16u ? C_DIM : C_GRAY);
-        else if (nv <= 32u)
-            cv_rect(x0 + (int32_t)i * w / (int32_t)nv, bot + 1, 1, 2, C_DIM);
-    for (i = 0; i < len; i++) {
-        const step_t *st = &t->step[ i ];
-        uint32_t n = note_len(t, i), f;
-        int32_t xa, xb, y;
-        if (!step_on(st) || i + n <= v0 || i >= v0 + nv)
-            continue;
-        xa = x0 + ((int32_t)i - (int32_t)v0) * w / (int32_t)nv + 1;
-        xb = x0 + ((int32_t)(i + n) - (int32_t)v0) * w / (int32_t)nv - 1;
-        xa = xa < x0 ? x0 : xa;
-        xb = xb > x0 + w ? x0 + w : xb;
-        {   /* AUDILUNE Block 1: Step FX lock badge indicator at top of locked step column */
-            uint32_t lk, has_fx = 0;
-            for (lk = 0; lk < NLOCK; lk++)
-                if (t->lock[ lk ].step == i && t->lock[ lk ].param != P_COUNT) { has_fx = 1; break; }
-            if (has_fx) {
-                cv_rect(xa, top + 1, xb - xa > 3 ? xb - xa : 3, 2, C_WHITE);
-                cv_rect(xa, top + 4, 2, 2, c);
-            }
-        }
-        for (j = 0; j < st->n; j++) {
-            if (st->note[ j ] < lo || st->note[ j ] > hi)
-                continue;
-            y = bot - ((int32_t)st->note[ j ] - lo + 1) * rh + 1;
-            f = note_force(st, j);
-            cv_rect(xa, y, xb - xa, rh - 1, f ? c : TE_DIM[ song.sel & 3u ]);
-            if (f == 1u && rh > 4)
-                cv_rect(xa + 1, y + 1, xb - xa - 2, rh - 3, C_BLACK);
-            if (f == 4u)
-                cv_rect(xa, y, xb - xa, 2, C_WHITE);
-            if ((st->flags & SF_SLIDE) && j == 0u)
-                cv_rect(xb, y + rh / 2 - 1, 4, 2, c);
-            if (i == ui.cursor && j == ui.note_k % st->n) {
-                cv_rect(xa - 2, y - 2, xb - xa + 4, 1, C_WHITE), cv_rect(xa - 2, y + rh - 1, xb - xa + 4, 1, C_WHITE);
-                cv_rect(xa - 2, y - 2, 1, rh + 2, C_WHITE), cv_rect(xb + 1, y - 2, 1, rh + 2, C_WHITE);
-                note_name(b, st->note[ j ]);
-                cv_text(xa, y - 15 < top ? y + rh + 1 : y - 15, &FONT_S, b, C_WHITE);
-            }
-        }
-    }
-    cx = x0 + ((int32_t)ui.cursor - (int32_t)v0) * w / (int32_t)nv;
-    if (!step_on(cs) && sel_note >= lo && sel_note <= hi) {
-        int32_t y = bot - (sel_note - lo + 1) * rh + 1, xw = w / (int32_t)nv - 2;
-        cv_rect(cx + 1, y - 1, xw, 1, C_WHITE), cv_rect(cx + 1, y + rh - 1, xw, 1, C_WHITE);
-        cv_rect(cx + 1, y - 1, 1, rh, C_WHITE), cv_rect(cx + xw, y - 1, 1, rh, C_WHITE);
-    }
-    if (song.playing && t->seq_idx >= v0 && t->seq_idx < v0 + nv) {
-        int32_t x = x0 + ((int32_t)t->seq_idx - (int32_t)v0) * w / (int32_t)nv;
-        cv_rect(x, top, 1, bot - top, C_HI);
-        cv_rect(x - 2, top, 5, 2, C_HI);
-    }
-    if (ui.sheet) {
+UI_SMALL static void al_unused_roll_tail(void)
+{
+    if (0) {
         char nu[ B8 ];
+
         const char *val[ B8 ] = {cs->flags & SF_SLIDE ? "ON" : "OFF", nu, FILL_N[ step_fill(t, ui.cursor) % 3u ], "", "", ""};
         fmt_int(nu, t->micro[ ui.cursor ]);
         if (t->micro[ ui.cursor ] > 0) { nu[ I0 ] = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
