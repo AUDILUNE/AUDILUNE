@@ -648,12 +648,6 @@ UI_SMALL static int ed_backup(uint32_t cmd, const uint8_t *a, uint32_t na)   /* 
                     rc = 0;
                 }
             }
-
-                    ed_bk_pos = 0;
-                    ed_bk_ms = fm1_ms;
-                    rc = 0;
-                }
-            }
         } else if (!ed_bk_put || ed_bk_id != id || fm1_ms - ed_bk_ms > 15000u) {
             rc = 5;                                       /* no begin for this object (or too long ago) */
         } else if (op == 1u && na >= 9u && ed_bk_r32(a + 2) == ed_bk_pos) {   /* data: off (5), pack7 */
@@ -668,6 +662,7 @@ UI_SMALL static int ed_backup(uint32_t cmd, const uint8_t *a, uint32_t na)   /* 
             rc = ed_bk_commit();
             ed_bk_put = 0;
             if (!rc) {
+
                 sync_reload = 1;
                 ui.force = 1;
             }
