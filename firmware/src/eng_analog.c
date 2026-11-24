@@ -18,7 +18,7 @@ static void analog_note_on(track_t *t, voice_t *v)
 }
 
 /* Minimoog Model D: 3 VCOs (LO..2' octaves + Osc 3 decoupled mod), CP3 mixer drive, 24 dB/oct nonlinear transistor ladder + bass comp */
-static void analog_moog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+UI_SMALL static void analog_moog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
     const int16_t *p = t->p;
     int32_t det = p[P_E1], mix = p[P_E2], o3m = p[P_E3], res = p[P_E5], drv = p[P_E6];
@@ -63,6 +63,7 @@ static uint8_t al_pad_x[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
 static uint8_t al_pad_y[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
 
 /* EMS VCS 3 / Synthi AKS: 3 wave-morphing oscs, 4-quadrant ring mod, 18 dB/oct diode ladder, loopable Trapezoid + X/Y Joystick */
+
 static void analog_vcs3_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
     const int16_t *p = t->p;
