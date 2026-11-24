@@ -159,11 +159,11 @@ def cc0_entries(setname, kind):
         given = re.search(r"_m(\d+)\.wav$", p.name)
         if given and kind != "kit":
             root = int(given.group(1))                  # (the file says it)
-        elif kind == "kit":
+          elif kind == "kit":
             root = KIT_BASE + k
         elif nn:
             root = (nn[0] + conv) * 12 + nn[1]
-              if setname in MEASURED_TUNING:              # tuned off A440: the measured pitch near the named note
+            if setname in MEASURED_TUNING:              # tuned off A440: the measured pitch near the named note
                 det = hz_to_midi(detect_hz(x, sr))
                 if abs(det - root) < 1.0:
                     root = det
@@ -174,6 +174,7 @@ def cc0_entries(setname, kind):
         x = x[:int(keep * TR)]
         n = len(x)
         if kind == "piano":                          # the attack, then a steady tone the envelope (DEC) fades:
+
 
             ls, le, xf, a0 = int(0.50 * TR), n - 1, int(0.08 * TR), int(0.28 * TR)   # long notes in 0.9 s
             w = int(0.02 * TR)
