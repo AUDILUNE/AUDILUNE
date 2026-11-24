@@ -602,11 +602,12 @@ UI_SMALL static int ed_backup(uint32_t cmd, const uint8_t *a, uint32_t na)   /* 
         }
         ed_b(rc);
         ed_b(rc ? 0u : (uint32_t)sizeof ED_BK_IDS - (ed_bk_obj(10u, &len) && !len ? 1u : 0u) -
-                           (ed_bk_obj(11u, &len) && !len ? 1u : 0u));
+                           (ed_bk_obj(11u, &len) && !len ? 1u : 0u) -
+                           (ed_bk_obj(12u, &len) && !len ? 1u : 0u));
         for (i = 0; !rc && i < sizeof ED_BK_IDS; i++) {
             p = ed_bk_obj(ED_BK_IDS[i], &len);
-            if ((ED_BK_IDS[i] == 10u || ED_BK_IDS[i] == 11u) && !len)
-                continue;                                 /* (nothing learned / no theme: not in the list) */
+            if ((ED_BK_IDS[i] == 10u || ED_BK_IDS[i] == 11u || ED_BK_IDS[i] == 12u) && !len)
+                continue;                                 /* (nothing learned / no theme / no custom vox: not in list) */
             ed_b(ED_BK_IDS[i]);
             ed_bk_u32(len);
             ed_bk_u32(st_crc32(p, len));
@@ -633,6 +634,21 @@ UI_SMALL static int ed_backup(uint32_t cmd, const uint8_t *a, uint32_t na)   /* 
         rc = 1;
         if (!flash_ok) {
             rc = 4;
+        } else if (op == 0u && na == 12u && (id <= 12u)) {  /* begin: id, length (5), CRC-32 (5) */
+            len = ed_bk_r32(a + 2);
+            if (id >= 2u || len) {                        /* (the working project and the settings are never empty) */
+                if (len <= sizeof proj_tmp) {
+                    ed_bk_put = 1;
+                    ed_bk_valid = 0;                      /* (the staging RAM is the snapshot's) */
+                    ed_bk_id = (uint8_t)id;
+                    ed_bk_len = len;
+                    ed_bk_crc = ed_bk_r32(a + 7);
+                    ed_bk_pos = 0;
+                    ed_bk_ms = fm1_ms;
+                    rc = 0;
+                }
+            }
+
         } else if (op == 0u && na == 12u && (id <= 11u)) {  /* begin: id, length (5), CRC-32 (5) */
             len = ed_bk_r32(a + 2);
             if (id >= 2u || len) {                        /* (the working project and the settings are never empty) */
