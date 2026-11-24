@@ -1623,6 +1623,7 @@ UI_SMALL static void ui_input(void)
     }
 
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
+        extern uint8_t audilune_vox_genre[];
         int32_t span = AUDILUNE_GENRE_COUNT + (int32_t)DRUM_KITS;
         int32_t pos;
         ui_input_ms = fm1_ms;
@@ -1637,7 +1638,11 @@ UI_SMALL static void ui_input(void)
         }
         pos = ((pos + s) % span + span) % span;
         ui.list_sel = (uint8_t)pos;
+        if (pos < AUDILUNE_GENRE_COUNT) {
+            audilune_vox_genre[song.sel % NTRK] = (uint8_t)pos;
+        }
         if (pos < AUDILUNE_GENRE_COUNT)
+
             audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[pos]);
         else
             audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[pos - AUDILUNE_GENRE_COUNT]);
