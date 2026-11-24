@@ -223,17 +223,29 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         k = (k * (65536 - k)) >> 15;                    /* ease out: the mouth opens fast, then settles */
     }
     uint32_t vox_on = (t->preset >= 7u && vox_len > 0u);
-    int32_t vox_gv = 32767, vox_gn = 0, vox_burst = 0;
+    int32_t vox_gv = 32767, vox_gn = 0, vox_burst = 0, vox_bend = 0;
     if (vox_on) {
         uint32_t step_b = (uint32_t)(18u - (p[P_E2] >> 3));
+        if (t->preset == 8u) step_b = (step_b * 3u) >> 1;   /* VOX-SING: slower sung syllable sustain */
+        else if (t->preset == 9u && (vox_idx & 1u)) step_b = (step_b >> 1) + 2u; /* VOX-BENT: uneven clock sag */
         uint32_t cur_i = vox_idx < vox_len ? vox_idx : 0u;
         uint32_t nxt_i = (cur_i + 1u) < vox_len ? (cur_i + 1u) : cur_i;
         const vox_ph_t *pa = &VOX_PH[vox_seq[cur_i] % 24u], *pb = &VOX_PH[vox_seq[nxt_i] % 24u];
         int32_t frac = step_b ? (int32_t)(((uint32_t)vox_tmr << 15) / step_b) : 0;
         if (frac > 32767) frac = 32767;
+        if (t->preset == 7u) frac = (frac * frac) >> 15;    /* DECTALK: crisp robotic phoneme snap */
+        else if (t->preset == 8u) frac = (frac * (65536 - frac)) >> 15; /* VOX-SING: lush legato vowel glide */
         fa[0 + 0] = ((int32_t)pa->f1 + (((int32_t)pb->f1 - (int32_t)pa->f1) * frac >> 15)) << 4;
         fa[1 + 0] = ((int32_t)pa->f2 + (((int32_t)pb->f2 - (int32_t)pa->f2) * frac >> 15)) << 4;
         fa[2 + 0] = ((int32_t)pa->f3 + (((int32_t)pb->f3 - (int32_t)pa->f3) * frac >> 15)) << 4;
+        if (t->preset == 9u) {                              /* VOX-BENT: circuit-bent F2/F3 cross-warp */
+            int32_t tmp_f = fa[1 + 0];
+            fa[1 + 0] = (fa[1 + 0] >> 1) + (fa[2 + 0] >> 1);
+            fa[2 + 0] = (tmp_f * 3) >> 1;
+            vox_bend = ((int32_t)(cur_i & 3u) - 1) * 48;
+        } else if (t->preset == 7u) {
+            vox_bend = ((int32_t)(cur_i % 3u) - 1) * 12;    /* DECTALK: subtle prosody pitch step */
+        }
         fb[0 + 0] = fa[0 + 0]; fb[1 + 0] = fa[1 + 0]; fb[2 + 0] = fa[2 + 0];
         ba[0 + 0] = 85 << 4; ba[1 + 0] = 105 << 4; ba[2 + 0] = 165 << 4;
         bb[0 + 0] = ba[0 + 0]; bb[1 + 0] = ba[1 + 0]; bb[2 + 0] = ba[2 + 0];
@@ -250,11 +262,9 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         v1 += ((rv - v1) * p[P_E7] * 258) >> 15;
         vowel_at(v0 + m->cutoff, fa, ba);
         vowel_at(v1 + m->cutoff, fb, bb);
-
-
     }
     /* SHIFT (semitones) and FOLOW (key tracking around C4, fixed), one ratio for all four */
-    ratio = fmt_ratio(p[P_E3] * 16 + ((FMT_FOLOW * (v->pitch_cur - 60 * 16) * 516) >> 16));   /* FOLOW / 127 */
+    ratio = fmt_ratio(p[P_E3] * 16 + vox_bend + ((FMT_FOLOW * (v->pitch_cur - 60 * 16) * 516) >> 16));
     bws = fmt_ratio((64 - p[P_E6]) * 4);                /* Q: bandwidth x2.5 .. x0.4 */
     f0 = (uint32_t)(((uint64_t)inc * 705600u) >> 32);   /* F0 in Hz * 16 */
     for (j = 0; j < 3; j++) {
@@ -268,6 +278,7 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         fa[j] = clamp(f, 60 * 16, 7000 * 16);
         ba[j] = clamp(b, 20 * 16, 1500 * 16);
     }
+
     fres_coef(&r1, (uint32_t)fa[0], (uint32_t)ba[0]);
     fres_coef(&r2, (uint32_t)fa[1], (uint32_t)ba[1]);
     fres_coef(&r3, (uint32_t)fa[2], (uint32_t)ba[2]);
