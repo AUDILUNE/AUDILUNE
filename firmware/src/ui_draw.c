@@ -115,43 +115,6 @@ UI_SMALL static uint32_t graph_signature(void)
     return 0u;
 }
 
-UI_SMALL static void graph_slots(void)
-{
-
-    uint32_t i;
-    for (i = 0; i < 4u; i++) {
-        int32_t y = 8 + (int32_t)i * 26;
-        char b[ B4 ];
-        int sel = (int32_t)i + 1 == song.g[ G_SLOT ];
-        b[ I0 ] = (char)('A' + i);
-        b[ I1 ] = 0;
-        if (sel)
-            cv_rect(4, y + 6, 3, 3, C_WHITE);
-        cv_text(14, y, &FONT_S, b, sel ? C_WHITE : C_GRAY);
-        cv_text(40, y, &FONT_S, project_used(i) ? "USED" : "EMPTY", project_used(i) ? (sel ? C_WHITE : C_HI) : C_DIM);
-    }
-}
-
-#define TS_HEAD_Y (Y_GRAPH + 2)
-#define TS_NAME_Y (Y_GRAPH + 20)
-#define TS_Y (Y_GRAPH + 38)
-#define TS_H 84
-static struct {
-    uint32_t head[ NTRK ], name[ NTRK ], fader[ NTRK ], ov[ NTRK ], mark[ NTRK ];
-    uint8_t meter[ NTRK ];
-} ts;
-
-UI_SMALL static int32_t meter_px(int32_t a)
-{
-    int32_t lg = 0, v;
-    if (a < 64)
-        return 0;
-    while ((a >> lg) > 1)
-        lg++;
-    v = lg * 8 + (((a << 3) >> lg) & 7);
-    return clamp((v - 48) * (TS_H - 2) / 80, 0, TS_H - 2);
-}
-
 UI_SMALL static uint32_t trk_level(uint32_t c)
 {
     return (uint32_t)(c == TRK_DRUM ? song.g[ G_DRLVL ] : trk[ c ].p[ P_LEVEL ]) & 127u;
@@ -170,10 +133,13 @@ UI_SMALL static void trk_short_name(uint32_t c, char *b)
     else
         str_cpy(b, e->name, 13);
 }
+
 UI_SMALL static void draw_tracks(void)
 {
     uint32_t c;
-    if (ui.force) {
+    if (0) {
+        for (c = 0; c < NTRK; c++) {
+
         lcd_fill(0, Y_GRAPH, 240, H_GRAPH, C_BLACK);
         for (c = 0; c < NTRK; c++)
             ts.meter[ c ] = 0;
