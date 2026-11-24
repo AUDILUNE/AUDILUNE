@@ -57,6 +57,11 @@ static void analog_moog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n,
     *(v->s + 0) = st0; *(v->s + 1) = st1; *(v->s + 3) = st3; *(v->s + 4) = st4; *(v->s + 2) = nst;
 }
 
+/* Shared 2D Pad / EMS VCS3 Joystick X/Y coordinates (0..127, center 64) */
+static uint8_t al_pad_latch, al_pad_idx;
+static uint8_t al_pad_x[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
+static uint8_t al_pad_y[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
+
 /* EMS VCS 3 / Synthi AKS: 3 wave-morphing oscs, 4-quadrant ring mod, 18 dB/oct diode ladder, loopable Trapezoid + X/Y Joystick */
 static void analog_vcs3_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
@@ -74,6 +79,7 @@ static void analog_vcs3_render(track_t *t, voice_t *v, int32_t *out, uint32_t n,
     uint32_t trap_inc = trap_spd > 64 ? (uint32_t)(trap_spd - 64) * 32000u : 0u;
     uint32_t i;
     for (i = 0; i < n; i++) {
+
         int32_t m_q15 = morph >> 1;
         int32_t o1 = osc_sine(ph0) + mulq15(osc_saw(ph0, inc1) - osc_sine(ph0), m_q15);
         int32_t o2 = osc_tri(ph1) + mulq15(osc_pulse(ph1, inc2, 0x60000000u) - osc_tri(ph1), m_q15);
