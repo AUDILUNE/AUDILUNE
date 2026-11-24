@@ -6074,13 +6074,13 @@ async function load(d) {
     for (let i = 0; i < d.info.gcount; i++) { sayK("reading", `${d.info.pcount + i + 1}/${total}`); d.gdesc[i] = await getDescOrNull(1, i); }
     const kd = d.pdesc[d.info.pe0];
     if (kd && kd.label === "KIT" && kd.names.length) d.kitNames = kd.names;   /* (the drum track was selected) */
-    d.titles = [];
+    d.titles = Array.of();
     for (let e = 0; e < d.info.nengines; e++) {
       const r = parse[CMD.NAMES](await d.link.request(req.names(e)));
       d.names[e] = r.names;
       d.titles[e] = r.titles;
     }
-    for (let k = 0; k < 4; k++) {                    /* PROJECT op 2: is the slot used */
+    for (let k = 0; k < 6; k++) {                    /* PROJECT op 2: is the slot used (SLOT 1..6) */
       try { d.slotUsed[k] = parse[CMD.PROJECT](await d.link.request(req.project(2, k))).used; }
       catch (e) { if (e.message === "closed") throw e; }
     }
@@ -6113,6 +6113,7 @@ async function load(d) {
     renderLib();
     renderBank();
     renderSysinfo();
+
     sayK("ready");
   } finally { busy--; }
 }
