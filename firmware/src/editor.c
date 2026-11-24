@@ -571,6 +571,18 @@ UI_SMALL static uint32_t ed_bk_commit(void)
         persist_saved = p;
         return 0;
     }
+    if (id == 12u) {                                      /* AUDILUNE: Klatt speech phrase bank (OBJ_VOXBANK, 512 B) */
+        uint32_t k;
+        if (ed_flash_busy())
+            return 3;
+        if (n && n != 512u)
+            return 2;
+        for (k = 0; k < n; k++)
+            *(raw + k) = *(raw + k) % 24u;
+        if (!flash_ok || st_save(OBJ_VOXBANK, raw, n))
+            return 4;
+        return 0;
+    }
     return 1;
 }
 
@@ -586,6 +598,7 @@ UI_SMALL static int ed_backup(uint32_t cmd, const uint8_t *a, uint32_t na)   /* 
             midi_part_fill(ed_bk_ml);
             ed_bk_valid = 1;
             ed_bk_put = 0;
+
         }
         ed_b(rc);
         ed_b(rc ? 0u : (uint32_t)sizeof ED_BK_IDS - (ed_bk_obj(10u, &len) && !len ? 1u : 0u) -
