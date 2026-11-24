@@ -172,7 +172,7 @@ static void fres_coef(fres_t *r, uint32_t f16, uint32_t bw16)
 
 }
 
-extern uint8_t algo_genre[];
+uint8_t audilune_vox_genre[NTRK];
 static void formant_note_on(track_t *t, voice_t *v)
 {
     uint32_t vi = (uint32_t)(v - t->v) & 3u;
@@ -182,7 +182,7 @@ static void formant_note_on(track_t *t, voice_t *v)
     v->s[7 + 0] = (int32_t)(((uint32_t)formant_nz >> 25) << 25);   /* TALK starts over, random vowel kept */
     if (t->preset >= 7u) {
         uint32_t ti = (uint32_t)(t - trk);
-        uint32_t g = ti < NTRK ? algo_genre[ti] : algo_genre[song.sel % NTRK];
+        uint32_t g = ti < NTRK ? audilune_vox_genre[ti] : audilune_vox_genre[song.sel % NTRK];
         uint32_t slot = t->preset >= 10u ? (uint32_t)(t->preset - 10u) : 0u;
         if (!(t->preset == 8u && (v->env || v->env_out) && vox_len > 0u)) {
             vox_build_phrase(vi, slot, t->preset >= 10u, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
