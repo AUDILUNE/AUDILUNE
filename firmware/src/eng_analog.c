@@ -191,13 +191,13 @@ static inline __attribute__((always_inline)) void analog_body(track_t *t, voice_
             }
             s = y << 1;
         }
-        out[i] += mulq15(mulq15(s, amp_at(m, i)), VOICE_FS) << 1;
+        *(out + i) += mulq15(mulq15(s, amp_at(m, i)), VOICE_FS) << 1;
     }
-    v->ph[0] = ph0;
-    v->ph[1] = ph1;
-    v->s[0] = ic1;
-    v->s[1] = ic2;
-    v->s[2] = nst;
+    *(v->ph + 0) = ph0;
+    *(v->ph + 1) = ph1;
+    *(v->s + 0) = ic1;
+    *(v->s + 1) = ic2;
+    *(v->s + 2) = nst;
 }
 static __attribute__((noinline)) void analog_render_f(track_t *t, voice_t *v, int32_t *out, uint32_t n,
                                                       const vmod_t *m)
@@ -206,6 +206,14 @@ static __attribute__((noinline)) void analog_render_f(track_t *t, voice_t *v, in
 }
 static void analog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
+    if (t->p[P_E0] == 5) {
+        analog_moog_render(t, v, out, n, m);
+        return;
+    }
+    if (t->p[P_E0] == 6) {
+        analog_vcs3_render(t, v, out, n, m);
+        return;
+    }
     if (t->p[P_FTYPE])                                  /* BP / HP (2.6) */
         analog_render_f(t, v, out, n, m);
     else
@@ -213,6 +221,7 @@ static void analog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
 }
 
 static const preset_t ANALOG_PRESETS[] = {
+
     /* SLOOP hip-hop / drum & bass bank. {WAVE, DTN, MIX, NOIS, CUT, RES, DRV, KTR}, {A D S R}, fenv, mono */
     /* 808s: a sine that decays (SUS 0) with a little pitch drop (ENV -> PITCH) and slides (GLIDE, legato) */
     {"808 BOOM", {3, 0, 0, 0, 127, 0, 48, 0}, {0, 112, 0, 52}, 0, 1, FX(0, 0, 0, 0), XP(P_GLIDE + 1, 59, P_GLMODE + 1, 1, P_ED_PIT + 1, 18, P_TRANS + 1, -24)},
