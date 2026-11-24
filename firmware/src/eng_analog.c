@@ -62,52 +62,57 @@ static uint8_t al_pad_latch, al_pad_idx;
 static uint8_t al_pad_x[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
 static uint8_t al_pad_y[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
 
-/* EMS VCS 3 / Synthi AKS: 3 wave-morphing oscs, 4-quadrant ring mod, 18 dB/oct diode ladder, loopable Trapezoid + X/Y Joystick */
-
-static void analog_vcs3_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
+/* Shared Minimoog Model D (vcs3=0) & EMS VCS 3 / Synthi AKS (vcs3=1) Architectural Renderer */
+UI_SMALL static void analog_classic_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m, int vcs3)
 {
     const int16_t *p = t->p;
-    int32_t morph = clamp((p[P_E1] << 8) + (m->shape - (64 << 8)), 0, 127 << 8);
-    int32_t rm_mix = p[P_E2] * 258, nz = p[P_E3] * 220, res = p[P_E5], drv = p[P_E6], trap_spd = p[P_E7];
-    int32_t jx = (al_pad_latch & 127u) ? (int32_t)*(al_pad_x + (al_pad_idx & 7u)) : 64;
-    int32_t jy = (al_pad_latch & 127u) ? (int32_t)*(al_pad_y + (al_pad_idx & 7u)) : 64;
-    int32_t cut_base = (p[P_E4] << 8) + m->cutoff + ((jx - 64) << 7);
-    uint32_t inc1 = m->inc, inc2 = pitch_inc(clamp(m->pitch16 + ((jy - 64) >> 1) - 112, 0, 2047));
-    uint32_t inc3 = (uint32_t)(14000u + (uint32_t)trap_spd * 26000u);
-    uint32_t ph0 = *(v->ph + 0), ph1 = *(v->ph + 1), ph2 = *(v->ph + 2), trap_ph = *(v->ph + 3);
-    int32_t st0 = *(v->s + 0), st1 = *(v->s + 1), st3 = *(v->s + 3), nst = *(v->s + 2);
-    int32_t fb_q12 = clamp((res + ((jy - 64) >> 2)) * 34, 0, 4400);
-    uint32_t trap_inc = trap_spd > 64 ? (uint32_t)(trap_spd - 64) * 32000u : 0u;
-    uint32_t i;
+    int32_t e1 = p[P_E1], mix = p[P_E2] * 258, e3 = p[P_E3], res = p[P_E5], drv = p[P_E6], e7 = p[P_E7];
+    int32_t jx = (vcs3 && (al_pad_latch & 127u)) ? (int32_t)*(al_pad_x + (al_pad_idx & 7u)) : 64;
+    int32_t jy = (vcs3 && (al_pad_latch & 127u)) ? (int32_t)*(al_pad_y + (al_pad_idx & 7u)) : 64;
+    int32_t cut_base = (p[P_E4] << 8) + m->cutoff + (vcs3 ? ((jx - 64) << 7) : ((e7 * (v->pitch16 - 960)) >> 4));
+    int32_t oct_sh = clamp((e1 / 22) - 2, -2, 2);
+    uint32_t inc1 = vcs3 ? m->inc : (oct_sh >= 0 ? (m->inc << (uint32_t)oct_sh) : (m->inc >> (uint32_t)(-oct_sh)));
+    uint32_t inc2 = pitch_inc(clamp(m->pitch16 + (vcs3 ? (((jy - 64) >> 1) - 112) : ((e1 % 22) - 11)), 0, 2047));
+    uint32_t inc3 = vcs3 ? (uint32_t)(14000u + (uint32_t)e7 * 26000u) : ((e3 > 64) ? (uint32_t)(18000u + (uint32_t)(e3 - 64) * 9500u) : (inc1 >> 1));
+    uint32_t ph0 = *(v->ph + 0), ph1 = *(v->ph + 1), ph2 = *(v->ph + 2), tph = *(v->ph + 3);
+    int32_t st0 = *(v->s + 0), st1 = *(v->s + 1), st3 = *(v->s + 3), st4 = *(v->s + 4), nst = *(v->s + 2);
+    int32_t fb_q12 = clamp((res + (vcs3 ? ((jy - 64) >> 2) : 0)) * 35, 0, 4400);
+    int32_t morph = clamp((e1 << 8) + (m->shape - (64 << 8)), 0, 127 << 8) >> 1;
+    uint32_t tinc = (vcs3 && e7 > 64) ? (uint32_t)(e7 - 64) * 32000u : 0u, i;
     for (i = 0; i < n; i++) {
-
-        int32_t m_q15 = morph >> 1;
-        int32_t o1 = osc_sine(ph0) + mulq15(osc_saw(ph0, inc1) - osc_sine(ph0), m_q15);
-        int32_t o2 = osc_tri(ph1) + mulq15(osc_pulse(ph1, inc2, 0x60000000u) - osc_tri(ph1), m_q15);
-        int32_t o3 = osc_tri(ph2);
-        int32_t trap = trap_inc ? ((trap_ph < 0x40000000u) ? (int32_t)(trap_ph >> 15) : (trap_ph < 0x80000000u) ? 32767 : (trap_ph < 0xC0000000u) ? (int32_t)((0xC0000000u - trap_ph) >> 15) : 0) : 32767;
-        int32_t rm = (o1 * o2) >> 15;
-        int32_t s = mulq15((o1 + o2) >> 1, 32767 - rm_mix) + mulq15(rm, rm_mix);
-        int32_t g_q15 = 1400 + ((clamp(cut_base + ((o3 * 48) >> 5) + ((trap - 16384) >> 1), 0, 127 << 8) * 28200) >> 15);
-        int32_t x;
-        if (nz)
-            s += mulq15((int32_t)(noise32(&nst) >> 17) - 16384, nz);
-        s = softclip(((s >> 1) * (32768 + drv * 520)) >> 14);
-        x = softclip(s - ((fb_q12 * st3) >> 12));
+        int32_t o1 = vcs3 ? (osc_sine(ph0) + mulq15(osc_saw(ph0, inc1) - osc_sine(ph0), morph)) : ((osc_saw(ph0, inc1) * 3 + osc_tri(ph0)) >> 2);
+        int32_t o2 = vcs3 ? (osc_tri(ph1) + mulq15(osc_pulse(ph1, inc2, 0x60000000u) - osc_tri(ph1), morph)) : osc_saw(ph1, inc2);
+        int32_t o3 = (vcs3 || e3 > 64) ? osc_tri(ph2) : osc_pulse(ph2, inc3, 0x80000000u);
+        int32_t trap = tinc ? ((tph < 0x40000000u) ? (int32_t)(tph >> 15) : (tph < 0x80000000u) ? 32767 : (tph < 0xC0000000u) ? (int32_t)((0xC0000000u - tph) >> 15) : 0) : 32767;
+        int32_t s = vcs3 ? (mulq15((o1 + o2) >> 1, 32767 - mix) + mulq15((o1 * o2) >> 15, mix)) : (o1 + mulq15((o2 + ((e3 > 64) ? 0 : o3)) >> 1, mix));
+        int32_t cmod = vcs3 ? (((o3 * 48) >> 5) + ((trap - 16384) >> 1)) : ((e3 > 64) ? ((o3 * (e3 - 64)) >> 4) : 0);
+        int32_t g_q15 = 1300 + ((clamp(cut_base + cmod, 0, 127 << 8) * 28300) >> 15), x;
+        if (e3 && (vcs3 || e3 <= 64))
+            s += mulq15((int32_t)(noise32(&nst) >> 17) - 16384, e3 * 240);
+        s = softclip(((s >> 1) * (32768 + drv * 580)) >> 14);
+        x = softclip(s - ((fb_q12 * (vcs3 ? st3 : (st4 - (s >> 3)))) >> 12));
         st0 += mulq15(x - st0, g_q15);
-        st1 += mulq15(softclip(st0) - st1, g_q15);
+        st1 += mulq15((vcs3 ? softclip(st0) : st0) - st1, g_q15);
         st3 += mulq15(st1 - st3, g_q15);
-        ph0 += inc1 + (uint32_t)((o3 * (jx - 64)) << 3);
-        ph1 += inc2; ph2 += inc3; trap_ph += trap_inc;
-        *(out + i) += mulq15(mulq15(softclip(st3), mulq15(amp_at(m, i), (int16_t)trap)), VOICE_FS) << 1;
+        if (vcs3) {
+            s = st3;
+            ph0 += inc1 + (uint32_t)((o3 * (jx - 64)) << 3);
+        } else {
+            st4 += mulq15(st3 - st4, g_q15);
+            s = st4 + mulq15(s, res * 120);
+            ph0 += inc1;
+        }
+        ph1 += inc2; ph2 += inc3; tph += tinc;
+        *(out + i) += mulq15(mulq15(softclip(s), mulq15(amp_at(m, i), (int16_t)trap)), VOICE_FS) << 1;
     }
-    *(v->ph + 0) = ph0; *(v->ph + 1) = ph1; *(v->ph + 2) = ph2; *(v->ph + 3) = trap_ph;
-    *(v->s + 0) = st0; *(v->s + 1) = st1; *(v->s + 3) = st3; *(v->s + 2) = nst;
+    *(v->ph + 0) = ph0; *(v->ph + 1) = ph1; *(v->ph + 2) = ph2; *(v->ph + 3) = tph;
+    *(v->s + 0) = st0; *(v->s + 1) = st1; *(v->s + 3) = st3; *(v->s + 4) = st4; *(v->s + 2) = nst;
 }
 
 /* the filter's TYPE (SLOOP 2.6, after Felucca 1.5 by Leo Kuroshita, #104: track parameter P_FTYPE, EDIT > FILTER):
  * the SVF's outputs (dsp.c tsvf_lp, written out here with the taps: Simper's trapezoidal state-variable filter), 0 LP
  * the low-pass as always (tsvf_lp itself: the same steps, bit for bit), 1 BP its band-pass v1, 2 HP in - k v1 - v2. At
+
  * the cutoff the three peak alike (1/k, k the damping RES sets: 2 at RES 0, ~0.15 at 127), so the soft knee after them
  * and the level stay as LP's */
 static inline int32_t analog_tap(const tsvf_t *c, int32_t k, int32_t in, int32_t *ic1, int32_t *ic2, uint32_t ft)
