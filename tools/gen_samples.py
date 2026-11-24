@@ -167,21 +167,22 @@ def cc0_entries(setname, kind):
                 det = hz_to_midi(detect_hz(x, sr))
                 if abs(det - root) < 1.0:
                     root = det
-        else:
+          else:
             root = hz_to_midi(detect_hz(x, sr))
         x = resample(x, sr, TR)
-        keep = {"oneshot": 1.0, "sus": 0.95, "kit": 0.6, "piano": 1.0}[kind]
+        keep = {"oneshot": 0.88, "sus": 0.85, "kit": 0.55, "piano": 0.90}.get(kind, 0.88)
         x = x[:int(keep * TR)]
         n = len(x)
         if kind == "piano":                          # the attack, then a steady tone the envelope (DEC) fades:
-            ls, le, xf, a0 = int(0.55 * TR), n - 1, int(0.08 * TR), int(0.30 * TR)   # long notes in 1 s
+            ls, le, xf, a0 = int(0.50 * TR), n - 1, int(0.08 * TR), int(0.28 * TR)   # long notes in 0.9 s
             w = int(0.02 * TR)
             env = [max(1e-6, (sum(v * v for v in x[max(0, i - w):i + w]) / (2 * w)) ** 0.5) for i in range(0, n, w)]
             ref = env[a0 // w]
             x = [v * (ref / env[min(len(env) - 1, i // w)] if i >= a0 else 1.0) for i, v in enumerate(x)]
-            ls = best_loop_start(x, le, xf, int(0.45 * TR), int(0.65 * TR))   # (the tone in phase: no dip)
+            ls = best_loop_start(x, le, xf, int(0.42 * TR), int(0.60 * TR))   # (the tone in phase: no dip)
             for i in range(xf):
                 a = i / xf
+
                 x[le - xf + i] = x[le - xf + i] * (1 - a) + x[ls - xf + i] * a
             loop = (ls, le)
         elif kind == "sus":                          # crossfaded sustain loop in the steady part
