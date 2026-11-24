@@ -95,22 +95,9 @@ UI_SMALL static void graph_slicer(const track_t *t, uint16_t c)
     if (0) {
         for (i = 0; i < 16u; i++) {
             int32_t x = 4 + (int32_t)i * 14, open = 0;
-
+            (void)x; (void)open;
         }
-        if (mode != SL_OFF && i == cur)
-            cv_rect(x, 85, 11, 3, C_WHITE);
     }
-}
-
-UI_SMALL static uint32_t steps_hash(const track_t *t)
-{
-    uint32_t h = 2166136261u, i;
-    for (i = 0; i < NSTEP; i++) {
-        const step_t *st = &t->step[ i ];
-        h = (h ^ (st->note[ I0 ] + st->n * 128u + st->time * 1024u + st->flags * 4096u + st->note[ I1 ] * 65536u)) *
-            16777619u;
-    }
-    return h;
 }
 
 UI_SMALL static uint32_t str_hash(uint32_t h, const char *s)
@@ -120,40 +107,14 @@ UI_SMALL static uint32_t str_hash(uint32_t h, const char *s)
     return h;
 }
 
-UI_SMALL static int big_page(const page_t *pg)
-{
-    return (pg->graph == GR_NONE || pg->graph == GR_INS) && pg->scope != SC_SONG && pg->scope != SC_DRUM;
-}
-
 UI_SMALL static uint32_t graph_signature(void)
 {
     const page_t *pg = cur_page();
     const track_t *t = TSEL;
-    uint32_t h = 2166136261u, i;
-    if (ui.hot_t && settings.zoom)
-        h = str_hash(str_hash(str_hash(h ^ 0x5555u, ui.focus_v), ui.focus_l), ui.focus_u);
-    if (ui.home || big_page(pg))
-        for (i = 0; i < 4u; i++)
-            h = str_hash(str_hash(str_hash(h ^ ui.big_c[ i ] * 31u, ui.big_v[ i ]), ui.big_l[ i ]), ui.big_u[ i ]);
-    if (ui.home)
-        return h ^ (uint32_t)TSEL->eng_req * 131u ^ song.sel * 7777u;
-    h ^= (uint32_t)pg->graph * 131u + TSEL->eng_req + song.sel * 7777u;
-    for (i = 0; i < P_COUNT; i++)
-        h = (h ^ (uint32_t)t->p[ i ]) * 16777619u;
-    h ^= (uint32_t)TSEL->preset * 7u + (uint32_t)song.g[ G_SLOT ] * 13u + TSEL->user * 257u + up_gen * 7919u + ui.uslot * 104729u;
-    {
-        uint32_t q;
-        for (q = 0; q < FAV_N; q++) h = h * 31u + fav[ q ];
-    }
-    if (pg->graph == GR_SLCR && t->p[ P_SLCR ])
-        h ^= (sl[ song.sel ].idx + 1u) * 2654435761u;
-    if (pg->graph == GR_SLOTS)
-        for (i = 0; i < 4u; i++)
-            h ^= (uint32_t)project_used(i) << (20u + i);
-    if (pg->graph == GR_STEPS || pg->graph == GR_ROLL) {
-        uint32_t ph = song.playing ? t->seq_idx : 0xFFFFu;
-        if (pg->graph == GR_ROLL)
-            h ^= ui.note_k * 104729u + ui.zoom * 7u + ui.sheet * 977u + (uint32_t)t->micro[ ui.cursor ] * 31337u +
+    uint32_t h = 2166136261u;
+    if (0) {
+        if (pg->graph == GR_STEPS || pg->graph == GR_ROLL) {
+
                  step_fill(t, ui.cursor) * 3u + last_note * 65537u;
         h ^= steps_hash(t) + ph * 31u + ui.cursor * 7919u;
     }
