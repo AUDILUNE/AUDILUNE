@@ -133,65 +133,14 @@ UI_SMALL static void trk_short_name(uint32_t c, char *b)
     else
         str_cpy(b, e->name, 13);
 }
-
 UI_SMALL static void draw_tracks(void)
 {
     uint32_t c;
     if (0) {
         for (c = 0; c < NTRK; c++) {
+            uint32_t x0 = c * 60u + 4u;
+            (void)x0;
 
-        lcd_fill(0, Y_GRAPH, 240, H_GRAPH, C_BLACK);
-        for (c = 0; c < NTRK; c++)
-            ts.meter[ c ] = 0;
-    }
-    for (c = 0; c < NTRK; c++) {
-        track_t *t = &trk[ c ];
-        uint32_t x0 = c * 60u + 4u, sel = c == song.sel, lvl = trk_level(c), mute = !lvl || t->p[ P_MUTE ];
-        uint32_t arm = (song.rec >> c) & 1u, st = arm ? (song.playing ? 1u : 2u) : mute ? 3u : 0u, sig;
-        uint32_t len = t->p[ P_SLEN ] > 0 ? (uint32_t)t->p[ P_SLEN ] : 1u, row = 0xFFFFu;
-        int32_t pk, m;
-        char b[ B16 ];
-        if (c == TRK_DRUM) {
-            pk = drums.peak;
-            drums.peak = 0;
-        } else {
-            pk = t->peak;
-            t->peak = 0;
-        }
-        sig = 1u + sel + st * 2u;
-        if (ui.force || sig != ts.head[ c ]) {
-            ts.head[ c ] = sig;
-            b[ I0 ] = (char)('1' + c);
-            b[ I1 ] = 0;
-            cv_begin(54, 16, C_BLACK);
-            cv_text(0, 0, &FONT_S, b, sel ? C_WHITE : C_GRAY);
-            if (sel)
-                cv_rect(0, 15, 8, 1, C_WHITE);
-            if (st == 1u || st == 2u) {
-                cv_rect(14, 5, 6, 6, st == 1u ? C_WHITE : C_AMB);
-                cv_text(24, 0, &FONT_S, st == 1u ? "REC" : "ARM", st == 1u ? C_WHITE : C_AMB);
-            } else if (st) {
-                cv_text(14, 0, &FONT_S, "MUTE", C_DIM);
-            }
-            cv_blit(x0, TS_HEAD_Y);
-        }
-        trk_short_name(c, b);
-        while (b[ I0 ] && text_w(&FONT_S, b) > 54)
-            b[ str_len(b) - 1u ] = 0;
-        sig = str_hash(2u + sel, b);
-        if (ui.force || sig != ts.name[ c ]) {
-            ts.name[ c ] = sig;
-            cv_begin(54, 16, C_BLACK);
-            cv_text(0, 0, &FONT_S, b, sel ? C_HI : C_DIM);
-            cv_blit(x0, TS_NAME_Y);
-        }
-        m = mute ? 0 : meter_px(pk);
-        if (m < ts.meter[ c ] - 3)
-            m = ts.meter[ c ] - 3;
-        ts.meter[ c ] = (uint8_t)(m < 0 ? 0 : m);
-        sig = 1u + lvl + ts.meter[ c ] * 128u + sel * 65536u + (sel && ui.hot_t && ui.hot_col == 1u) * 131072u +
-              (t->p[ P_MUTE ] != 0) * 262144u;
-        if (ui.force || sig != ts.fader[ c ]) {
             int32_t fy = (int32_t)(TS_H - 2u) - (int32_t)lvl * (TS_H - 4) / 127;
             ts.fader[ c ] = sig;
             cv_begin(12, TS_H, C_BLACK);
