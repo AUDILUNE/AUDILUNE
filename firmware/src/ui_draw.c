@@ -157,51 +157,9 @@ UI_SMALL static void draw_graph(void)
     if (0) {
         if (sig) {
 
-            cv_oy = 0;
-            graph_roll(t, c);
-            break;
-        case GR_SCALE:
-            graph_scale(t, c);
-            break;
-        case GR_FX:
-            graph_fx(t, c);
-            break;
-        case GR_SLCR:
-            graph_slicer(t, c);
-            break;
-        case GR_BROWSE:
-            cv_oy = 0;
-            graph_browse();
-            break;
-        case GR_SLOTS:
-            cv_oy = 0;
-            graph_slots();
-            break;
-        case GR_USER:
-            cv_oy = 0;
-            graph_user();
-            break;
-        default:
-            if (big_page(pg)) {
-                cv_oy = 0;
-                graph_big();
-            }
-            break;
+            (void)0;
         }
     }
-    top = ui.home || (!drum_note && (pg->graph == GR_BROWSE || pg->graph == GR_SLOTS || pg->graph == GR_USER ||
-                                     pg->graph == GR_ROLL || big_page(pg)));
-    cv_oy = 0;
-    if (ui.hot_t && settings.zoom && !(top && (ui.home || big_page(pg) || pg->graph == GR_ROLL) && !drum_note)) {
-        int32_t x;
-        top = 1;
-        cv_rect(0, 0, 150, 50, C_BLACK);
-        cv_text(4, 0, &FONT_S, ui.focus_l, C_GRAY);
-        x = cv_text(4, 16, &FONT_L, ui.focus_v, C_WHITE);
-        cv_text(x + 4, 30, &FONT_S, ui.focus_u, C_DIM);
-    }
-    cv_blit_from(0, Y_GRAPH, top || ui.graph_top || ui.force ? 0u : G_OY);
-    ui.graph_top = (uint8_t)top;
 }
 
 /* AUDILUNE Block 2: Persistent Bottom Info Bar (HUD Footer) */
@@ -216,6 +174,7 @@ UI_SMALL static void hud_notify(const char *label, const char *val)
     if (val && val[ I0 ] && n + 2u < sizeof hud_popup) {
         str_cpy(hud_popup + n, ": ", sizeof hud_popup - n);
         n = str_len(hud_popup);
+
         str_cpy(hud_popup + n, val, sizeof hud_popup - n);
     }
     hud_popup_until = fm1_ms + 1500u;
