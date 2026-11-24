@@ -17,47 +17,8 @@ static void analog_note_on(track_t *t, voice_t *v)
         *(v->s + 2) = 0x1234567 + (int32_t)v->age;
 }
 
-/* Minimoog Model D: 3 VCOs (LO..2' octaves + Osc 3 decoupled mod), CP3 mixer drive, 24 dB/oct nonlinear transistor ladder + bass comp */
-UI_SMALL static void analog_moog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
-{
-    const int16_t *p = t->p;
-    int32_t det = p[P_E1], mix = p[P_E2], o3m = p[P_E3], res = p[P_E5], drv = p[P_E6];
-    int32_t cut_base = (p[P_E4] << 8) + m->cutoff + (p[P_E7] * (v->pitch16 - 60 * 16) >> 4);
-    int32_t oct_sh = clamp((det / 22) - 2, -2, 2);
-    int32_t fine16 = (det % 22) - 11;
-    uint32_t inc1 = oct_sh >= 0 ? (m->inc << (uint32_t)oct_sh) : (m->inc >> (uint32_t)(-oct_sh));
-    uint32_t inc2 = pitch_inc(clamp(m->pitch16 + fine16, 0, 2047));
-    uint32_t inc3 = (o3m > 64) ? (uint32_t)(18000u + (uint32_t)(o3m - 64) * 9500u) : (inc1 >> 1);
-    uint32_t ph0 = *(v->ph + 0), ph1 = *(v->ph + 1), ph2 = *(v->ph + 2);
-    int32_t st0 = *(v->s + 0), st1 = *(v->s + 1), st3 = *(v->s + 3), st4 = *(v->s + 4), nst = *(v->s + 2);
-    int32_t m23 = mix * 258, fb_q12 = res * 36, bass_comp = res * 120;
-    uint32_t i;
-    for (i = 0; i < n; i++) {
-        int32_t v1 = (osc_saw(ph0, inc1) * 3 + osc_tri(ph0)) >> 2;
-        int32_t v2 = osc_saw(ph1, inc2);
-        int32_t v3 = (o3m > 64) ? osc_tri(ph2) : osc_pulse(ph2, inc3, 0x80000000u);
-        int32_t cut_mod = cut_base + ((o3m > 64) ? ((v3 * (o3m - 64)) >> 4) : 0);
-        int32_t g_q15 = 1200 + ((clamp(cut_mod, 0, 127 << 8) * 28500) >> 15);
-        int32_t s = v1 + mulq15((v2 + ((o3m > 64) ? 0 : v3)) >> 1, m23);
-        int32_t x, fb;
-        if (o3m > 0 && o3m <= 64)
-            s += mulq15((int32_t)(noise32(&nst) >> 17) - 16384, o3m * 360);
-        s = softclip(((s >> 1) * (32768 + drv * 640)) >> 14);
-        fb = (fb_q12 * (st4 - (s >> 3))) >> 12;
-        x = softclip(s - fb);
-        st0 += mulq15(x - st0, g_q15);
-        st1 += mulq15(st0 - st1, g_q15);
-        st3 += mulq15(st1 - st3, g_q15);
-        st4 += mulq15(st3 - st4, g_q15);
-        s = st4 + mulq15(s, bass_comp);
-        ph0 += inc1; ph1 += inc2; ph2 += inc3;
-        *(out + i) += mulq15(mulq15(softclip(s), amp_at(m, i)), VOICE_FS) << 1;
-    }
-    *(v->ph + 0) = ph0; *(v->ph + 1) = ph1; *(v->ph + 2) = ph2;
-    *(v->s + 0) = st0; *(v->s + 1) = st1; *(v->s + 3) = st3; *(v->s + 4) = st4; *(v->s + 2) = nst;
-}
-
 /* Shared 2D Pad / EMS VCS3 Joystick X/Y coordinates (0..127, center 64) */
+
 static uint8_t al_pad_latch, al_pad_idx;
 static uint8_t al_pad_x[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
 static uint8_t al_pad_y[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64};
