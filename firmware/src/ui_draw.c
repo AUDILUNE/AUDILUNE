@@ -16,22 +16,6 @@
 static void draw_menu(void);
 static uint32_t str_hash(uint32_t h, const char *s);
 
-UI_SMALL static int is_eng_name(const char *s)
-{
-    uint32_t e;
-    for (e = 0; e < NENGINES; e++)
-        if (s == ENGINES[ e ]->name)
-            return 1;
-    return 0;
-}
-
-UI_SMALL static void fit(char *d, const char *src, const felucca_font_t *f, int32_t maxw)
-{
-    str_cpy(d, src, is_eng_name(src) ? 8 : 6);
-    while (d[ I0 ] && text_w(f, d) > maxw)
-        d[ str_len(d) - 1u ] = 0;
-}
-
 UI_SMALL static int32_t batt_level(void)
 {
     return song.batt_raw >= 591 ? 3 : song.batt_raw >= 561 ? 2 : song.batt_raw >= 531 ? 1 : 0;
@@ -46,26 +30,9 @@ UI_SMALL static int32_t batt_shown(void)
 
 UI_SMALL static void draw_head(void)
 {
-    char b[ B16 ];
-    uint32_t i;
-    int32_t x;
-    uint32_t rec = (song.rec >> song.sel) & 1u ? 2u : song.rec != 0u;
-    uint32_t sig = (uint32_t)song.playing * 3u + rec * 5u + (uint32_t)(song.octave + 8) * 11u + song.sel * 13131u +
-                   (ui.msg_t ? str_hash(7u, ui.msg) : 0u) + (uint32_t)song.g[ G_BPM ] * 101u + (ui.bpm_t != 0) * 31u +
-                   (uint32_t)batt_shown() * 7777u + (usb.config && !usb.suspended) * 99991u + mlu.on * 7919u;
-    if (!ui.force && sig == ui.head_sig)
-        return;
-    ui.head_sig = sig;
-    cv_begin(240, H_HEAD, C_BLACK);
-    if (ui.msg_t) {
-        cv_text(4, 1, &FONT_S, ui.msg, C_HI);
-        cv_blit(0, Y_HEAD);
-        return;
-    }
-    if (song.playing) {
-        for (i = 0; i < 5u; i++)
-            cv_rect(4 + (int32_t)i * 2, 4 + (int32_t)i, 2, 10 - 2 * (int32_t)i, C_WHITE);
-    } else {
+    (void)0;
+}
+
         cv_rect(4, 5, 8, 8, C_HI);
     }
     if (rec)
