@@ -173,12 +173,8 @@ static __attribute__((noinline)) void analog_render_f(track_t *t, voice_t *v, in
 }
 static void analog_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const vmod_t *m)
 {
-    if (t->p[P_E0] == 5) {
-        analog_moog_render(t, v, out, n, m);
-        return;
-    }
-    if (t->p[P_E0] == 6) {
-        analog_vcs3_render(t, v, out, n, m);
+    if (t->p[P_E0] == 5 || t->p[P_E0] == 6) {
+        analog_classic_render(t, v, out, n, m, t->p[P_E0] == 6);
         return;
     }
     if (t->p[P_FTYPE])                                  /* BP / HP (2.6) */
@@ -196,6 +192,7 @@ static const preset_t ANALOG_PRESETS[] = {
     {"SUB BASS", {3, 0, 0, 0, 127, 0, 10, 0}, {0, 60, 118, 24}, 0, 1, FX(0, 0, 0, 0), XP(P_GLIDE + 1, 40, P_TRANS + 1, -24)},
     {"808 SLIDE", {3, 0, 0, 0, 127, 0, 72, 0}, {0, 118, 0, 60}, 0, 1, FX(30, 0, 0, 0), XP(P_GLIDE + 1, 82, P_GLMODE + 1, 1, P_ED_PIT + 1, 12, P_TRANS + 1, -24)},
     /* acid: one saw, high resonance, the envelope on the filter, slides where notes overlap */
+
     {"ACID 303", {0, 0, 0, 0, 36, 112, 44, 64}, {0, 56, 24, 20}, 52, 1, FX(28, 0, 22, 10), XP(P_GLIDE + 1, 34, P_GLMODE + 1, 1, P_TRANS + 1, -12)},
     /* plugg / soft trap: a round triangle bass */
     {"PLUGG BASS", {2, 0, 0, 0, 92, 0, 30, 0}, {0, 96, 92, 34}, 0, 1, FX(0, 0, 0, 6), XP(P_GLIDE + 1, 52, P_GLMODE + 1, 1, P_TRANS + 1, -24)},
