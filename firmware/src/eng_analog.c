@@ -250,6 +250,6 @@ static const engine_t ENG_ANALOG = {
         {"DRV", F_PCT, 0, 127, 0, 0, 0},
         {"KTR", F_PCT, 0, 127, 64, 0, 0},
     },
-    ANALOG_PRESETS, sizeof(ANALOG_PRESETS) / sizeof(ANALOG_PRESETS + 0), 1, analog_note_on, analog_render,
+    ANALOG_PRESETS, sizeof(ANALOG_PRESETS) / sizeof(*ANALOG_PRESETS), 1, analog_note_on, analog_render,
     0xF986, {P_E4, P_E5, P_ATK, P_REL},
 };
