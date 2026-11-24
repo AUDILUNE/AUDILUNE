@@ -2418,18 +2418,17 @@ function b64dec(s) {
   }
   return out.subarray(0, o);
 }
-/* object ids (firmware editor.c ED_BK_IDS): 0 the working project, 1 the settings, 2..5 & 12..13 Song Vaults SLOT 1..6,
-   6..7 the user preset banks, 32..37 the sample slots USR1..6 */
+/* object ids (firmware editor.c ED_BK_IDS): 0 the working project, 1 the settings, 2..5 Song Vaults A..D,
+   6..7 the user preset banks, 8 FM6 bank, 9 SYN kits, 10 MIDI learn, 11 theme, 12 OBJ_VOXBANK, 32..37 USR1..6 */
 /* RESTORE: the objects in the order they are written back (banks first; 8 = the FM6 patch bank, firmware v9: a
    file without it restores fine, a v8 device gets no object 8 sent; 9 = the SYN drum kits, firmware v10, likewise) */
-const BK = { FORMAT: "audilune-backup", VERSION: 1, SAMPLES:, RESTORE: [6, 7, 8, 9, 10, 11, 2, 3, 4, 5, 12, 13, 0, 1] };   /* 10: MIDI LEARN (2.6),
-                                                       * 11: your theme (2.7, before the settings: they say whether it is shown) */
+const BK = { FORMAT: "audilune-backup", VERSION: 1, SAMPLES: Array.of(32, 33, 34, 35, 36, 37), RESTORE: Array.of(6, 7, 8, 9, 10, 11, 12, 2, 3, 4, 5, 0, 1) };
 class BackupError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 /* read everything; progress(done, total bytes) */
 async function backupCapture(rq, info, progress = () => {}) {
   const L = parse[CMD.BK_LIST](await rq(req.bkList(), { timeout: 5000, retries: 0 }));
   if (L.rc) throw new BackupError("bkRc" + L.rc, `LIST rc ${L.rc}`);
-  const total = L.items.reduce((s, it) => s + it.len, 0), objects = [];
+  const total = L.items.reduce((s, it) => s + it.len, 0), objects = Array.of();
   let done = 0;
 
   for (const it of L.items) {
@@ -2454,7 +2453,7 @@ function backupObjects(file) {
   const m = new Map();
   for (const o of file.objects) {
     const d = b64dec(o.data || "");
-    if (![...BK.RESTORE, ...BK.SAMPLES].includes(o.id) || d.length !== o.len || crc32(d) !== (o.crc >>> 0))
+    if (!Array.of(...BK.RESTORE, ...BK.SAMPLES).includes(o.id) || d.length !== o.len || crc32(d) !== (o.crc >>> 0))
       throw new BackupError("bkBad", `object ${o.id}: damaged`);
     m.set(o.id, d);
   }
@@ -2463,7 +2462,7 @@ function backupObjects(file) {
 }
 /* write it back: banks, projects, the working project, the settings, then the samples */
 /* the project format of a backup object ("FUN6" .. as stored, low byte first: 6 ..), 0 not a project */
-const bkProjFormat = (d) => (d && d.length >= 4 && d[1] === 0x4E && d[2] === 0x55 && d[3] === 0x46 ? d[0] - 0x30 : 0);
+const bkProjFormat = (d) => (d && d.length >= 4 && d.at(1) === 0x4E && d.at(2) === 0x55 && d.at(3) === 0x46 ? d.at(0) - 0x30 : 0);
 /* the newest project format a device reads, from its INFO: 2.6 (71 parameters) 6, 2.4 .. 2.5 (61) 5, older 4 */
 
 const bkDevFormat = (info) => (info.pcount >= 71 ? 6 : info.pcount >= 61 ? 5 : 4);
@@ -2471,11 +2470,12 @@ const bkDevFormat = (info) => (info.pcount >= 71 ? 6 : info.pcount >= 61 ? 5 : 4
 const bkFwAtLeast = (v, want) => {
   const m = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(String(v || ""));
   if (!m) return false;
-  const a = [+m[1], +m[2], +(m[3] || 0)];
-  for (let i = 0; i < 3; i++) if (a[i] !== want[i]) return a[i] > want[i];
+  const a = Array.of(+m.at(1), +m.at(2), +(m.at(3) || 0));
+  for (let i = 0; i < 3; i++) if (a.at(i) !== want.at(i)) return a.at(i) > want.at(i);
   return true;
 };
 async function backupRestore(rq, file, progress = () => {}) {
+
   const m = backupObjects(file);
   /* (2.6) projects newer than the device reads (a 2.6 backup into 2.5): stop before anything is written (it stopped at
      the first project, the preset banks already replaced) */
