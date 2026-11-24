@@ -2920,59 +2920,60 @@ const FM6 = (() => {
 /* the mock's settings object: "PER3", the rest opaque, the song order A B C D, 4 bars each (arranger.h arr_defaults) */
 function mockSettings() {
   const b = Uint8Array.from({ length: 88 }, (_, i) => (i * 37 + 5) & 0xFF);
-  b.set([0x33, 0x52, 0x45, 0x50]);
-  return ARR.encode(b, { loop: false, entries: [0, 1, 2, 3].map((scene) => ({ scene, bars: 4 })) });
+  b.set(Array.of(0x33, 0x52, 0x45, 0x50));
+  return ARR.encode(b, { loop: false, entries: Array.of(0, 1, 2, 3).map((scene) => ({ scene, bars: 4 })) });
 }
 /* backup object 10 at its default: nothing learned, CH1-3 = 1 2 3, drums 10, OTHER SEL, BEND 2 (a 32 / 36-byte one: the
    map, the map and the channels) */
 const mlDefault = (b) => b.every((x, i) => i < 32 ? !x : i === 32 ? x === 1 : i === 33 ? x === 2 : i === 34 ? x === 3 : i === 35 ? x === 10 : i === 36 ? x === 2 : !x);
 function makeMockDevice(opt = {}) {
-  const NONOFF = ["OFF", "ON"], NDIV = ["1/4", "1/8", "1/16", "1/32", "8T", "16T"], NGO = ["--", "GO"], NDASH = ["--"];
-  const NSDIV = [...NDIV, "1/2", "1BAR", "2BAR"], NDLY = [...NDIV, "1/8D", "1/16D", "1/4D"];   /* SLOOP 2.4: long steps, dotted delays */
+  const NONOFF = Array.of("OFF", "ON"), NDIV = Array.of("1/4", "1/8", "1/16", "1/32", "8T", "16T"), NGO = Array.of("--", "GO"), NDASH = Array.of("--");
+  const NSDIV = Array.of(...NDIV, "1/2", "1BAR", "2BAR"), NDLY = Array.of(...NDIV, "1/8D", "1/16D", "1/4D");   /* SLOOP 2.4: long steps, dotted delays */
   const D = (label, fmt, min, max, def, names = null, unit = "") => ({ label, fmt, min, max, def, names, unit });
   const E = (label, names, def) => D(label, F.ENUM, 0, names.length - 1, def, names);
-  const TP = [
+  const TP = Array.of(
     D("LVL", F.DB, 0, 127, 104),
     D("ATK", F.TIME, 0, 127, 10), D("DEC", F.TIME, 0, 127, 70), D("SUS", F.PCT, 0, 127, 90), D("REL", F.TIME, 0, 127, 60),
     D("FLT", F.BIPCT, -64, 63, 0), D("PIT", F.BIPCT, -64, 63, 0), D("SHP", F.BIPCT, -64, 63, 0), D("FX", F.BIPCT, -64, 63, 0),
-    D("RATE", F.LFOHZ, 0, 127, 60), E("WAVE", ["SIN", "TRI", "SAW", "SQR", "S&H"], 0), D("PHS", F.INT, 0, 127, 0), D("FADE", F.TIME, 0, 127, 0),
+    D("RATE", F.LFOHZ, 0, 127, 60), E("WAVE", Array.of("SIN", "TRI", "SAW", "SQR", "S&H"), 0), D("PHS", F.INT, 0, 127, 0), D("FADE", F.TIME, 0, 127, 0),
     D("PIT", F.BIPCT, -64, 63, 0), D("FLT", F.BIPCT, -64, 63, 0), D("SHP", F.BIPCT, -64, 63, 0), D("AMP", F.PCT, 0, 127, 0),
-    E("MODE", ["OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "UP+8", "CONV", "DIVG", "PINKY", "THUMB", "WALK", "CHORD"], 0), E("RATE", NDIV, 2), D("OCT", F.INT, 1, 4, 1), D("GATE", F.PCT, 1, 127, 64),
-    D("SWG", F.SWING, 0, 100, 0), D("PROB", F.PCT, 0, 127, 127), E("HOLD", NONOFF, 0), E("ORD", ["NOTE", "PLAY"], 0),
-    D("ROOT", F.NOTE, 0, 11, 0), E("SCL", ["CHR", "MAJ", "MIN", "DOR", "MIX", "PEN", "MPEN", "HARM", "PHRY", "LYD", "LOC", "MEL", "BLUES", "WHOLE", "DIMHW", "DIMWH"], 0), E("QNT", ["OFF", "SNAP", "WHITE"], 0), D("TRN", F.SEMI, -24, 24, 0),
-    D("LEN", F.STEPS, 1, 64, 16), E("DIV", NSDIV, 2), D("SWG", F.SWING, 0, 100, 0), D("GATE", F.PCT, 1, 127, 64),
+    E("MODE", Array.of("OFF", "UP", "DN", "UPDN", "RND", "ORD", "REPEAT", "DNUP", "UP+8", "CONV", "DIVG", "PINKY", "THUMB", "WALK", "CHORD"), 0), E("RATE", NDIV, 2), D("OCT", F.INT, 1, 4, 1), D("GATE", F.PCT, 1, 127, 64),
+    D("SWG", F.SWING, 0, 100, 0), D("PROB", F.PCT, 0, 127, 127), E("HOLD", NONOFF, 0), E("ORD", Array.of("NOTE", "PLAY"), 0),
+    D("ROOT", F.NOTE, 0, 11, 0), E("SCL", Array.of("CHR", "MAJ", "MIN", "DOR", "MIX", "PEN", "MPEN", "HARM", "PHRY", "LYD", "LOC", "MEL", "BLUES", "WHOLE", "DIMHW", "DIMWH", "HIRA", "IN", "PDOM", "DHARM", "PROM", "ENIG"), 0), E("QNT", Array.of("OFF", "SNAP", "WHITE"), 0), D("TRN", F.SEMI, -24, 24, 0),
+    D("LEN", F.STEPS, 1, 128, 16), E("DIV", NSDIV, 2), D("SWG", F.SWING, 0, 100, 0), D("GATE", F.PCT, 1, 127, 64),
     D("DST", F.PCT, 0, 127, 0), D("CHO", F.PCT, 0, 127, 0), D("DLY", F.PCT, 0, 127, 0), D("REV", F.PCT, 0, 127, 0),
-    E("VCE", ["POLY", "MONO", "LEG", "UNI"], 0), D("GLD", F.TIME, 0, 127, 0), D("PAN", F.BIPCT, -64, 63, 0), E("MUTE", NONOFF, 0),
-    E("GLMOD", ["RATE", "TIME"], 0), E("PRIO", ["LAST", "LOW", "HIGH"], 0), E("ALLOC", ["ROT", "REUSE"], 0), D("DTUNE", F.INT, 0, 127, 40),
-    E("SLCR", ["OFF", "GATE", "STUT"], 0), D("PAT", F.INT, 1, 16, 1), E("RATE", ["1/8", "1/16", "1/32", "8T", "16T", "32T"], 1), D("DEPTH", F.PCT, 0, 127, 127),
-    E("CHORD", ["OFF", "TRIAD", "7TH", "9TH", "SUS4", "POWER"], 0),
+    E("VCE", Array.of("POLY", "MONO", "LEG", "UNI"), 0), D("GLD", F.TIME, 0, 127, 0), D("PAN", F.BIPCT, -64, 63, 0), E("MUTE", NONOFF, 0),
+    E("GLMOD", Array.of("RATE", "TIME"), 0), E("PRIO", Array.of("LAST", "LOW", "HIGH"), 0), E("ALLOC", Array.of("ROT", "REUSE"), 0), D("DTUNE", F.INT, 0, 127, 40),
+    E("SLCR", Array.of("OFF", "GATE", "STUT"), 0), D("PAT", F.INT, 1, 16, 1), E("RATE", Array.of("1/8", "1/16", "1/32", "8T", "16T", "32T"), 1), D("DEPTH", F.PCT, 0, 127, 127),
+    E("CHORD", Array.of("OFF", "TRIAD", "7TH", "9TH", "SUS4", "POWER"), 0),
     D("FILT", F.FILT, -64, 63, 0), D("STRUM", F.INT, -60, 60, 0), E("VLEAD", NONOFF, 0),
     /* SLOOP 2.6 (after Felucca 1.4 / 1.5): INSERT, ANALOG's filter TYPE, ENV SYNC, LFO 2 */
-    E("INSRT", ["OFF", "SOFT", "HARD", "FOLD", "FUZZ", "CRUSH", "PHASR", "FLANG", "CHOR"], 0),
+    E("INSRT", Array.of("OFF", "SOFT", "HARD", "FOLD", "FUZZ", "CRUSH", "PHASR", "FLANG", "CHOR"), 0),
     D("INS A", F.PCT, 0, 127, 64), D("INS B", F.PCT, 0, 127, 96), D("INS C", F.PCT, 0, 127, 96), D("MIX", F.PCT, 0, 127, 127),
-    E("TYPE", ["LP", "BP", "HP"], 0), E("ESYNC", NONOFF, 0),
-    E("SYNC", ["OFF", "4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8", "8T", "1/16", "16T", "1/32"], 0),
-    E("TRIG", ["NOTE", "FREE"], 0), E("POL", ["BI", "UNI"], 0),
-  ];
-  const GP = [
-    D("BPM", F.BPM, 40, 240, 90), D("SWING", F.SWING, 0, 100, 0), E("CLICK", ["OFF", "REC", "ON"], 0), D("TUNE", F.INT, -50, 50, 0),
+    E("TYPE", Array.of("LP", "BP", "HP"), 0), E("ESYNC", NONOFF, 0),
+    E("SYNC", Array.of("OFF", "4BAR", "2BAR", "1BAR", "1/2", "1/4", "1/8", "8T", "1/16", "16T", "1/32"), 0),
+    E("TRIG", Array.of("NOTE", "FREE"), 0), E("POL", Array.of("BI", "UNI"), 0)
+  );
+  const GP = Array.of(
+    D("BPM", F.BPM, 40, 240, 90), D("SWING", F.SWING, 0, 100, 0), E("CLICK", Array.of("OFF", "REC", "ON"), 0), D("TUNE", F.INT, -50, 50, 0),
     E("TIME", NDLY, 1), D("FDBK", F.PCT, 0, 120, 60), D("COLR", F.PCT, 0, 127, 70), D("MIX", F.PCT, 0, 127, 90),
     D("SIZE", F.PCT, 0, 127, 90), D("DAMP", F.PCT, 0, 127, 60), D("CRT", F.LFOHZ, 0, 127, 40), D("CDP", F.PCT, 0, 127, 60),
-    E("OUT", ["KEYS", "SEQ"], 0), E("SYNC", ["INT", "USB", "TRS"], 0), E("IN", ["NOTES", "CLOCK", ...Array.from({ length: 16 }, (_, k) => `CH ${k + 1}`)], 0), D("CPU", F.INT, 0, 0, 0),
-    D("SECT", F.INT, 1, 4, 1), E("NAME", NDASH, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
-    E("ENG", ["ANALOG", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
-      "GRAIN", "FM6", "PHYS", "NOISE"], 0), E("SET", NGO, 0),
+    E("OUT", Array.of("KEYS", "SEQ"), 0), E("SYNC", Array.of("INT", "USB", "TRS"), 0), E("IN", Array.of("NOTES", "CLOCK", ...Array.from({ length: 16 }, (_, k) => `CH ${k + 1}`)), 0), D("CPU", F.INT, 0, 0, 0),
+    D("SECT", F.INT, 1, 6, 1), E("NAME", NDASH, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
+    E("ENG", Array.of("ANALOG", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
+      "GRAIN", "FM6", "PHYS", "NOISE"), 0), E("SET", NGO, 0),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
-    E("CH4", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 10), D("LVL", F.INT, 0, 127, 100), D("REV", F.INT, 0, 127, 16),
+    E("CH4", Array.of("OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))), 10), D("LVL", F.INT, 0, 127, 100), D("REV", F.INT, 0, 127, 16),
     D("DUST", F.PCT, 0, 127, 0), D("DUCK", F.PCT, 0, 127, 0), D("FILT", F.FILT, -64, 63, 0),
-    E("ROLL", ["1/8", "1/16", "1/32", "32T", "1/64"], 1), E("NEW", NGO, 0), D("DLY", F.INT, 0, 127, 0),
+    E("ROLL", Array.of("1/8", "1/16", "1/32", "32T", "1/64"), 1), E("NEW", NGO, 0), D("DLY", F.INT, 0, 127, 0),
     /* SLOOP 2.6: GLO > MIDI, each synth track's channel (OFF, 1..16) and the other channels (SEL / OFF) */
-    ...[1, 2, 3].map((k) => E("CH" + k, ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], k)), E("OTHER", ["SEL", "OFF"], 0),
+    ...Array.of(1, 2, 3).map((k) => E("CH" + k, Array.of("OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))), k)), E("OTHER", Array.of("SEL", "OFF"), 0),
     /* GLO > TEXTURE (2.6): the bed under the mix */
-    E("SRC", ["OFF", "VINYL", "TAPE", "RAIN", "WIND", "RADIO", "ROOM", "USR1", "USR2", "USR3", "USR4"], 0), D("LEVEL", F.PCT, 0, 127, 64),
+    E("SRC", Array.of("OFF", "VINYL", "TAPE", "RAIN", "WIND", "RADIO", "ROOM", "USR1", "USR2", "USR3", "USR4", "USR5", "USR6"), 0), D("LEVEL", F.PCT, 0, 127, 64),
     D("TONE", F.FILT, -64, 63, 0), D("MOVE", F.PCT, 0, 127, 40),
-    E("RATE", ["1BAR", "2BAR", "4BAR", "8BAR", "16BAR"], 2), E("WHEN", ["PLAY", "ALWAYS"], 0), E("DUCK", NONOFF, 0),
+    E("RATE", Array.of("1BAR", "2BAR", "4BAR", "8BAR", "16BAR"), 2), E("WHEN", Array.of("PLAY", "ALWAYS"), 0), E("DUCK", NONOFF, 0),
     D("BEND", F.SEMI, 1, 12, 2),                    /* GLO > MIDI 2 (2.6): the pitch bend's range */
+
     E("FX CH", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 0),   /* GLO > MIDI 3 (2.7): the punch-in FX */
     E("DR MAP", ["GM", "1-16"], 0),                  /* GLO > MIDI 3 (2.7): MIDI notes -> drum sounds */
     E("REMOTE", ["OFF", ...Array.from({ length: 16 }, (_, i) => String(i + 1))], 0),   /* GLO > MIDI 3 (2.7): the buttons */
