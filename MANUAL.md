@@ -70,9 +70,9 @@ Pressing **Home Button** returns to **Live Play Page** from anywhere and cycles 
 
 ---
 
-## 5. Effects Page & 110% Musical Overflow
+## 5. Effects Page, 2D Chaos Pads & 110% Musical Overflow
 
-Includes categorized processing across **Time, Pitch & Groove**, **Granular, Glitch & Rhythmic**, **Spatial & Ambient (`0%`–`110%` Overflow)**, **Modulation & Stereo Movement**, **Filters & EQ**, and **Saturation, Lo-Fi & Dynamics**. Sweeping past `100%` into `101%`–`110%` unlocks shimmer feedback loops, harmonic delay cascades, and rich stereo bloom without clipping.
+Includes categorized processing across **Time, Pitch & Groove**, **Granular, Glitch & Rhythmic**, **Spatial & Ambient (`0%`–`110%` Overflow)**, **Modulation & Stereo Movement**, **Filters & EQ**, and **Saturation, Lo-Fi & Dynamics**, plus interactive **2D Chaos Pads** and **Precision FX**. Sweeping past `100%` into `101%–110%` unlocks fixed-buffer shimmer feedback loops, harmonic delay cascades, and rich stereo bloom without digital clipping.
 
 ---
 
@@ -91,15 +91,17 @@ Includes categorized processing across **Time, Pitch & Groove**, **Granular, Gli
 
 ---
 
-## 8. Synthesis Engines, Macro-Genres & Smart Voicing
+## 8. Synthesis Engines, Analog Emulations, Klatt Speech & Sound Landscaper
 
-Provides simultaneous access to **13 synthesis engines** (`ANALOG`, `DIGITAL`, `PHASE`, `LOFI`, `SAMPLE`, `VOICE`, `TRIO`, `WHEEL`, `GRAIN`, `FM6`, `PHYS`, `NOISE`, `DRUMS`), environmental/animal soundscapes, user samples, and automatic voice allocation.
+* **13 Unrestricted Synthesis Engines:** Simultaneous access across all 6 tracks to `ANALOG` (including architectural emulations of the **Minimoog Model D** and **EMS VCS 3 / Synthi AKS**), `DIGITAL`, `PHASE`, `LOFI`, `SAMPLE`, `VOICE` (featuring the zero-SRAM **Klatt Formant Speech Engine** with `DECTALK`, `VOX-SING`, `VOX-BENT`, and `PHRASE 1`–`PHRASE 8` genre-locked combinatorial speech), `TRIO`, `WHEEL`, `GRAIN`, `FM6`, `PHYS`, `NOISE`, and `DRUMS` (**32 Drum Kits**).
+* **Sound Landscaper & Psychoacoustic Layers:** Blend up to **10 environmental & drone layers** alongside utilitarian psychoacoustic frequency layers.
+* **Isolated Kick & Bass Pools & Sub-Bass Centering:** Isolated Kick & Bass voice pools prevent low-end voice stealing while phase-clean sub-bass centering anchors low frequencies cleanly in mono.
 
 ---
 
 ## 9. MIDI, USB-C Audio & Web Editor
 
-* **MIDI & USB Audio:** Mapped to MIDI Channels 1–6 (plus GM Drum Channel 10), class-compliant USB-C audio (`44.1 kHz` / `48 kHz`), and web editor support with **5-Second Smart Auto-Fit**.
+* **MIDI & USB Audio:** Mapped to MIDI Channels 1–6 (plus GM Drum Channel 10), class-compliant USB-C audio (`44.1 kHz` / `48 kHz`), and cross-platform web editor support (`web/editor.html`) for desktop and **Android Chrome USB-C OTG** with **offline PWA** caching, **5-Second Smart Auto-Fit** (`USR1`–`USR6`), **6 flash vault** management (`SLOT 1`–`6`), and SysEx backup/restore (`OBJ_VOXBANK`).
 
 ---
 
