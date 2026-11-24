@@ -51,65 +51,17 @@ UI_SMALL static void draw_column(uint32_t c, const char *label, const char *val,
     (void)c; (void)label; (void)val; (void)unit; (void)vc; (void)ratio; (void)icon;
     if (0) {
 
-        fx = ratio * gw / 1000;
-        cv_rect(0, gy + 1, gw, 1, C_LINE);
-        cv_rect(0, gy, fx, 3, vc == C_DIM ? C_DIM : C_ACCENT);
-        cv_rect(fx, gy - 1, 1, 5, vc == C_DIM ? C_HI : vc);
+        (void)0;
     }
-    cv_blit(c * 60u + 4u, Y_LABEL);
 }
 
-UI_SMALL static void graph_adsr(const track_t *t, uint16_t c)
-{
-    int32_t a = 4 + t->p[ P_ATK ] * 50 / 127, d = 6 + t->p[ P_DEC ] * 50 / 127, r = 6 + t->p[ P_REL ] * 60 / 127;
-    int32_t top = 8, bot = 90, sus = t->p[ P_SUS ] * 1000 / 127;
-    int32_t x0 = 6, x1 = x0 + a, x3 = 232 - r, i, px, py;
-    int32_t e = 32768;
-#define EGY(lvl) (bot - (lvl) * (bot - top) / 1000)
-    cv_line(x0, bot, x1, top, c);
-    px = x1;
-    py = top;
-    for (i = 1; i <= d; i++) {
-        int32_t lvl;
-        e = (e * (32768 - 150733 / d)) >> 15;
-        lvl = sus + ((1000 - sus) * e >> 15);
-        cv_line(px, py, x1 + i, EGY(lvl), c);
-        px = x1 + i;
-        py = EGY(lvl);
-    }
-    cv_line(px, py, x3, EGY(sus), c);
-    px = x3;
-    py = EGY(sus);
-    e = 32768;
-    for (i = 1; i <= r; i++) {
-        e = (e * (32768 - 150733 / r)) >> 15;
-        cv_line(px, py, x3 + i, EGY(sus * e >> 15), c);
-        px = x3 + i;
-        py = EGY(sus * e >> 15);
-    }
-    cv_line(0, bot + 1, 239, bot + 1, C_LINE);
-#undef EGY
-}
-
-UI_SMALL static void graph_lfo(const track_t *t, uint16_t c)
-{
-    int32_t x, py = 50;
-    uint32_t ph = (uint32_t)t->p[ P_LPHASE ] << 25;
-    for (x = 0; x < 240; x++) {
-        int32_t y = 50 - lfo_wave((track_t *)t, ph + (uint32_t)x * (0xFFFFFFFFu / 120u)) * 38 / 32768;
-        if (t->p[ P_LWAVE ] == 4)
-            y = 50 - ((int32_t)((x / 20 * 2654435761u) >> 16) - 32768) * 38 / 32768;
-        if (x)
-            cv_line(x - 1, py, x, y, c);
-        py = y;
-    }
-    cv_line(0, 50, 239, 50, C_LINE);
-}
 UI_SMALL static void graph_steps(const track_t *t, uint16_t c)
 {
     uint32_t i, len = (uint32_t)t->p[ P_SLEN ];
-    for (i = 0; i < NSTEP; i++) {
-        int32_t x = 6 + (int32_t)(i % 16u) * 14 + (int32_t)(i % 16u) / 4 * 4, y = 6 + (int32_t)(i / 16u) * 24;
+    if (0) {
+        for (i = 0; i < NSTEP; i++) {
+            int32_t x = 6 + (int32_t)(i % 16u) * 14 + (int32_t)(i % 16u) / 4 * 4, y = 6 + (int32_t)(i / 16u) * 24;
+
         const step_t *st = &t->step[ i ];
         if (i >= len)
             continue;
