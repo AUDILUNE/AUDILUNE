@@ -457,6 +457,15 @@ UI_SMALL static const uint8_t *ed_bk_obj(uint32_t id, uint32_t *len)   /* 0 = no
             *len = sizeof theme;
         return (const uint8_t *)&theme;
     }
+    if (id == 12u) {                                      /* AUDILUNE: Klatt speech phrase bank (OBJ_VOXBANK, 512 B) */
+        uint32_t vlen = 0;
+        const uint8_t *vp = flash_ok ? (const uint8_t *)st_xip(OBJ_VOXBANK, &vlen) : 0;
+        if (vp && vlen >= 512u) {
+            *len = 512u;
+            return vp;
+        }
+        return (const uint8_t *)&theme;
+    }
     if (id >= 32u && id < 32u + SMP_USER_SLOTS) {
         const smp_user_hdr_t *h = (const smp_user_hdr_t *)smp_user_xip(id - 32u);
         if (h->magic == SMP_USER_MAGIC && h->version == 1u && h->nz && h->nz <= 16u &&
@@ -466,8 +475,7 @@ UI_SMALL static const uint8_t *ed_bk_obj(uint32_t id, uint32_t *len)   /* 0 = no
     }
     return 0;
 }
-static const uint8_t ED_BK_IDS[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 32, 33, 34, 35};   /* 11: your theme (2.7) */   /* 35: USR4 (2.4), 9: SYN kits (2.5),
-                                                                                      * 10: MIDI LEARN (2.6) */
+static const uint8_t ED_BK_IDS[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 32, 33, 34, 35, 36, 37};
 
 /* a flash erase silences the audio for ~50 ms and stalls USB: only while stopped (as the panel) */
 UI_SMALL static uint32_t ed_flash_busy(void) { return song.playing || transport_req; }
@@ -493,6 +501,7 @@ UI_SMALL static uint32_t ed_bk_commit(void)
         up_bank_find(id - 6u);                            /* (the bank is read where it is now) */
         up_gen++;
         return 0;
+
     }
     if (id == 8u) {                                       /* the FM6 patch bank (n 0: empty) */
         if (ed_flash_busy())
