@@ -927,15 +927,16 @@ UI_SMALL static void layer_tap(uint32_t layer)
             break;
         }
         if (ui.scr == UI_ALGO) {
+            extern uint8_t audilune_vox_genre[];
             uint8_t row = ui.list_sel;
             if (row < AUDILUNE_GENRE_COUNT) {
-
                 TSEL->synth_mode = 1;
                 ui.algo_genre[song.sel] = row;
+                audilune_vox_genre[song.sel % NTRK] = row;
                 audilune_genre_idx = row;
                 audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[row]);
             } else if (row < AUDILUNE_GENRE_COUNT + DRUM_KITS) {
-                  uint8_t kidx = (uint8_t)(row - AUDILUNE_GENRE_COUNT);
+                uint8_t kidx = (uint8_t)(row - AUDILUNE_GENRE_COUNT);
                 TSEL->synth_mode = 0;
                 TDRUM->p[P_E0] = (int16_t)kidx;
                 audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[kidx]);
@@ -943,6 +944,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             go_home();
         } else if (ui.scr == UI_SETUP) {
             if (ui.list_sel == 0u) {
+
                 go_home();
                 if (ui.session_mode > 0u) {
                     audilune_infinite_on = 1u;
