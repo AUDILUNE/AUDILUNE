@@ -111,63 +111,13 @@ UI_SMALL static uint32_t graph_signature(void)
 {
     const page_t *pg = cur_page();
     const track_t *t = TSEL;
-    uint32_t h = 2166136261u;
-    if (0) {
-        if (pg->graph == GR_STEPS || pg->graph == GR_ROLL) {
-
-                 step_fill(t, ui.cursor) * 3u + last_note * 65537u;
-        h ^= steps_hash(t) + ph * 31u + ui.cursor * 7919u;
-    }
-    return h;
+    (void)pg; (void)t;
+    return 0u;
 }
 
-UI_SMALL static void graph_browse(void)
-{
-    uint32_t total, cur = preset_pos(&total), e, k;
-    int32_t row;
-    if (!total)
-        return;
-    for (row = -3; row <= 3; row++) {
-        int32_t y = 4 + (row + 3) * 17;
-        char tag[ B16 ], nm[ B16 ];
-        int sel = row == 0;
-        uint32_t n = (cur + total * 4u + (uint32_t)row) % total;
-        e = preset_at(n, &k);
-        if (e == NENGINES) {
-            up_slot_label(tag, k);
-            up_name(k, nm);
-        } else {
-            str_cpy(tag, preset_kind(n), sizeof tag);
-            str_cpy(nm, ENGINES[ e ]->presets[ k ].name, sizeof nm);
-        }
-        if (sel)
-            cv_rect(4, y + 6, 3, 3, C_WHITE);
-        cv_text(14, y, &FONT_S, tag, sel ? C_GRAY : C_DIM);
-        cv_text(54, y, &FONT_S, nm, sel ? C_WHITE : C_GRAY);
-    }
-}
-
-UI_SMALL static void graph_user(void)
-{
-    int32_t row, first = clamp((int32_t)ui.uslot - 3, 0, UP_SLOTS - 7);
-    for (row = 0; row < 7; row++) {
-        uint32_t k = (uint32_t)(first + row);
-        int32_t y = 4 + row * 17;
-        char tag[ B16 ], nm[ B16 ];
-        int sel = k == ui.uslot, used = up_used(k);
-        up_slot_label(tag, k);
-        if (used)
-            up_name(k, nm);
-        else
-            str_cpy(nm, "EMPTY", sizeof nm);
-        if (sel)
-            cv_rect(4, y + 6, 3, 3, C_WHITE);
-        cv_text(14, y, &FONT_S, tag, sel ? C_WHITE : C_GRAY);
-        cv_text(54, y, &FONT_S, nm, used ? (sel ? C_WHITE : C_HI) : C_DIM);
-    }
-}
 UI_SMALL static void graph_slots(void)
 {
+
     uint32_t i;
     for (i = 0; i < 4u; i++) {
         int32_t y = 8 + (int32_t)i * 26;
