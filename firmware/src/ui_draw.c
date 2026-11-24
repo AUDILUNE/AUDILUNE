@@ -33,124 +33,24 @@ UI_SMALL static void draw_head(void)
     (void)0;
 }
 
-        cv_rect(4, 5, 8, 8, C_HI);
-    }
-    if (rec)
-        te_disc(21, 9, 4, rec == 2u ? TE_RED : C_GRAY);
-    fmt_int(b, song.g[ G_BPM ]);
-    x = 32;
-    if (FELUCCA_ICONS) {
-        cv_icon(x, 2, ICON_TEMPO, C_GRAY);
-        x += 14;
-    }
-    x = cv_text(x, 1, &FONT_S, b, ui.bpm_t ? C_WHITE : C_HI);
-    if (mlu.on) {
-        cv_text(x + 12, 1, &FONT_S, "LEARN", C_AMB);
-    } else if (song.octave) {
-        str_cpy(b, song.octave > 0 ? "+" : "", 4);
-        fmt_int(b + str_len(b), song.octave);
-        cv_text(x + 12, 1, &FONT_S, "OCT", C_GRAY);
-        cv_text(x + 40, 1, &FONT_S, b, C_HI);
-    }
-    if (FELUCCA_ICONS) {
-        cv_icon(156, 2, ICON_TAPE, C_GRAY);
-        b[ I0 ] = (char)('1' + song.sel);
-        b[ I1 ] = 0;
-        cv_rect(168, 2, 12, 16, C_ACCENT);
-        cv_text(170, 1, &FONT_S, b, C_BLACK);
-    } else {
-        b[ I0 ] = 'T';
-        b[ I1 ] = (char)('1' + song.sel);
-        b[ I2 ] = 0;
-        cv_text(158, 1, &FONT_S, b, C_HI);
-    }
-    {
-        int32_t lvl = batt_shown(), k;
-        int32_t bx = 236 - 19;
-        cv_rect(bx, 4, 17, 1, C_GRAY);
-        cv_rect(bx, 12, 17, 1, C_GRAY);
-        cv_rect(bx, 4, 1, 9, C_GRAY);
-        cv_rect(bx + 16, 4, 1, 9, C_GRAY);
-        cv_rect(bx + 17, 6, 2, 5, C_GRAY);
-        for (k = 0; k < lvl; k++)
-            cv_rect(bx + 2 + k * 5, 6, 3, 5, lvl == 1 && batt_level() <= 1 ? C_WHITE : C_HI);
-        if (usb.config && !usb.suspended)
-            cv_text(bx - 28, 1, &FONT_S, "USB", C_DIM);
-       }
-    cv_blit(0, Y_HEAD);
-}
 UI_SMALL static void draw_frame(void)
 {
-    uint32_t i;
-    lcd_fill(0, H_HEAD, 240, Y_LABEL - H_HEAD, C_BLACK);
-    lcd_fill(0, Y_SEP_END, 240, Y_GRAPH - Y_SEP_END, C_BLACK);
-    lcd_fill(0, Y_GRAPH + H_GRAPH, 240, Y_FOOT - Y_GRAPH - H_GRAPH, C_BLACK);
-    for (i = 0; i < 4u; i++)
-        lcd_fill(i * 60u, Y_LABEL, 4, Y_SEP_END - Y_LABEL, C_BLACK);
-    lcd_fill(0, H_HEAD, 240, 1, C_LINE);
-    lcd_fill(0, Y_FOOT - 2, 240, 1, C_LINE);
-    for (i = 1; i < 4u; i++) {
-        uint32_t cx = i * 60u - 1u;
-        lcd_fill(cx, H_HEAD + 4, 1, Y_SEP_END - H_HEAD - 4, C_LINE);
-        lcd_fill(cx - 2u, H_HEAD, 5, 1, C_ACCENT);
-        lcd_fill(cx, H_HEAD - 2u, 1, 5, C_ACCENT);
-        lcd_fill(cx - 2u, Y_SEP_END + 1u, 5, 1, C_DIM);
-        lcd_fill(cx, Y_SEP_END - 1u, 1, 5, C_DIM);
-    }
-    lcd_fill(0, H_HEAD, 6, 1, C_ACCENT);
-    lcd_fill(0, H_HEAD, 1, 6, C_ACCENT);
-    lcd_fill(234, H_HEAD, 6, 1, C_ACCENT);
-    lcd_fill(239, H_HEAD, 1, 6, C_ACCENT);
-    lcd_fill(0, Y_FOOT - 6, 1, 5, C_ACCENT);
-    lcd_fill(239, Y_FOOT - 6, 1, 5, C_ACCENT);
-
-        lcd_fill(i * 60u - 1u, H_HEAD + 4, 1, Y_SEP_END - H_HEAD - 4, C_LINE);
+    (void)0;
 }
-#define LABEL_X (FELUCCA_ICONS ? ICON_CELL + ICON_GAP : 0)
+
+UI_SMALL static void al_unused_frame_tail(void)
+{
+    if (0) {
+        (void)0;
+    }
+}
+
 UI_SMALL static void draw_column(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon)
 {
-    char l[ B8 ], v[ B8 ], u[ B8 ], key[ B32 ];
-    int32_t x, gw = 52, fx;
-    if (icon == ICON_AUTO)
-        icon = icon_for_label(label);
-    fit(l, label, &FONT_S, 54 - LABEL_X);
-    fit(v, val, &FONT_S, is_eng_name(val) ? 56 : 40);
-    fit(u, unit, &FONT_S, 54 - text_w(&FONT_S, v) - 3);
-    str_cpy(key, l, 8);
-    str_cpy(key + str_len(key), "|", 2);
-    str_cpy(key + str_len(key), v, 8);
-    str_cpy(key + str_len(key), "|", 2);
-    str_cpy(key + str_len(key), u, 8);
-    {
-        uint32_t n = str_len(key);
-        key[ n ] = (char)('A' + (vc == C_WHITE) + (vc == C_DIM) * 2);
-        key[ n + 1 ] = (char)(' ' + (ratio < 0 ? 0 : 1 + ratio / 20));
-        key[ n + 2 ] = (char)(icon == ICON_NONE ? '~' : '!' + icon % 90u);
-        key[ n + 3 ] = 0;
-    }
-    if (c < 4u) {
-        str_cpy(ui.big_l[ c ], l, 8);
-        fit(ui.big_v[ c ], val, &FONT_L, 112 - (unit[ I0 ] ? 4 : 0));
-        str_cpy(ui.big_u[ c ], unit, 8);
-        ui.big_c[ c ] = vc;
-    }
-    if (c == ui.hot_col) {
-        str_cpy(ui.focus_l, l, 8);
-        str_cpy(ui.focus_v, v, 8);
-        str_cpy(ui.focus_u, u, 8);
-    }
-    if (!ui.force && str_eq(key, ui.col[ c ]))
-        return;
-    str_cpy(ui.col[ c ], key, sizeof ui.col[ c ]);
-    cv_begin(55, Y_SEP_END - Y_LABEL, C_BLACK);
-    if (FELUCCA_ICONS && icon != ICON_NONE && l[ I0 ])
-        cv_icon(0, 1, icon, C_ACCENT);
-    cv_text(l[ I0 ] ? LABEL_X : 0, 0, &FONT_S, l, C_GRAY);
-    x = cv_text(0, Y_VALUE - Y_LABEL, &FONT_S, v, vc);
-    cv_text(x + 3, Y_VALUE - Y_LABEL, &FONT_S, u, C_DIM);
-    if (ratio >= 0) {
-        int32_t gy = Y_GAUGE - Y_LABEL;
+    (void)c; (void)label; (void)val; (void)unit; (void)vc; (void)ratio; (void)icon;
+    if (0) {
+
         fx = ratio * gw / 1000;
         cv_rect(0, gy + 1, gw, 1, C_LINE);
         cv_rect(0, gy, fx, 3, vc == C_DIM ? C_DIM : C_ACCENT);
