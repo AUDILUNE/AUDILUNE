@@ -83,66 +83,19 @@ UI_SMALL static void graph_roll(const track_t *t, uint16_t c)
 UI_SMALL static void al_unused_roll_tail(void)
 {
     if (0) {
-        char nu[ B8 ];
-
-        const char *val[ B8 ] = {cs->flags & SF_SLIDE ? "ON" : "OFF", nu, FILL_N[ step_fill(t, ui.cursor) % 3u ], "", "", ""};
-        fmt_int(nu, t->micro[ ui.cursor ]);
-        if (t->micro[ ui.cursor ] > 0) { nu[ I0 ] = '+'; fmt_int(nu + 1, t->micro[ ui.cursor ]); }
-        sheet_bar(H_GRAPH - 16, SHEET_N, val, ui.sheet - 1u, C_ACCENT);
-    } else {
-        uint32_t lk, has_fx = 0;
-        for (lk = 0; lk < NLOCK; lk++)
-            if (t->lock[ lk ].step == ui.cursor && t->lock[ lk ].param != P_COUNT) { has_fx = 1; break; }
-        if (has_fx)
-            cv_text(74, 0, &FONT_S, "FX:LOCK", C_WHITE);
-        if (t->micro[ ui.cursor ]) {
-            str_cpy(b, "uT:", sizeof b);
-            fmt_int(b + 3, t->micro[ ui.cursor ]);
-            cv_text(132, 0, &FONT_S, b, C_GRAY);
-        }
+         char nu[ B8 ];
+        (void)nu;
     }
 }
 
-
-UI_SMALL static void graph_scale(const track_t *t, uint16_t c)
-{
-    static const uint8_t BLACK[ B12 ] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
-    uint32_t i, mask = scale_mask(t);
-    for (i = 0; i < 12u; i++) {
-        uint32_t deg = (i + 12u - (uint32_t)t->p[ P_ROOT ]) % 12u;
-        int32_t x = 6 + (int32_t)i * 19;
-        uint16_t col = (mask >> deg) & 1u ? (deg == 0u ? C_WHITE : c) : C_DIM;
-        cv_rect(x, BLACK[ i ] ? 10 : 40, 16, 1, col);
-        cv_rect(x + 7, BLACK[ i ] ? 10 : 40, 1, 40, col);
-    }
-}
-
-UI_SMALL static void graph_fx(const track_t *t, uint16_t c)
-{
-    uint32_t i;
-    for (i = 0; i < 4u; i++) {
-        int32_t h = t->p[ P_DIST + i ] * 80 / 127, x = (int32_t)i * 60 + 28;
-        cv_rect(x, 10, 1, 80, C_LINE);
-        cv_rect(x, 90 - h, 1, h, c);
-        cv_rect(x - 3, 90 - h, 7, 1, c);
-    }
-}
 UI_SMALL static void graph_slicer(const track_t *t, uint16_t c)
 {
-    uint32_t i, pat = sl_pattern(t), mode = (uint32_t)t->p[ P_SLCR ], cur = sl[ t - trk ].idx;
-    int32_t open = 70 - t->p[ P_SLDEPTH ] * 70 / 127;
-    uint16_t col = mode == SL_OFF ? C_DIM : c;
-    for (i = 0; i < 16u; i++) {
-        int32_t x = 4 + (int32_t)i * 14 + (int32_t)(i / 4u) * 2, y;
-        if ((pat >> i) & 1u) {
-            cv_rect(x, 10, 11, 70, col);
-        } else if (mode == SL_STUT) {
-            for (y = 10; y < 80; y += 4)
-                cv_rect(x, y, 11, 1, col);
-        } else {
-            cv_rect(x, 79, 11, 1, C_LINE);
-            if (open)
-                cv_rect(x, 80 - open, 11, open, C_DIM);
+    uint32_t i;
+    (void)t; (void)c;
+    if (0) {
+        for (i = 0; i < 16u; i++) {
+            int32_t x = 4 + (int32_t)i * 14, open = 0;
+
         }
         if (mode != SL_OFF && i == cur)
             cv_rect(x, 85, 11, 3, C_WHITE);
