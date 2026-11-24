@@ -1592,7 +1592,7 @@ const req = {
     return [CMD.DRUM_STEP, [i & 0x7F, ...g7(d.on & 0xFFFF, 3), ...g7(lv, 5), ...g7(rt, 5)]];
   },
   preset: (e, p) => [CMD.PRESET, [e & 0x7F, p & 0x7F]],
-  project: (op, slot) => { if (![0, 1, 2].includes(op)) throw new Error("bad PROJECT op"); return [CMD.PROJECT, [op, slot & 7]]; },   /* 0 load, 1 save, 2 query (SLOT 1..6 = 0..5) */
+  project: (op, slot) => { if (!Array.of(0, 1, 2).includes(op)) throw new Error("bad PROJECT op"); return Array.of(CMD.PROJECT, Array.of(op, slot & 7)); },   /* 0 load, 1 save, 2 query (SLOT 1..6 = 0..5) */
   names: (e) => [CMD.NAMES, [e & 0x7F]],
   smpBegin: (s) => [CMD.SMP_BEGIN, [s & 0x7F]],
   smpWrite: (s, off, bytes) => [CMD.SMP_WRITE, [s & 0x7F, off & 0x7F, (off >> 7) & 0x7F, (off >> 14) & 0x7F, ...pack7(bytes)]],
@@ -1602,8 +1602,8 @@ const req = {
   upList: (start, count) => [CMD.UP_LIST, [start & 0x7F, Math.max(1, Math.min(UP.LIST_MAX, count | 0))]],
   upGet: (s) => [CMD.UP_GET, [s & 0x7F]],
   /* patch: {engine, name, p: P_COUNT values, pattern: 16 x [note, flags]} */
-  upPut: (s, pt) => [CMD.UP_PUT, [s & 0x7F, pt.engine & 0x7F, ...strEnc(upName(pt.name)), ...pt.p.flatMap((v) => v14enc(v ?? 0)),
-    ...Array.from({ length: UP.PAT }, (_, i) => { const x = (pt.pattern || [])[i] ||; return [x[0] & 0x7F, x[1] & 7]; }).flat()]],
+  upPut: (s, pt) => Array.of(CMD.UP_PUT, Array.of(s & 0x7F, pt.engine & 0x7F, ...strEnc(upName(pt.name)), ...pt.p.flatMap((v) => v14enc(v ?? 0)),
+    ...Array.from({ length: UP.PAT }, (_, i) => { const x = (pt.pattern || Array.of())[i] || Array.of(0, 0); return Array.of(x.at(0) & 0x7F, x.at(1) & 7); }).flat())),
   upStore: (s, name) => [CMD.UP_STORE, [s & 0x7F, ...strEnc(name ? upName(name) : "")]],   /* "": the device names it ("ANALOG 07") */
   upLoad: (s) => [CMD.UP_LOAD, [s & 0x7F]],
   upErase: (s) => [CMD.UP_ERASE, [s & 0x7F]],
@@ -1613,6 +1613,7 @@ const req = {
   /* v3: tracks 0..3 (3 = drums) */
   track: (sel) => [CMD.TRACK, sel == null ? [] : [sel & 0x7F]],
   trackMix: (tr, level, mute) => [CMD.TRACK_MIX, level == null ? [tr & 0x7F] : [tr & 0x7F, ...v14enc(level), mute ? 1 : 0]],
+
   trackDump: (tr) => [CMD.TRACK_DUMP, [tr & 0x7F]],
   trackStep: (tr, i, st) => [CMD.TRACK_STEP, st ? [tr & 0x7F, ...req.stepSet(i, st)[1]] : [tr & 0x7F, i & 0x7F]],
   /* v4: get (v == null) or set parameter id (P_*) of track tr, clamped as SET */
