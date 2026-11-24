@@ -994,7 +994,7 @@
           <button id="clearseq" class="warn" data-t="clearSeq" data-ic="symbol_trash"></button>
           <span class="dim" id="noteshelp"></span></p>
         <p class="bar seqtools"><span data-t="lenLabel"></span>
-          <button type="button" id="lenminus" class="sq">&minus;</button><input id="lenval" type="number" min="1" max="64"><button type="button" id="lenplus" class="sq">+</button>
+          <button type="button" id="lenminus" class="sq">&minus;</button><input id="lenval" type="number" min="1" max="128"><button type="button" id="lenplus" class="sq">+</button>
           <span class="seg" id="viewseg"><button type="button" data-v="grid" data-t="viewGrid"></button><button type="button" data-v="roll" data-t="viewRoll"></button></span>
           <button type="button" id="midiexp" data-t="midiExport" data-ic="symbol_download"></button>
           <button type="button" id="midiimp" data-t="midiImportBtn" data-ic="symbol_upload"></button>
@@ -1005,7 +1005,7 @@
         <div class="grid" id="stepgrid"></div>
         <div class="roll" id="roll" hidden>
           <p class="bar"><span class="dim" data-t="rollLen"></span> <span class="seg" id="rolllen"></span>
-            <button type="button" id="rolldown" data-t="rollDown"></button> <span class="dim" id="rollrange"></span> <button type="button" id="rollup" data-t="rollUp"></button></p>
+            <button type="button" id="rolldown" data-t="rollDown"></button> <span class="dim" data-t="rollrange"></span> <button type="button" id="rollup" data-t="rollUp"></button></p>
           <div class="rollbox"><canvas id="rollcv"></canvas></div>
           <p class="dim" data-t="rollHelp"></p>
         </div>
@@ -1013,6 +1013,7 @@
         <details class="more" id="steplist"><summary data-t="stepList"></summary>
           <div class="stepcols" id="steptables"></div></details>
       </div>
+
     </section>
 
     <section class="panel" id="p-tracks" data-tab="tracks" data-dev hidden>
