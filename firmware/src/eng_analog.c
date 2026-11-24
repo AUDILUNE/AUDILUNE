@@ -255,20 +255,29 @@ static const preset_t ANALOG_PRESETS[] = {
      XP(P_LD_PIT + 1, 1, P_LRATE + 1, 80, P_LFADE + 1, 60, P_GLIDE + 1, 30)},
     {"SAW BASS", {0, 6, 64, 0, 52, 30, 40, 64}, {0, 60, 60, 20}, 30, 1, FX(8, 0, 0, 4), XP(P_TRANS + 1, -24)},
     {"SINE PAD", {3, 10, 64, 4, 90, 0, 0, 32}, {80, 90, 118, 90}, 0, 0, FX(0, 60, 20, 65)},
+    /* AUDILUNE Classic Synth Architectural Emulations: Minimoog Model D & EMS VCS 3 / Synthi AKS */
+    {"MINIMOOG D", {5, 52, 108, 0, 64, 46, 56, 64}, {2, 62, 92, 24}, 42, 1, FX(14, 0, 18, 14), XP(P_GLIDE + 1, 42, P_GLMODE + 1, 1)},
+    {"MOOG BASS", {5, 28, 116, 0, 46, 54, 72, 64}, {0, 54, 68, 18}, 48, 1, FX(18, 0, 0, 6), XP(P_GLIDE + 1, 36, P_GLMODE + 1, 1, P_TRANS + 1, -24)},
+    {"MOOG LEAD", {5, 74, 104, 84, 76, 42, 48, 80}, {4, 68, 108, 32}, 36, 1, FX(10, 12, 28, 22), XP(P_GLIDE + 1, 48)},
+    {"MOOG BRASS", {5, 50, 112, 0, 54, 28, 38, 64}, {14, 74, 98, 34}, 38, 0, FX(8, 18, 16, 26)},
+    {"EMS VCS3", {6, 48, 72, 16, 62, 68, 44, 82}, {6, 76, 94, 44}, 32, 1, FX(12, 24, 34, 38), XP(P_GLIDE + 1, 34)},
+    {"SYNTHI AKS", {6, 78, 86, 24, 56, 78, 52, 96}, {10, 82, 88, 52}, 40, 1, FX(16, 30, 42, 46)},
+    {"VCS3 MATRIX", {6, 96, 104, 32, 70, 84, 60, 112}, {4, 68, 72, 48}, 48, 1, FX(20, 36, 48, 54)},
+    {"VCS3 DRONE", {6, 34, 58, 28, 52, 64, 36, 88}, {68, 104, 118, 86}, 24, 0, FX(8, 44, 52, 64)},
 };
 
 /* (after Clipper 1.2) UNISON (voice.c unison_spread): both oscillators moved by r (Q32) of a turn of the note,
  * each by its share: as if started that much sooner (osc 2 took its phase from ph[0] before the spread: in phase) */
 static void analog_spread(track_t *t, voice_t *v, uint32_t r)
 {
-    v->ph[0] += r;
-    v->ph[1] += uni_turns(r, v->pitch16, t->p[P_E1] * 16 / 100);
+    *(v->ph + 0) += r;
+    *(v->ph + 1) += uni_turns(r, v->pitch16, t->p[P_E1] * 16 / 100);
 }
 
 static const engine_t ENG_ANALOG = {
     "ANALOG", {"OSC", "FLT"},
     {
-        {"WAVE", F_ENUM, 0, 4, 0, N_ANALOG_WAVE, 0},
+        {"WAVE", F_ENUM, 0, 6, 0, N_ANALOG_WAVE, 0},
         {"DTN", F_INT, 0, 127, 10, 0, "ct"},
         {"MIX", F_PCT, 0, 127, 64, 0, 0},
         {"NOIS", F_PCT, 0, 127, 0, 0, 0},
@@ -277,6 +286,6 @@ static const engine_t ENG_ANALOG = {
         {"DRV", F_PCT, 0, 127, 0, 0, 0},
         {"KTR", F_PCT, 0, 127, 64, 0, 0},
     },
-    ANALOG_PRESETS, sizeof(ANALOG_PRESETS) / sizeof(ANALOG_PRESETS[0]), 1, analog_note_on, analog_render,
+    ANALOG_PRESETS, sizeof(ANALOG_PRESETS) / sizeof(ANALOG_PRESETS + 0), 1, analog_note_on, analog_render,
     0xF986, {P_E4, P_E5, P_ATK, P_REL},
 };
