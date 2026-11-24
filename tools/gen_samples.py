@@ -163,17 +163,18 @@ def cc0_entries(setname, kind):
             root = KIT_BASE + k
         elif nn:
             root = (nn[0] + conv) * 12 + nn[1]
-            if setname in MEASURED_TUNING:              # tuned off A440: the measured pitch near the named note
+              if setname in MEASURED_TUNING:              # tuned off A440: the measured pitch near the named note
                 det = hz_to_midi(detect_hz(x, sr))
                 if abs(det - root) < 1.0:
                     root = det
-          else:
+        else:
             root = hz_to_midi(detect_hz(x, sr))
         x = resample(x, sr, TR)
         keep = {"oneshot": 0.88, "sus": 0.85, "kit": 0.55, "piano": 0.90}.get(kind, 0.88)
         x = x[:int(keep * TR)]
         n = len(x)
         if kind == "piano":                          # the attack, then a steady tone the envelope (DEC) fades:
+
             ls, le, xf, a0 = int(0.50 * TR), n - 1, int(0.08 * TR), int(0.28 * TR)   # long notes in 0.9 s
             w = int(0.02 * TR)
             env = [max(1e-6, (sum(v * v for v in x[max(0, i - w):i + w]) / (2 * w)) ** 0.5) for i in range(0, n, w)]
