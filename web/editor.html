@@ -3152,47 +3152,43 @@ function makeMockDevice(opt = {}) {
     [[72, 0, 0, 74, 0, 0, 76, 0, 79, 0, 76, 0, 74, 0, 0, 0], [1, T_, 0, 2, T_, 0, 0, 0, 1, 0, 2, 0, 0, T_, T_, 0]],
     [[60, 0, 0, 0, 0, 0, 0, 0, 57, 0, 0, 0, 55, 0, 0, 0], [0, T_, T_, T_, T_, T_, T_, 0, 0, T_, T_, 0, 0, T_, T_, 0]],
     [[0, 0, 60, 0, 0, 63, 0, 0, 0, 0, 60, 0, 0, 65, 0, 63], [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]],
-    [[72, 0, 0, 79, 0, 0, 84, 0, 0, 0, 76, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
-    [[36, 0, 0, 0, 0, 0, 0, 36, 0, 0, 34, 0, 0, 0, 0, 0], [1, T_, T_, T_, 0, 0, 0, 0, 0, 0, 0, T_, T_, T_, 0, 0]],
-    [[60, 61, 62, 67, 64, 65, 60, 69, 68, 70, 62, 67, 72, 72, 74, 64], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]],
-
-    [[60, 60, 61, 61, 62, 0, 63, 63, 64, 65, 65, 0, 66, 66, 66, 67], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]],
-    [[60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75], [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]],
-  ];
-  const P_E0 = TP.length, P_COUNT = P_E0 + 8, G_COUNT = GP.length, NSTEP = 64, G_ENGSEL = 20, P_SLCR = 45, P_CHORD = 49;
+    Array.of(Array.of(72, 0, 0, 79, 0, 0, 84, 0, 0, 0, 76, 0, 0, 0, 0, 0), Array.of(1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+    Array.of(Array.of(36, 0, 0, 0, 0, 0, 0, 36, 0, 0, 34, 0, 0, 0, 0, 0), Array.of(1, T_, T_, T_, 0, 0, 0, 0, 0, 0, 0, T_, T_, T_, 0, 0)),
+    Array.of(Array.of(60, 61, 62, 67, 64, 65, 60, 69, 68, 70, 62, 67, 72, 72, 74, 64), Array.of(1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0)),
+    Array.of(Array.of(60, 60, 61, 61, 62, 0, 63, 63, 64, 65, 65, 0, 66, 66, 66, 67), Array.of(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)),
+    Array.of(Array.of(60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75), Array.of(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0))
+  );
+  const P_E0 = TP.length, P_COUNT = P_E0 + 8, G_COUNT = GP.length, NSTEP = 128, G_ENGSEL = 20, P_SLCR = 45, P_CHORD = 49;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  /* four tracks (firmware v3); engine / preset / p / step below are the selected track's */
-  const NTRK = 4, TRK_DRUM = 3;
-  const newTrack = (i) => ({ engine: 0, preset: 0, drum: i === TRK_DRUM, fm6: FM6.INIT_PK.slice(),   /* fm6: the FM6 patch (eng_fm6.c fm6_patch) */
-    p: TP.map((d) => d.def).concat(i === TRK_DRUM ? [5, 0, 0, 0, 0, 0, 0, 0] : new Array(8).fill(0)),
-    step: Array.from({ length: NSTEP }, () => ({ n: 0, notes: [0, 0, 0, 0], time: 2, flags: 0, vel: 0, lvl: 0, rat: 0 })),
-    dstep: i === TRK_DRUM ? Array.from({ length: NSTEP }, emptyDrum) : null,
-    micro: new Array(NSTEP).fill(0), locks: [],      /* v7: nudges, parameter locks (at most NLOCK) */
-    fill: new Array(NSTEP / 4).fill(0) });           /* v8: fill conditions, 2 bits a step */
+  const NTRK = 6, TRK_DRUM = 5;
+  const newTrack = (i) => ({ engine: 0, preset: 0, drum: false, fm6: FM6.INIT_PK.slice(),
+    p: TP.map((d) => d.def).concat(new Array(8).fill(0)),
+    step: Array.from({ length: NSTEP }, () => ({ n: 0, notes: Array.of(0, 0, 0, 0), time: 2, flags: 0, vel: 0, lvl: 0, rat: 0 })),
+    dstep: Array.from({ length: NSTEP }, emptyDrum),
+    micro: new Array(NSTEP).fill(0), locks: Array.of(),
+    fill: new Array(NSTEP / 4).fill(0) });
   const NLOCK = 24;
   const st = {
-    tracks: [0, 1, 2, 3].map(newTrack), sel: 0, rec: 0, solo: 0,
+    tracks: Array.of(0, 1, 2, 3, 4, 5).map(newTrack), sel: 0, rec: 0, solo: 0,
     g: GP.map((d) => d.def),
-    slots: [null, null, null, null],
-    smp: [0, 1, 2, 3].map(() => ({ flash: new Uint8Array(SMP.SLOT_SIZE).fill(0xFF), zones: 0, name: "", len: 0, next: SMP.DATA_OFF })),   /* USR1..4 (2.4: USR4) */
+    slots: Array.of(null, null, null, null, null, null),
+    smp: Array.of(0, 1, 2, 3, 4, 5).map(() => ({ flash: new Uint8Array(SMP.SLOT_SIZE).fill(0xFF), zones: 0, name: "", len: 0, next: SMP.DATA_OFF })),
     bank: new Array(opt.slots || 32).fill(null),     /* user presets: {engine, name, p, pattern} */
     fm6bank: new Array(FM6_BANK).fill(null),         /* the FM6 patch bank (fm6_bank.c): packed records */
     settings: mockSettings(),                       /* v6: the settings object (2.5: a PER3 with a song order) */
-    dsyn: null, dsynStored: null, dsynPlayed: [],  /* v10: the SYN kits (RAM, flash), the auditions heard */
+    dsyn: null, dsynStored: null, dsynPlayed: Array.of(),
     ml: null,                                       /* 2.6: the MIDI LEARN map (seq.c ml_tab, 16 x 2 bytes), null: none */
     bkSnap: null, bkPut: null,
     watch: false, v4: false, lastReq: 0, playing: false,
-    /* v12 (LIVE): the transport's start, the sections (A..D: playing, asked for at a time), song mode, SONG REC, fills,
-       the punch-in effect, REC waiting for a note, undo (0 none, 1 undo, 2 redo), a store waiting for its second press,
-       the taps of TAP, the MIDI the editor played (notes) */
     live: { t0: 0, sec: -1, next: -1, nextAt: 0, songMode: false, srec: 0, fillHeld: false, fillBar: false, fillAt: 0, fillTo: 0,
-      fx: -1, recWait: false, undo: 0, armed: -1, armedAt: 0, taps: [],
-      rolls: new Set(), erase: new Set(), pattern: [], chain: [], thr: 0, master: 0, dtw: new Array(16).fill(8 | 4 << 4) },
-    midiIn: [],
+      fx: -1, recWait: false, undo: 0, armed: -1, armedAt: 0, taps: Array.of(),
+      rolls: new Set(), erase: new Set(), pattern: Array.of(), chain: Array.of(), thr: 0, master: 0, dtw: new Array(16).fill(8 | 4 << 4) },
+    midiIn: Array.of(),
   };
-  for (const k of ["engine", "preset", "p", "step"]) {
+  for (const k of Array.of("engine", "preset", "p", "step")) {
     Object.defineProperty(st, k, { enumerable: false, get: () => st.tracks[st.sel][k], set: (v) => { st.tracks[st.sel][k] = v; } });
   }
+
   const drumSel = () => st.tracks[st.sel].drum;
   const engOf = (t) => (t.drum ? ENG.length : t.engine);   /* the engine byte: NENGINES = drums */
   const watchMs = opt.watchMs || 3000;
