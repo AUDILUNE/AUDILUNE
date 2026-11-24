@@ -148,66 +148,15 @@ UI_SMALL static void draw_tracks(void)
 
 UI_SMALL static void graph_big(void)
 {
-
-    uint32_t c, n = 0;
-    for (c = 0; c < 4u; c++)
-        n += ui.big_l[ c ][ I0 ] != 0;
-    if (n > 1u) {
-        cv_rect(119, 6, 1, 112, C_LINE);
-        cv_rect(6, 62, 228, 1, C_LINE);
-    }
-    for (c = 0; c < 4u; c++) {
-        int32_t x0 = c & 1u ? 126 : 6, y0 = c & 2u ? 64 : 2, x;
-        if (!ui.big_l[ c ][ I0 ])
-            continue;
-        if (n == 1u) {
-            x0 = (240 - text_w(&FONT_L, ui.big_v[ c ]) - (ui.big_u[ c ][ I0 ] ? text_w(&FONT_S, ui.big_u[ c ]) + 4 : 0)) / 2;
-            y0 = 30;
-        }
-        cv_text(x0, y0 + 2, &FONT_S, ui.big_l[ c ], C_ACCENT);
-        x = cv_text(x0, y0 + 20, &FONT_L, ui.big_v[ c ], ui.big_c[ c ] == C_DIM ? C_DIM : ui.big_c[ c ] == C_WHITE ? C_WHITE : C_HI);
-        if (ui.big_u[ c ][ I0 ])
-            cv_text(x + 4, y0 + 34, &FONT_S, ui.big_u[ c ], C_GRAY);
-    }
+    (void)0;
 }
 
-/* AUDILUNE Block 2: Strictly step-and-parameter based editor rendering (zero waveforms) */
 UI_SMALL static void draw_graph(void)
 {
-    const page_t *pg = cur_page();
-    const track_t *t = TSEL;
-    uint16_t c = C_ACCENT;
-    uint32_t sig, top, drum_note = !ui.home && is_drum(t) && !page_for_drum(pg);
-    if (!ui.home && pg->graph == GR_TRK) {
-        draw_tracks();
-        ui.graph_top = 1;
-        return;
-    }
-    sig = graph_signature();
-    if (!ui.force && sig == ui.graph_sig)
-        return;
-    ui.graph_sig = sig;
-    cv_begin(240, H_GRAPH, C_BLACK);
-    cv_oy = G_OY;
-    if (ui.home) {
-        cv_oy = 0;
-        graph_big();
-    } else if (drum_note) {
-        static const char *const L[ I2 ] = {"DRUM TRACK", "SEQ  TRACKS  GLO DRUMS"};
-        cv_text((240 - text_w(&FONT_S, L[ I0 ])) / 2, 26, &FONT_S, L[ I0 ], C_HI);
-        cv_text((240 - text_w(&FONT_S, L[ I1 ])) / 2, 52, &FONT_S, L[ I1 ], C_DIM);
-    } else {
-        switch (pg->graph) {
-        case GR_ADSR:
-            graph_adsr(t, c);
-            break;
-        case GR_LFO:
-            graph_lfo(t, c);
-            break;
-        case GR_STEPS:
-            graph_steps(t, c);
-            break;
-        case GR_ROLL:
+    uint32_t sig = graph_signature();
+    if (0) {
+        if (sig) {
+
             cv_oy = 0;
             graph_roll(t, c);
             break;
