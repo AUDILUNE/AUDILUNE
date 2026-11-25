@@ -1270,32 +1270,41 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_popup("WET/MIX", (int32_t)al_pad_z[p] * 110 / 127, "%");
         }
     } else if (ui.scr == UI_FX) {
-        if (row < 8u) {
-            if (k == 2u) audilune_sel_vol(s);
+        static const uint8_t FX_CNT[6 + 6] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 1u};
+        uint32_t cnt = *(FX_CNT + (row % 11u));
+        if (k == 3u) {
+            *(al_fx_sub + row) = (uint8_t)((*(al_fx_sub + row) + (s > 0 ? 1u : cnt - 1u)) % cnt);
+            if (row == 1u && *(al_fx_sub + row) < 4u && *(al_fx_val + row) == 0u) *(al_fx_val + row) = 55u;
+            audilune_fx_apply(t, row, *(al_fx_sub + row), *(al_fx_val + row));
+            audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
         } else {
-            uint32_t fxr = row - 8u;
-            if (k == 3u) {
-                al_fx_sub[fxr] = (uint8_t)((al_fx_sub[fxr] + (s > 0 ? 1u : 7u)) & 7u);
-                if (fxr == 1u && al_fx_sub[fxr] < 4u && al_fx_val[fxr] == 0u) al_fx_val[fxr] = 55u;
-                audilune_fx_apply(t, fxr, al_fx_sub[fxr], al_fx_val[fxr]);
-                audilune_hud_popup(AL_FX_ROWS[fxr], (int32_t)(al_fx_sub[fxr] + 1u), "");
-            } else {
-                int32_t nv = clamp((int32_t)al_fx_val[fxr] + s * 4, 0, 110);
-                al_fx_val[fxr] = (uint8_t)nv;
-                audilune_fx_apply(t, fxr, al_fx_sub[fxr], al_fx_val[fxr]);
-                audilune_hud_popup(AL_FX_ROWS[fxr], nv, "%");
-            }
-
+            int32_t nv = clamp((int32_t)(*(al_fx_val + row)) + s * 4, 0, 110);
+            *(al_fx_val + row) = (uint8_t)nv;
+            if (row == 10u) song.g[G_DUST] = (int16_t)(nv * 127 / 110);
+            else audilune_fx_apply(t, row, *(al_fx_sub + row), (uint8_t)nv);
+            audilune_hud_popup(*(AL_FX_ROWS + row), nv, "%");
         }
-    } else if (ui.scr == UI_ENV && k == 2u) {
-        uint32_t pid = P_ATK + row;
-        t->p[pid] = (int16_t)clamp(t->p[pid] + s * 3, 0, 127);
-        audilune_hud_popup(AL_ENV_ROWS[row], t->p[pid] * 100 / 127, "%");
+    } else if (ui.scr == UI_ENV) {
+        static const uint8_t ENV_CNT[4 + 4] = {4u, 7u, 4u, 4u, 4u, 4u, 7u, 7u};
+        if (k == 3u) {
+            uint32_t cnt = *(ENV_CNT + (row & 7u));
+            t->p[P_FMODE] = (int16_t)((t->p[P_FMODE] + (s > 0 ? 1 : (int32_t)cnt - 1)) % (int32_t)cnt);
+            audilune_hud_popup(*(AL_ENV_ROWS + row), t->p[P_FMODE] + 1, "");
+        } else {
+            uint32_t pid = row >= 2u && row <= 5u ? P_ATK + (row - 2u) : row == 1u ? P_FRES : row == 6u ? P_FENV : P_FCUT;
+            t->p[pid] = (int16_t)clamp(t->p[pid] + s * 3, 0, 127);
+            audilune_hud_popup(*(AL_ENV_ROWS + row), t->p[pid] * 100 / 127, "%");
+        }
     } else if (ui.scr == UI_LFO) {
-        static const uint32_t LFO_P[2 + 2] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
-        uint32_t pid = *(LFO_P + row);
-        t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
-        audilune_hud_popup(AL_LFO_ROWS[row], t->p[pid], "");
+        static const uint32_t LFO_P[4 + 4] = {P_LD_PIT, P_LWAVE, P_LRATE, P_LD_FLT, P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+        uint32_t pid = *(LFO_P + (row & 7u));
+        if (k == 3u && row == 1u) {
+            t->p[P_LWAVE] = (int16_t)((t->p[P_LWAVE] + (s > 0 ? 1 : 7)) % 8);
+            audilune_hud_popup(*(AL_LFO_ROWS + row), t->p[P_LWAVE] + 1, "");
+        } else {
+            t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
+            audilune_hud_popup(*(AL_LFO_ROWS + row), t->p[pid] * 100 / 127, "%");
+        }
     } else if (ui.scr == UI_EDIT) {
 
         enum { CLIP_STEPS = 32u };
@@ -1313,6 +1322,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         if (row == 0u && k == 3u) {
             ui.edit_redo_dir = (uint8_t)(!ui.edit_redo_dir);
             audilune_hud_text("ACTION", ui.edit_redo_dir ? "REDO" : "UNDO");
+
         } else if (row == 2u) {
             al_clip_ok = 1u;
             clip_drum = (uint8_t)is_drum(t);
