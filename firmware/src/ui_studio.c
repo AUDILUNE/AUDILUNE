@@ -1523,53 +1523,42 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
 
         }
     } else if (ui.scr == UI_SAVE) {
-        if (ui.chop_mode != 0xFF && ui.list_top == 1u) {
-            if (row == 0u) {
-                ui.chop_save_usr = (uint8_t)((ui.chop_save_usr + (s > 0 ? 1u : 6u)) % 7u);
-                audilune_hud_popup("VAULT USR", (int32_t)ui.chop_save_usr, "");
-            } else {
-                ui.chop_load_trk = (uint8_t)((ui.chop_load_trk + (s > 0 ? 1u : 6u)) % 7u);
-                audilune_hud_popup("LOAD TRK", (int32_t)ui.chop_load_trk, "");
-            }
-        } else if (k == 2u) {
+        if (k == 2u) {
             audilune_sel_vol(s);
         } else {
-            ui.save_vault = (uint8_t)(row % 6u);
-            if (k == 3u) ui.save_op = (uint8_t)(!ui.save_op);
-            audilune_hud_text(ui.save_op ? "LOAD SLOT" : "SAVE SLOT", "READY");
+            ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_popup(*(AL_SAVE_ROWS + (row % 5u)), (int32_t)ui.save_vault + 1, "");
         }
     } else if (ui.scr == UI_ARP) {
-        static const char *const AL_SCOPE_H[] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
-        if (k == 2u || row == 3u) {
-
-            int32_t nm = clamp((int32_t)audilune_gen_morph + s * 4, 0, 100);
-            audilune_gen_morph = (uint8_t)nm;
-            audilune_hud_popup("MORPH", nm, "%");
-        } else if (row == 0u) {
-            audilune_infinite_on = (uint8_t)(!audilune_infinite_on);
-            audilune_hud_text("ENGINE", audilune_infinite_on ? "ON" : "OFF");
+        uint8_t *mp = al_arp_mode + (song.sel % 6u);
+        if (row == 0u) {
+            if (k == 3u) {
+                uint8_t mode = (uint8_t)(((*mp & 0x0Fu) + (s > 0 ? 1u : 9u)) % 10u);
+                *mp = (uint8_t)((*mp & 0xF0u) | mode);
+                audilune_hud_popup("ARP MODE", (int32_t)mode + 1, "");
+            } else {
+                song.g[G_SWING] = (int16_t)clamp(song.g[G_SWING] + s * 4, 0, 100);
+                audilune_hud_popup("SWING", song.g[G_SWING], "%");
+            }
         } else if (row == 1u) {
-            ui.session_mode = (uint8_t)((ui.session_mode + (s > 0 ? 1u : 5u)) % 6u);
-            audilune_session_mode = ui.session_mode;
-            audilune_hud_text("MODE", *(AL_SESS_NAMES + ui.session_mode));
+            if (k == 3u) {
+                uint8_t rate = (uint8_t)((((*mp >> 4) & 0x0Fu) + (s > 0 ? 1u : 4u)) % 5u);
+                *mp = (uint8_t)((*mp & 0x0Fu) | (rate << 4));
+                audilune_hud_popup("RATE", (int32_t)rate + 1, "");
+            } else {
+                t->p[P_AGATE] = (int16_t)clamp(t->p[P_AGATE] + s * 4, 5, 110);
+                audilune_hud_popup("ARP GATE", t->p[P_AGATE], "%");
+            }
         } else if (row == 2u) {
-            audilune_gen_scope = (uint8_t)((audilune_gen_scope + (s > 0 ? 1u : 4u)) % 5u);
-            ui.morph_scope = audilune_gen_scope;
-            audilune_hud_text("SCOPE", *(AL_SCOPE_H + audilune_gen_scope));
-        } else if (row == 6u) {
-            audilune_freq_layer = (uint8_t)((audilune_freq_layer + (s > 0 ? 1u : 3u)) & 3u);
-            audilune_hud_text("FREQ LYR", *(AL_FREQ_NAMES + audilune_freq_layer));
-        } else if (row == 4u) {
-            uint8_t ng = (uint8_t)((audilune_genre + (s > 0 ? 1u : 5u)) % 6u);
-            audilune_genre = ng;
-            if (song.sel < NTRK) audilune_trk_genre[song.sel] = ng;
+            if (k == 3u) {
+                audilune_gen_morph = (uint8_t)((audilune_gen_morph + (s > 0 ? 1u : 3u)) & 3u);
+                audilune_hud_popup("OCTAVES", (int32_t)audilune_gen_morph + 1, " OCT");
+            } else {
+                static uint8_t arp_acc = 50u;
+                arp_acc = (uint8_t)clamp((int32_t)arp_acc + s * 4, 0, 100);
+                audilune_hud_popup("ACCENT", (int32_t)arp_acc, "%");
+            }
 
-            audilune_hud_text("GENRE", *(AUDILUNE_GENRE_NAMES + ng));
-        } else if (row == 5u) {
-            if (audilune_gen_scope == 4u) {
-                ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
-                audilune_hud_popup("DJ VAULT", (int32_t)ui.save_vault + 1, "");
-            } else if (audilune_gen_scope == 2u) {
                 uint32_t max_s = trk_len(t) > 64u ? 64u : trk_len(t);
                 audilune_active_step = (uint8_t)((audilune_active_step + (s > 0 ? 1u : max_s - 1u)) % max_s);
                 audilune_sel_step_mask[song.sel] ^= (1u << (audilune_active_step & 31u));
