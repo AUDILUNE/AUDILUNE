@@ -1798,26 +1798,17 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 12u) { str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "TRS MIDI" : "INTERNAL", 14); }
     } else if (scr == UI_SEQ) {
         uint8_t grabbed = (ui.seq_grab && (uint32_t)ui.list_sel == row);
-        if (row < 6u) {
-            str_cpy(lbl, "TRACK ", 18);
-            fmt_int(lbl + 6, (int32_t)row + 1);
-            val = (char)('A' + ((uint8_t)song.g[G_SLOT] % 6u));
-            val = ' ';
-            fmt_int(val + 2, *(trk[row].p + P_SLEN));
-
-            str_cpy(val + str_len(val), grabbed ? " [GRAB]" : " ST", 8);
-        } else if (row == 6u) {
-            str_cpy(lbl, "SET CHAIN", 18);
-            str_cpy(val, "SLOT ", 14);
-            fmt_int(val + 5, (int32_t)ui.save_vault + 1);
-            if (grabbed) str_cpy(val + str_len(val), " [GRAB]", 8);
-        } else {
-            str_cpy(lbl, "CHOP SHOP ->", 18);
-            str_cpy(val, "SEL", 14);
-        }
+        uint32_t r = row % 6u;
+        str_cpy(lbl, "TRACK ", 18);
+        fmt_int(lbl + 6, (int32_t)r + 1);
+        *(val + 0) = (char)('A' + ((uint8_t)song.g[G_SLOT] % 6u));
+        *(val + 1) = ' ';
+        fmt_int(val + 2, *(trk[r].p + P_SLEN));
+        str_cpy(val + str_len(val), grabbed ? " [L]" : " ST", 6);
     } else if (scr == UI_CHOP_SRC) {
         if (row == 0u) {
             str_cpy(lbl, "SOURCE", 18);
+
             str_cpy(val, "CURRENT AUDIO", 14);
         } else if (row == 1u) {
             str_cpy(lbl, "SLICE MODE", 18);
