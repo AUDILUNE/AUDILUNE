@@ -1790,21 +1790,26 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(val, "SEL", 14);
         }
     } else if (scr == UI_CHOP_SRC) {
-        static const char *const SRC_L[] = {"CHOP SONG", "CHOP TRACK", "CHOP SAMPLE", "CHOP VOICE"};
-        str_cpy(lbl, *(SRC_L + row), 18);
-        fmt_int(val, (int32_t)ui.chop_src_idx + 1);
+        if (row == 0u) {
+            str_cpy(lbl, "SOURCE", 18);
+            str_cpy(val, "CURRENT AUDIO", 14);
+        } else if (row == 1u) {
+            str_cpy(lbl, "SLICE MODE", 18);
+            str_cpy(val, *(AL_CHOP_MODES + (ui.chop_mode % 5u)), 14);
+        } else {
+            str_cpy(lbl, "SLICE ", 18);
+            fmt_int(lbl + 6, (int32_t)row - 1);
+            str_cpy(val, (uint32_t)ui.list_sel == row ? "[TRIM]" : "READY", 14);
+        }
     } else if (scr == UI_CHOP_WAVE) {
-        static const char *const SRC_T[] = {"SONG", "TRACK", "SAMPLE", "VOICE"};
-        if (row == 0u) { str_cpy(lbl, "SOURCE TYPE", 18); str_cpy(val, *(SRC_T + (ui.chop_src_type & 3u)), 14); }
-        else if (row == 1u) { str_cpy(lbl, "TARGET", 18); fmt_int(val, (int32_t)ui.chop_src_idx + 1); }
-        else if (row == 2u) { str_cpy(lbl, "MASTER TRIM", 18); str_cpy(val, (uint32_t)ui.list_sel == 2u && ui.chop_trim == 1u ? "[START []" : (uint32_t)ui.list_sel == 2u && ui.chop_trim == 2u ? "[END ]]" : "GRAB", 14); }
-        else if (row == 3u) { str_cpy(lbl, "SLICE MODE", 18); str_cpy(val, *(AL_CHOP_MODES + ui.chop_mode), 14); }
-        else if (row == 4u) { str_cpy(lbl, "PLAY MODE", 18); str_cpy(val, al_chop_chrom ? "CHROMATIC" : "KIT", 14); }
-        else {
-            uint8_t act = ((uint32_t)ui.list_sel == row && ui.chop_trim > 0u);
-            str_cpy(lbl, "CHOP ", 18);
-            fmt_int(lbl + 5, (int32_t)row - 4);
-            str_cpy(val, !act ? "GRAB" : ui.chop_trim == 1u ? "[WHOLE]" : ui.chop_trim == 2u ? "[START []" : "[END ]]", 14);
+        if (row == 0u) {
+            str_cpy(lbl, "START [", 18);
+            fmt_int(val, (int32_t)al_chop_trim_s);
+            str_cpy(val + str_len(val), "%", 4);
+        } else {
+            str_cpy(lbl, "END ]", 18);
+            fmt_int(val, (int32_t)al_chop_trim_e);
+            str_cpy(val + str_len(val), "%", 4);
         }
     }
 
@@ -1828,6 +1833,7 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
         pid = P_TFLT;
         t->p[P_TFLT] = (int16_t)clamp((int32_t)((w0 * (uint32_t)(VC_FLT[c0] + 64) + w1 * (uint32_t)(VC_FLT[c1] + 64) + w2 * (uint32_t)(VC_FLT[c2] + 64) + w3 * (uint32_t)(VC_FLT[c3] + 64)) / 16129u) - 64 + ((int32_t)z - 64) / 2, -64, 63);
         t->p[P_LD_FLT] = (int16_t)((w0 * (uint32_t)VC_LFO[c0] + w1 * (uint32_t)VC_LFO[c1] + w2 * (uint32_t)VC_LFO[c2] + w3 * (uint32_t)VC_LFO[c3]) / 16129u);
+
     } else if (p == 3u) {
         pid = P_DIST; t->p[P_DIST] = (int16_t)(x * z / 127u); song.g[G_DUST] = (int16_t)(y * z / 127u);
     } else if (p == 4u) {
