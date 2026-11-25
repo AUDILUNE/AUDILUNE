@@ -259,7 +259,7 @@ UI_SMALL static void loop_pos(const track_t *t, char *b)
     b[k + 2] = 0;
 }
 
-/* the header of the live screens: BPM, transport, loop position, beat lights, inverted white when REC armed */
+/* the header of the live screens: Left = Tempo + Transport, Center = Page Title, Right = Master Vol + Clock */
 UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, int32_t sect)
 {
     char b[12], nb[8];
@@ -279,20 +279,22 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
         return;
     *cache = sig;
     cv_begin(240, 40, bg);
+    if (title && title[0])
+        te_text_c(120, 2, title, armed ? C_BLACK : HUD_ACCENT);
     fmt_int(b, song.g[G_BPM]);
     cv_text(4, 3, &FONT_L, b, fg);
     cv_text(4 + text_w(&FONT_L, b) + 3, 18, &FONT_S, "BPM", armed ? C_BLACK : TE_G3);
-    te_play_icon(88, 5, (int)playing);
+    te_play_icon(88, 17, (int)playing);
     if (armed) {
-        cv_text(104, 4, &FONT_S, song.rec ? "REC" : "ARM", C_BLACK);
+        cv_text(104, 17, &FONT_S, song.rec ? "REC" : "ARM", C_BLACK);
     } else if (playing) {
         loop_pos(TSEL, b);
-        cv_text(104, 4, &FONT_S, b, fg);
+        cv_text(104, 17, &FONT_S, b, fg);
     } else {
-        cv_text(104, 4, &FONT_S, "STOP", TE_G3);
+        cv_text(104, 17, &FONT_S, "STOP", TE_G3);
     }
     for (k = 0; k < 4u; k++)
-        cv_rect(88 + (int32_t)k * 9, 24, 7, 7,
+        cv_rect(88 + (int32_t)k * 9, 31, 7, 5,
                 playing && beat % 4u == k ? (k ? fg : HUD_ACCENT) : dim);
     str_cpy(b, "MST ", sizeof b);
     fmt_int(nb, (int32_t)mst);
@@ -323,6 +325,7 @@ UI_SMALL static void swing_str(char *b, int32_t v)            /* 0 straight .. 1
 
 /* Persistent 14px Active-Selection Track & Live Step/Waveform Strip (y = 41..55) */
 UI_SMALL static void audilune_sel_strip(uint32_t *cache)
+
 {
     uint32_t mask = (ui.sel_trk_mask & 0x3Fu) | (1u << (song.sel % 6u));
     uint32_t i, j, pos = TSEL->seq_idx % 16u, sig = mask * 977u + pos * 31u + song.playing * 7u;
