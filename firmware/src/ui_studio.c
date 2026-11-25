@@ -1685,14 +1685,9 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     const track_t *t = TSEL;
     *lbl = 0; *val = 0;
     if (scr == UI_FX) {
-        if (row < 8u) {
-            row_kv(lbl, val, *(AL_PAD_NAMES + row), ((al_pad_latch >> row) & 1u) ? "[ON]" : "PAD");
-        } else {
-            uint32_t fxr = row - 8u;
-            row_kv(lbl, val, *(AL_FX_ROWS + fxr), 0);
-            fmt_int(val, *(al_fx_val + fxr));
-            str_cpy(val + str_len(val), "%", 4);
-        }
+        row_kv(lbl, val, *(AL_FX_ROWS + (row % 11u)), 0);
+        fmt_int(val, *(al_fx_val + (row % 11u)));
+        str_cpy(val + str_len(val), "%", 4);
     } else if (scr == UI_PUNCH) {
         row_kv(lbl, val, al_nth_str(AL_PUNCH_STR, row),
                (al_punch_active && al_punch_slot == (uint8_t)row) ? "[LIVE]" : *(AL_PUNCH_DIVS + (al_punch_div[row] % 6u)));
@@ -1700,39 +1695,46 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         row_kv(lbl, val, al_nth_str(AL_LAND_STR, row),
                ((al_land_on >> row) & 1u) ? al_land_sub_name(row, al_land_sub[row]) : "[MUTE]");
     } else if (scr == UI_ENV) {
-        row_kv(lbl, val, *(AL_ENV_ROWS + row), 0);
-        fmt_int(val, *(t->p + P_ATK + row) * 100 / 127);
-        str_cpy(val + str_len(val), "%", 4);
+        row_kv(lbl, val, *(AL_ENV_ROWS + (row & 7u)), 0);
+        if (row >= 2u && row <= 5u) {
+            fmt_int(val, *(t->p + P_ATK + (row - 2u)) * 100 / 127);
+            str_cpy(val + str_len(val), "%", 4);
+        } else if (row == 0u) row_kv(0, val, 0, "AMP");
+        else if (row == 1u) row_kv(0, val, 0, "LPF-24");
+        else if (row == 6u) row_kv(0, val, 0, "FILTER CUT");
+        else row_kv(0, val, 0, "OFF");
     } else if (scr == UI_LFO) {
-        static const uint32_t LFO_P[2 + 2] = {P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
-        row_kv(lbl, val, *(AL_LFO_ROWS + row), 0);
-        fmt_int(val, *(t->p + *(LFO_P + row)));
+        static const uint32_t LFO_P[4 + 4] = {P_LD_PIT, P_LWAVE, P_LRATE, P_LD_FLT, P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+        row_kv(lbl, val, *(AL_LFO_ROWS + (row % 7u)), 0);
+        if (row == 0u) row_kv(0, val, 0, "LFO 1");
+        else if (row == 4u) row_kv(0, val, 0, "FREE-RUN");
+        else fmt_int(val, *(t->p + *(LFO_P + (row & 7u))));
     } else if (scr == UI_EDIT) {
         uint32_t has_sel = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
-        row_kv(lbl, val, *(AL_EDIT_ROWS + row), 0);
+        row_kv(lbl, val, *(AL_EDIT_ROWS + (row % 13u)), 0);
         if (row == 0u) row_kv(0, val, 0, ui.edit_redo_dir ? "REDO" : "UNDO");
-        else if (row == 1u) row_kv(0, val, 0, has_sel ? "STEPS" : "TRK");
-        else if (row == 2u) row_kv(0, val, 0, al_clip_ok ? "CLIP" : "READY");
-        else if (row == 3u) row_kv(0, val, 0, al_clip_ok ? "READY" : "EMPTY");
-        else if (row == 4u) { fmt_int(val, *(t->p + P_SLEN)); str_cpy(val + str_len(val), " ST", 4); }
-        else if (row == 10u) { fmt_int(val, *(t->p + P_SGATE) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
-
-        else if (row == 11u) { fmt_int(val, *(t->p + P_APROB) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
-        else if (row >= 5u && row <= 13u) str_cpy(val, has_sel ? "STEPS" : "TRK", 14);
-        else if (row == 14u) str_cpy(val, *(AL_NOTE_NAMES + (*(t->p + P_ROOT) % 12)), 14);
-        else if (row == 15u) str_cpy(val, *(AL_SCALE_NAMES + (*(t->p + P_SCALE) % 22)), 14);
+        else if (row == 1u) { str_cpy(val, *(AL_NOTE_NAMES + (*(t->p + P_ROOT) % 12)), 14); }
+        else if (row == 2u) { fmt_int(val, *(t->p + P_SLEN)); str_cpy(val + str_len(val), " ST", 4); }
+        else if (row == 6u) { fmt_int(val, *(t->p + P_SGATE) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
+        else if (row == 7u) { fmt_int(val, *(t->p + P_APROB) * 100 / 127); str_cpy(val + str_len(val), "%", 4); }
+        else if (row == 10u) row_kv(0, val, 0, "OFF");
+        else if (row == 11u) row_kv(0, val, 0, al_chop_chrom ? "CHROMATIC" : "KIT");
+        else if (row == 12u) row_kv(0, val, 0, al_clip_ok ? "PASTE" : "COPY");
+        else str_cpy(val, has_sel ? "STEPS" : "TRK", 14);
     } else if (scr == UI_GLO) {
         static const char *const AL_THM[] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
-        str_cpy(lbl, *(AL_GLO_ROWS + row), 18);
-        if (row == 0u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
-        else if (row == 1u) str_cpy(val, *(AL_FREQ_NAMES + (audilune_freq_layer & 3u)), 14);
-        else if (row == 2u) str_cpy(val, al_helper_notes ? "ON" : "OFF", 14);
-        else if (row == 5u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
-        else if (row == 7u) str_cpy(val, "OPEN", 14);
+        str_cpy(lbl, *(AL_GLO_ROWS + (row % 10u)), 18);
+        if (row == 0u) str_cpy(val, ui.setup_vault ? "SLOT" : "BLANK", 14);
+        else if (row >= 1u && row <= 4u) { str_cpy(val, "01", 14); }
+        else if (row == 5u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
+        else if (row == 6u) str_cpy(val, "CH 1-6", 14);
+        else if (row == 7u) str_cpy(val, "SEND+RECV", 14);
+        else if (row == 8u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
+        else str_cpy(val, "STEREO+IN", 14);
     } else if (scr == UI_SAVE) {
-        str_cpy(lbl, "SLOT ", 18);
-        fmt_int(lbl + 5, (int32_t)row + 1);
-        str_cpy(val, ui.save_op ? "LOAD" : "SAVE", 14);
+        str_cpy(lbl, *(AL_SAVE_ROWS + (row % 5u)), 18);
+        str_cpy(val, "01", 14);
+
     } else if (scr == UI_ARP) {
         static const char *const AL_SCOPE_N[] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
         if (row == 0u) {
