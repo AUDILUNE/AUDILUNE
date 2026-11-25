@@ -1487,17 +1487,10 @@ UI_SMALL static void ui_input(void)
     }
     if (home == BT_TAP) {
         pressed &= ~(1u << panel.btn[B_HOME]);
-        if (ui.scr == UI_LIVE && !vis_on) {
-            vis_on = 0;
-            ui.scr = UI_VIS;
-            vis_open();
-            ui_message("VISUALIZER");
-        } else {
-            vis_on = 0;
-
-            go_home();
-            ui_message("LIVE PLAY");
-        }
+        ui_input_ms = fm1_ms;
+        vis_on = 0;
+        go_home();
+        ui_message("HOME");
         ui.list_sel = 0;
         ui.list_top = 0;
         ui.force = 1;
