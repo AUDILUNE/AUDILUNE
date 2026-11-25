@@ -1327,39 +1327,25 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         if (row == 0u && k == 3u) {
             ui.edit_redo_dir = (uint8_t)(!ui.edit_redo_dir);
             audilune_hud_text("ACTION", ui.edit_redo_dir ? "REDO" : "UNDO");
-
-        } else if (row == 2u) {
-            al_clip_ok = 1u;
-            clip_drum = (uint8_t)is_drum(t);
-            clip_len = t->p[P_SLEN];
-            if (clip_drum)
-                memcpy(clip_buf.dst, t->dstep, sizeof clip_buf.dst);
-            else
-                memcpy(clip_buf.st, t->step, sizeof clip_buf.st);
-            memcpy(clip_micro, t->micro, sizeof clip_micro);
-            memcpy(clip_fill, t->fill, sizeof clip_fill);
-            audilune_hud_text("COPY", "PATTERN");
-        } else if (row == 3u) {
-            if (!al_clip_ok) {
-                audilune_hud_text("PASTE", "EMPTY");
+        } else if (row == 1u) {
+            if (k == 2u) {
+                int32_t nr = (t->p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
+                t->p[P_ROOT] = (int16_t)nr;
+                audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
             } else {
-                undo_mark(t, (undo_sess += 4u) | 3u);
-                fm1_irq_off();
-                if (is_drum(t) && clip_drum)
-                    memcpy(t->dstep, clip_buf.dst, sizeof clip_buf.dst);
-                else if (!is_drum(t) && !clip_drum)
-                    memcpy(t->step, clip_buf.st, sizeof clip_buf.st);
-                memcpy(t->micro, clip_micro, sizeof clip_micro);
-
-                memcpy(t->fill, clip_fill, sizeof clip_fill);
-                t->p[P_SLEN] = clip_len;
-                t->seq_active = 1;
-                fm1_irq_on();
-                sync_reload = 1;
-                audilune_hud_text("PASTE", "DONE");
+                int32_t ns = (t->p[P_SCALE] + (s > 0 ? 1 : 21)) % 22;
+                t->p[P_SCALE] = (int16_t)ns;
+                audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
             }
+        } else if (row == 2u) {
+            int32_t step_sz = (k == 3u) ? 16 : 1;
+            int32_t nl = clamp((int32_t)t->p[P_SLEN] + dir * step_sz, 1, NSTEP);
+            t->p[P_SLEN] = (int16_t)nl;
+            sync_reload = 1;
+            audilune_hud_popup("LENGTH", nl, " ST");
         } else if (row == 4u) {
             if (len * 2u > NSTEP) {
+
                 audilune_hud_text("DUPLICATE", "MAX 128");
 
             } else {
