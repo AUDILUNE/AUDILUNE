@@ -1736,50 +1736,25 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         str_cpy(val, "01", 14);
 
     } else if (scr == UI_ARP) {
-        static const char *const AL_SCOPE_N[] = {"SONG", "TRACK", "STEP", "PART A->B", "SONG DJ"};
-        if (row == 0u) {
-            str_cpy(lbl, "AUTONOMOUS ENG", 18);
-            str_cpy(val, audilune_infinite_on ? "ON" : "OFF", 14);
-        } else if (row == 1u) {
-            str_cpy(lbl, "SESSION MODE", 18);
-            str_cpy(val, *(AL_SESS_NAMES + (ui.session_mode % 6u)), 14);
-        } else if (row == 2u) {
-            str_cpy(lbl, "MORPH SCOPE", 18);
-            str_cpy(val, *(AL_SCOPE_N + (audilune_gen_scope % 5u)), 14);
-        } else if (row == 3u) {
-            str_cpy(lbl, "MORPH AMOUNT", 18);
-
-            fmt_int(val, (int32_t)audilune_gen_morph);
-            str_cpy(val + str_len(val), "%", 4);
-        } else if (row == 4u) {
-            str_cpy(lbl, "GENRE", 18);
-            str_cpy(val, *(AUDILUNE_GENRE_NAMES + (audilune_genre % 6u)), 14);
-        } else if (row == 6u) {
-            str_cpy(lbl, "FREQ LAYER", 18);
-            str_cpy(val, *(AL_FREQ_NAMES + (audilune_freq_layer & 3u)), 14);
-        } else if (audilune_gen_scope == 4u) {
-            str_cpy(lbl, "DJ VAULT", 18);
-            str_cpy(val, "SLOT ", 14);
-            fmt_int(val + 5, (int32_t)ui.save_vault + 1);
-        } else if (audilune_gen_scope == 2u) {
-            uint32_t st = audilune_active_step & 31u;
-            str_cpy(lbl, "TARGET STEP", 18);
-            str_cpy(val, ((audilune_sel_step_mask[song.sel] >> st) & 1u) ? "*" : "", 14);
-            fmt_int(val + str_len(val), (int32_t)st + 1);
-        } else {
-            str_cpy(lbl, "TARGET TRK", 18);
-            str_cpy(val, "TRK ", 14);
-            fmt_int(val + 4, (int32_t)song.sel + 1);
-        }
+        static const char *const AL_ARP_NAMES[] = {
+            "OFF", "UP", "DOWN", "UP-DOWN", "DOWN-UP",
+            "CONVERGE", "DIVERGE", "CHORD", "* ORBIT", "CUSTOM"
+        };
+        static const char *const AL_ARP_RATES[] = {"1/4", "1/8", "1/16", "1/32", "1/64"};
+        static const char *const AL_ARP_LATCH[] = {"OFF", "HOLD", "ADD"};
+        uint8_t m = al_arp_mode[song.sel % 6u];
+        str_cpy(lbl, *(AL_ARP_ROWS + (row & 3u)), 18);
+        if (row == 0u) str_cpy(val, *(AL_ARP_NAMES + (m % 10u)), 14);
+        else if (row == 1u) str_cpy(val, *(AL_ARP_RATES + ((m >> 4) % 5u)), 14);
+        else if (row == 2u) { fmt_int(val, (int32_t)((audilune_gen_morph & 3u) + 1u)); str_cpy(val + 1, " OCT", 5); }
+        else str_cpy(val, *(AL_ARP_LATCH + (audilune_gen_scope % 3u)), 14);
     } else if (scr == UI_ALGO) {
-        if (row < 6u) {
-            str_cpy(lbl, *(AUDILUNE_GENRE_NAMES + row), 18);
-            str_cpy(val, (t->synth_mode && (ui.algo_genre[song.sel] % 6u) == row) ? "ACTIVE" : "GENRE", 14);
-        } else {
-            uint32_t ki = row - 6u;
-            str_cpy(lbl, *(DRUM_KIT_NAMES + ki), 18);
-            str_cpy(val, (!t->synth_mode && (uint32_t)drum_kit() == ki) ? "ACTIVE" : "KIT", 14);
-        }
+        str_cpy(lbl, *(AL_ALGO_ROWS + (row % 7u)), 18);
+        if (row == 0u) str_cpy(val, *(AUDILUNE_GENRE_NAMES + (ui.algo_genre[song.sel] % 6u)), 14);
+        else if (row == 1u) str_cpy(val, "ANALOG", 14);
+        else if (row == 2u) str_cpy(val, *(DRUM_KIT_NAMES + (drum_kit() & 31)), 14);
+        else if (row == 3u) str_cpy(val, "DECTALK", 14);
+        else str_cpy(val, "01", 14);
     } else if (scr == UI_SETUP) {
         str_cpy(lbl, *(AL_SETUP_ROWS + row), 21);
         if (row == 0u) { str_cpy(val, "SEL", 14); }
@@ -1800,9 +1775,10 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         if (row < 6u) {
             str_cpy(lbl, "TRACK ", 18);
             fmt_int(lbl + 6, (int32_t)row + 1);
-            val[0] = (char)('A' + ((uint8_t)song.g[G_SLOT] % 6u));
-            val[1] = ' ';
+            val = (char)('A' + ((uint8_t)song.g[G_SLOT] % 6u));
+            val = ' ';
             fmt_int(val + 2, *(trk[row].p + P_SLEN));
+
             str_cpy(val + str_len(val), grabbed ? " [GRAB]" : " ST", 8);
         } else if (row == 6u) {
             str_cpy(lbl, "SET CHAIN", 18);
