@@ -1385,7 +1385,7 @@ UI_SMALL static void remote_poll(void)
 UI_SMALL static void ui_input(void)
 {
     uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
-    uint32_t home = btn_hold_ms(&ui.home_t0, B_HOME, now, 1, 3000u);
+    uint32_t home = btn_hold_ms(&ui.home_t0, B_HOME, now, 1, 700u);
     int32_t s;
 
     int layered;
@@ -1404,17 +1404,16 @@ UI_SMALL static void ui_input(void)
     if (home == BT_HOLD) {
         if (ui.menu) {
             menu_close();
-        } else if ((fm1_in.buttons >> panel.btn[B_GLO]) & 1u) {
-            layer_unlock();
-            ui.menu = 1;
-            ui.menu_sel = 0;
-            ui.confirm = 0;
-            ui.force = 1;
-            song.seq_mode = 0;
         } else {
-            audilune_infinite_on = (uint8_t)!audilune_infinite_on;
+            layer_unlock();
+            vis_on = 0;
+            ui.home = 0;
+            ui.scr = UI_VIS;
+            ui.list_sel = 0;
+            ui.list_top = 0;
+            vis_open();
+            ui_message("VISUALIZER");
             ui.force = 1;
-            ui_message(audilune_infinite_on ? "INFINITE GEN: ON" : "INFINITE GEN: OFF");
         }
     }
 
@@ -1433,6 +1432,7 @@ UI_SMALL static void ui_input(void)
         for (k = 0; k < 6u; k++) if ((notes >> key_of_white(k)) & 1u) { if (audilune_save_latch == 1u) project_save(k); else project_load(k); audilune_save_latch = 0; ui.force = 1; break; }
         notes = 0;
     } else if ((ly_lock == LY_MIX || ((fm1_in.buttons >> panel.btn[B_GLO]) & 1u)) && (notes & (1u << key_of_white(1)))) {
+
         audilune_pit_latch = 1u; layer_unlock(); notes = 0; ui_message("LIVE PITCH: ON"); ui.force = 1;
     }
     layered = layers_input(notes, &pressed, home);
