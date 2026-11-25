@@ -1026,14 +1026,14 @@ static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "STUD
 static const char *const AL_TIMER_NAMES[] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
 static const char *const AL_NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
-static uint8_t al_fx_sub, al_fx_val, al_chop_chrom;
+static uint8_t al_fx_sub[6 + 6], al_fx_val[6 + 6], al_chop_chrom;
 static uint8_t al_pad_list_mode;
-static uint8_t al_pad_z = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner = {0, 1, 2, 3};
+static uint8_t al_pad_z[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[2 + 2] = {0, 1, 2, 3};
 static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
 static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_chop_trim_s = 0u, al_chop_trim_e = 100u;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
-static uint8_t audilune_theme_idx, al_arp_mode, al_clip_ok;
+static uint8_t audilune_theme_idx, al_arp_mode[3 + 3], al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 11u;
