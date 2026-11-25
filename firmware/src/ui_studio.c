@@ -938,9 +938,9 @@ UI_SMALL static void rec_screen_draw(void)
 
 /* ------------------------------------------- AUDILUNE 14-PAGE LISTS --- */
 static const char *const AL_FX_ROWS[] = {
-    "TIME / GROOVE", "PITCH / FORMANT", "STUTTER / GLITCH", "GRANULAR / FRZ",
-    "SPATIAL DELAY", "LUSH REVERB", "MOD / STEREO", "FILTER / EQ",
-    "DRIVE / LO-FI", "PUNCH / DUCK"
+    "DELAY", "PITCH", "TIME & STRETCH", "MORPH",
+    "GRANULAR", "STRUM & GROOVE", "HARMONIC", "DRIVE & GRIT",
+    "STEREO & CHORUS", "REVERB", "TEXTURES"
 };
 static const char *const AL_PAD_NAMES[] = {
     "DELAY PAD", "REVERB PAD", "4-CORNER VECTOR", "DRIVE & GRIT",
@@ -954,9 +954,9 @@ static const char *const AL_SCALE_NAMES[] = {
     "PROMETHEUS", "ENIGMATIC", "TRITONE HEX", "LUNAR ECLPS"
 };
 static const char *const AL_EDIT_ROWS[] = {
-    "UNDO / REDO", "CLEAR", "COPY", "PASTE", "DUPLICATE", "QUANTIZE",
-    "HUMANIZE", "NUDGE", "TRANSPOSE", "VELOCITY", "GATE", "PROBABILITY",
-    "RATCHET", "REVERSE", "ROOT NOTE", "SCALE TYPE"
+    "UNDO / REDO", "ROOT & SCALE", "LENGTH", "QUANTIZE / HUMAN",
+    "TRANSPOSE", "NUDGE", "GATE", "PROBABILITY",
+    "RATCHET", "REVERSE", "STEP FX", "CHOP MODE", "COPY & PASTE"
 };
 static const char AL_PUNCH_STR[] =
     "1/16 STUTTER\0TAPE/VNL BRAKE\0BUFFER REVERSE\0VINYL SPINBACK\0"
@@ -992,7 +992,11 @@ UI_SMALL static const char *al_land_sub_name(uint32_t row, uint32_t sub)
 static uint8_t al_punch_div[8 + 8], al_punch_val[8 + 8], al_punch_active, al_punch_slot;
 static uint16_t al_land_on;
 static uint8_t al_land_sub[5 + 5], al_land_vol[5 + 5];
-static const char *const AL_ENV_ROWS[] = {"ATTACK", "DECAY", "SUSTAIN", "RELEASE"};
+static const char *const AL_ENV_ROWS[] = {
+    "TARGET ENV", "FILTER MODE", "ATTACK", "DECAY",
+    "SUSTAIN", "RELEASE", "DESTINATION", "VELOCITY -> ENV"
+};
+
 static const char *const AL_LFO_ROWS[] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
 static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "HELPER NOTES", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
 static const char *const AL_SETUP_ROWS[] = {
