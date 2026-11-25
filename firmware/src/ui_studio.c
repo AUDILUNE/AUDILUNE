@@ -1490,26 +1490,37 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             }
         }
     } else if (ui.scr == UI_GLO) {
-
         if (k == 2u) {
             audilune_sel_vol(s);
         } else if (row == 0u) {
+            ui.setup_vault = (uint8_t)((ui.setup_vault + (s > 0 ? 1u : 6u)) % 7u);
+            if (ui.setup_vault == 0u) audilune_hud_text("SONG", "NEW BLANK");
+            else audilune_hud_popup("SONG SLOT", (int32_t)ui.setup_vault, "");
+        } else if (row >= 1u && row <= 4u) {
+            ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_popup(*(AL_GLO_ROWS + row), (int32_t)ui.save_vault + 1, "");
+        } else if (row == 5u) {
             static const char *const AL_THM_H[] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
             palette_set(audilune_theme_idx);
             audilune_hud_text("THEME", *(AL_THM_H + audilune_theme_idx));
-        } else if (row == 1u) {
-            audilune_freq_layer = (uint8_t)((audilune_freq_layer + (s > 0 ? 1u : 3u)) & 3u);
-            audilune_hud_text("FREQ LYR", *(AL_FREQ_NAMES + audilune_freq_layer));
-        } else if (row == 2u) {
-            al_helper_notes = (uint8_t)(!al_helper_notes);
-            audilune_hud_text("HELPER", al_helper_notes ? "ON" : "OFF");
-        } else if (row == 5u) {
-            song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
-            audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
+        } else if (row == 6u) {
+            uint32_t gp = song.sel < 5u ? G_CH1 + song.sel : G_DRCH;
+            song.g[gp] = (int16_t)((song.g[gp] + (s > 0 ? 1 : 16)) % 17);
+            audilune_hud_popup("MIDI CH", song.g[gp], "");
         } else if (row == 7u) {
-            audilune_blank_studio_init();
-            audilune_hud_text("STUDIO", "SETUP");
+            static const char *const AL_MROUTE[] = {"SEND+RECV", "SEND", "RECV", "INT"};
+            song.g[G_MIDI] = (int16_t)((song.g[G_MIDI] + (s > 0 ? 1 : 3)) & 3);
+            audilune_hud_text("ROUTING", *(AL_MROUTE + (song.g[G_MIDI] & 3)));
+        } else if (row == 8u) {
+            song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
+            audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
+        } else if (row == 9u) {
+            static const char *const AL_USBIO[] = {"STEREO+IN", "STEREO ONLY", "DRY MON"};
+            static uint8_t usb_io_m;
+            usb_io_m = (uint8_t)((usb_io_m + (s > 0 ? 1u : 2u)) % 3u);
+            audilune_hud_text("USB I/O", *(AL_USBIO + usb_io_m));
+
         }
     } else if (ui.scr == UI_SAVE) {
         if (ui.chop_mode != 0xFF && ui.list_top == 1u) {
