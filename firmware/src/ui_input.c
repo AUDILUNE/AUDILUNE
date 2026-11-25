@@ -879,13 +879,9 @@ UI_SMALL static void layer_tap(uint32_t layer)
         }
         ui.force = 1;
         break;
-
     }
     case LY_STEP:
         vis_on = 0;
-        if (ui.scr == UI_SEQ && !ui.home && !al_seq_ovw) {
-            al_seq_ovw = 1u;
-            al_seq_ovw_trk = ui.list_sel < NTRK ? ui.list_sel : song.sel;
         if (ui.scr == UI_SEQ && !ui.home) {
             al_seq_ovw = 0u;
             ui.force = 1;
@@ -903,6 +899,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
         audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP");
         break;
     case LY_SCALE:
+
         if (rec_hud_pick) {
             rec_hud_pick = 0;
             if (rec_hud_mode == 2u || rec_hud_mode == 3u) {
