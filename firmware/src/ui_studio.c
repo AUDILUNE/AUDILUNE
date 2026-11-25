@@ -1343,50 +1343,41 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             t->p[P_SLEN] = (int16_t)nl;
             sync_reload = 1;
             audilune_hud_popup("LENGTH", nl, " ST");
-        } else if (row == 4u) {
-            if (len * 2u > NSTEP) {
-
-                audilune_hud_text("DUPLICATE", "MAX 128");
-
-            } else {
-                undo_mark(t, (undo_sess += 4u) | 3u);
-                fm1_irq_off();
-                for (i = 0; i < len; i++) {
-                    t->step[len + i] = t->step[i];
-                    t->dstep[len + i] = t->dstep[i];
-                    t->micro[len + i] = t->micro[i];
-                    step_fill_set(t, len + i, step_fill(t, i));
-                }
-
-                t->p[P_SLEN] = (int16_t)(len * 2u);
-                fm1_irq_on();
-                sync_reload = 1;
-                audilune_hud_popup("LEN", (int32_t)(len * 2u), " ST");
-            }
-        } else if (row == 5u) {
-            undo_mark(t, (undo_sess += 4u) | 3u);
-            fm1_irq_off();
-            for (i = 0; i < len; i++)
-                if (!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
-                    t->micro[i] = 0;
-            fm1_irq_on();
-            sync_reload = 1;
-            audilune_hud_text("QUANTIZE", "100%");
-        } else if (row == 6u) {
+        } else if (row == 3u) {
+            static int8_t qh_amt;
+            qh_amt = (int8_t)clamp((int32_t)qh_amt + dir * 10, -100, 100);
             undo_mark(t, (undo_sess += 4u) | 3u);
             fm1_irq_off();
             for (i = 0; i < len; i++) {
                 if (has_sel && !((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
                     continue;
-                int32_t jit = (int32_t)((i * 37u + 13u) % 15u) - 7;
-                t->micro[i] = (int8_t)clamp((int32_t)t->micro[i] + jit, MICRO_MIN, MICRO_MAX);
-                if (!is_drum(t) && step_on(&t->step[i]))
-                    t->step[i].vel = (uint8_t)clamp((int32_t)(t->step[i].vel ? t->step[i].vel : 96) + jit * 2, 24, 127);
+                if (qh_amt <= 0) {
+                    int32_t keep = 100 + (int32_t)qh_amt;
+                    t->micro[i] = (int8_t)((int32_t)t->micro[i] * keep / 100);
+                } else {
+                    int32_t jit = ((int32_t)((i * 37u + 13u) % 15u) - 7) * (int32_t)qh_amt / 100;
+                    t->micro[i] = (int8_t)clamp((int32_t)t->micro[i] + jit, MICRO_MIN, MICRO_MAX);
+                }
             }
             fm1_irq_on();
             sync_reload = 1;
-            audilune_hud_text("HUMANIZE", "+VAR");
-        } else if (row == 7u) {
+            audilune_hud_popup(qh_amt < 0 ? "QUANTIZE" : "HUMANIZE", (int32_t)qh_amt, "%");
+        } else if (row == 4u) {
+            undo_mark(t, (undo_sess += 4u) | 3u);
+            fm1_irq_off();
+            if (is_drum(t)) {
+                for (i = 0; i < DRUM_LANES; i++)
+                    drum_tune[i] = (int8_t)clamp((int32_t)drum_tune[i] + dir, DRUM_TUNE_MIN, DRUM_TUNE_MAX);
+            } else {
+                for (i = 0; i < len; i++)
+                    if ((!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u)) && step_on(&t->step[i]))
+                        for (j = 0; j < t->step[i].n && j < 4u; j++)
+                            t->step[i].note[j] = (uint8_t)clamp((int32_t)t->step[i].note[j] + dir, 0, 127);
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            audilune_hud_popup("TRANSPOSE", dir, " ST");
+        } else if (row == 5u) {
             undo_mark(t, (undo_sess += 4u) | 3u);
             fm1_irq_off();
             for (i = 0; i < len; i++)
@@ -1403,6 +1394,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                     drum_tune[i] = (int8_t)clamp((int32_t)drum_tune[i] + dir, DRUM_TUNE_MIN, DRUM_TUNE_MAX);
             } else {
                 for (i = 0; i < len; i++)
+
                     if ((!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u)) && step_on(&t->step[i]))
                         for (j = 0; j < t->step[i].n && j < 4u; j++)
                             t->step[i].note[j] = (uint8_t)clamp((int32_t)t->step[i].note[j] + dir, 0, 127);
