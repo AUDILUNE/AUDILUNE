@@ -365,10 +365,10 @@ UI_SMALL static void studio_tracks_draw(void)
     static uint32_t head, strip, rows[6], footer;
     static const char *const GEN_SHORT[6] = {"AMBIENT", "DOWNTMP", "GLITCH", "PUNCHY", "EXPERIM", "INDUST"};
     uint32_t i, j, disp_trks = NTRK < 6u ? 6u : NTRK;
-    int32_t row_h = (int32_t)(156u / disp_trks);
+    int32_t row_h = (int32_t)(140u / disp_trks);
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     audilune_in_arp_page = 0u;
-    te_header("AUDILUNE", C_WHITE, &head, sect);
+    te_header("HOME", C_WHITE, &head, sect);
     audilune_sel_strip(&strip);
     for (i = 0; i < disp_trks; i++) {
 
@@ -409,10 +409,16 @@ UI_SMALL static void studio_tracks_draw(void)
         if (!ui.force && h == rows[i]) continue;
         rows[i] = h;
         cv_begin(240, (uint32_t)row_h, C_BLACK);
-        cv_rect(2, 2, 24, row_h - 4, (selected || locked) ? C_WHITE : TE_G1);
+        if (selected && locked) {
+            cv_rect(2, 1, 26, row_h - 2, acc);
+            cv_rect(4, 3, 22, row_h - 6, C_WHITE);
+        } else {
+            cv_rect(2, 1, 26, row_h - 2, selected ? C_WHITE : locked ? acc : TE_G1);
+        }
         {
-            char n[2] = {(char)('1' + i), 0};
-            cv_text(10, (row_h - 14) / 2, &FONT_S, n, (selected || locked) ? C_BLACK : C_WHITE);
+            char n[4] = {(char)('1' + i), locked ? 'L' : 0, 0};
+            cv_text(locked ? 6 : 11, (row_h - 14) / 2, &FONT_S, n, (selected || locked) ? C_BLACK : C_WHITE);
+
         }
         if (b[0]) {
             cv_text(32, 1, &FONT_S, b, selected ? C_WHITE : TE_G4);
