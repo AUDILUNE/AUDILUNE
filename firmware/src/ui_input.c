@@ -886,27 +886,21 @@ UI_SMALL static void layer_tap(uint32_t layer)
         if (ui.scr == UI_SEQ && !ui.home && !al_seq_ovw) {
             al_seq_ovw = 1u;
             al_seq_ovw_trk = ui.list_sel < NTRK ? ui.list_sel : song.sel;
-            al_seq_ovw_step = 0u;
-
-            ui_message("128-STEP VIEW");
-        } else if (ui.scr == UI_SEQ && !ui.home && al_seq_ovw) {
+        if (ui.scr == UI_SEQ && !ui.home) {
             al_seq_ovw = 0u;
-
-            go_home();
-            ui_message("LIVE PLAY");
-        } else {
-            al_seq_ovw = 0u;
-            ui.scr = UI_SEQ;
-            ui.list_sel = 0;
-            ui.list_top = 0;
-            open_family(FAM_SEQ);
-            ui_message("SEQ PAGE");
+            ui.force = 1;
+            break;
         }
+        al_seq_ovw = 0u;
+        ui.scr = UI_SEQ;
+        ui.list_sel = 0;
+        ui.list_top = 0;
+        open_family(FAM_SEQ);
+        ui_message("SEQ");
         ui.force = 1;
         break;
-        break;
     case LY_ROLL:
-        audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP PAGE");
+        audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP");
         break;
     case LY_SCALE:
         if (rec_hud_pick) {
@@ -944,6 +938,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 go_home();
                 if (ui.session_mode > 0u) {
                     audilune_infinite_on = 1u;
+
                     if (!song.playing)
                         transport_req = 1;
                     ui_message("GENERATIVE LIVE");
