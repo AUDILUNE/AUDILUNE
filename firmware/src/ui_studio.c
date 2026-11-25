@@ -1428,8 +1428,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             fm1_irq_on();
             sync_reload = 1;
             audilune_hud_popup("RATCHET", (int32_t)nr + 1, "X");
-
-        } else if (row == 13u) {
+        } else if (row == 9u) {
             undo_mark(t, (undo_sess += 4u) | 3u);
             fm1_irq_off();
             for (i = 0; i < len / 2u; i++) {
@@ -1450,17 +1449,48 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             fm1_irq_on();
             sync_reload = 1;
             audilune_hud_text("REVERSE", "DONE");
-        } else if (row == 14u) {
-            int32_t nr = (t->p[P_ROOT] + (s > 0 ? 1 : 11)) % 12;
-
-            t->p[P_ROOT] = (int16_t)nr;
-            audilune_hud_text("ROOT", *(AL_NOTE_NAMES + nr));
-        } else if (row == 15u) {
-            int32_t ns = (t->p[P_SCALE] + (s > 0 ? 1 : 21)) % 22;
-            t->p[P_SCALE] = (int16_t)ns;
-            audilune_hud_text("SCALE", *(AL_SCALE_NAMES + ns));
+        } else if (row == 10u) {
+            static uint8_t step_fx_type, step_fx_val;
+            if (k == 3u) {
+                step_fx_type = (uint8_t)((step_fx_type + (s > 0 ? 1u : 10u)) % 11u);
+                audilune_hud_text("STEP FX", *(AL_FX_ROWS + step_fx_type));
+            } else {
+                step_fx_val = (uint8_t)clamp((int32_t)step_fx_val + s * 4, 0, 110);
+                audilune_fx_apply(t, step_fx_type, 0u, step_fx_val);
+                audilune_hud_popup(*(AL_FX_ROWS + step_fx_type), (int32_t)step_fx_val, "%");
+            }
+        } else if (row == 11u) {
+            al_chop_chrom = (uint8_t)(!al_chop_chrom);
+            ui.chop_play_mode = al_chop_chrom;
+            audilune_hud_text("CHOP MODE", al_chop_chrom ? "CHROMATIC" : "KIT");
+        } else if (row == 12u) {
+            if (k == 3u && s < 0) {
+                al_clip_ok = 1u;
+                clip_drum = (uint8_t)is_drum(t);
+                clip_len = t->p[P_SLEN];
+                if (clip_drum) memcpy(clip_buf.dst, t->dstep, sizeof clip_buf.dst);
+                else memcpy(clip_buf.st, t->step, sizeof clip_buf.st);
+                memcpy(clip_micro, t->micro, sizeof clip_micro);
+                memcpy(clip_fill, t->fill, sizeof clip_fill);
+                audilune_hud_text("COPY", "DONE");
+            } else if (al_clip_ok) {
+                undo_mark(t, (undo_sess += 4u) | 3u);
+                fm1_irq_off();
+                if (is_drum(t) && clip_drum) memcpy(t->dstep, clip_buf.dst, sizeof clip_buf.dst);
+                else if (!is_drum(t) && !clip_drum) memcpy(t->step, clip_buf.st, sizeof clip_buf.st);
+                memcpy(t->micro, clip_micro, sizeof clip_micro);
+                memcpy(t->fill, clip_fill, sizeof clip_fill);
+                t->p[P_SLEN] = clip_len;
+                t->seq_active = 1;
+                fm1_irq_on();
+                sync_reload = 1;
+                audilune_hud_text("PASTE", "DONE");
+            } else {
+                audilune_hud_text("PASTE", "EMPTY");
+            }
         }
     } else if (ui.scr == UI_GLO) {
+
         if (k == 2u) {
             audilune_sel_vol(s);
         } else if (row == 0u) {
