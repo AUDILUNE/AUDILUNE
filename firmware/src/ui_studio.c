@@ -997,41 +997,53 @@ static const char *const AL_ENV_ROWS[] = {
     "SUSTAIN", "RELEASE", "DESTINATION", "VELOCITY -> ENV"
 };
 
-static const char *const AL_LFO_ROWS[] = {"WAVEFORM", "RATE", "DEPTH", "DESTINATION"};
-static const char *const AL_GLO_ROWS[] = {"COLOR THEME", "FREQ LAYER", "HELPER NOTES", "MIDI CH", "MIDI ROUTE", "CLOCK SYNC", "USB AUDIO", "STUDIO SETUP"};
-static const char *const AL_SETUP_ROWS[] = {
-    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "TIMING / GRAVITY",
-    "FREQ LAYER", "HELPER NOTES", "AUTO POWER OFF", "SESSION TIMER",
-    "TEMPO", "ROOT NOTE", "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"
+static const char *const AL_LFO_ROWS[] = {
+    "LFO SELECT", "WAVEFORM", "RATE / SYNC", "DESTINATION",
+    "TRIGGER", "FADE-IN / SLEW", "VELOCITY -> LFO"
+};
+static const char *const AL_GLO_ROWS[] = {
+    "LOAD SONG", "LOAD / RESTORE SMP", "LOAD BOUNCE", "LOAD CHOP KIT",
+    "LOAD ARP PATTERN", "COLOR THEME", "MIDI CHANNELS", "MIDI ROUTING",
+    "CLOCK SYNC", "USB AUDIO I/O"
+};
+static const char *const AL_SAVE_ROWS[] = {
+    "SAVE SAMPLE", "BOUNCE / FLATTEN", "SAVE CHOP KIT",
+    "SAVE ARP PATTERN", "SAVE SONG SNAP"
+};
+static const char *const AL_ARP_ROWS[] = {
+    "ARP MODE", "RATE", "OCTAVES", "LATCH"
+};
+static const char *const AL_ALGO_ROWS[] = {
+    "GENRE", "SYNTH ENGINES", "DRUMS", "VOCAL PHRASINGS",
+    "SAMPLES", "BOUNCES", "CHOPS"
 };
 static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "STUDY FOCUS", "CHILL", "DANCE"};
 static const char *const AL_TIMER_NAMES[] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
 static const char *const AL_NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
-static uint8_t al_fx_sub[5 + 5], al_fx_val[5 + 5], al_chop_chrom;
+static uint8_t al_fx_sub[12], al_fx_val[12], al_chop_chrom;
 static uint8_t al_pad_list_mode;
-static uint8_t al_pad_z[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[2 + 2] = {0, 1, 2, 3};
+static uint8_t al_pad_z[8] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[4] = {0, 1, 2, 3};
 static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
 static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_chop_trim_s = 0u, al_chop_trim_e = 100u;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
-static uint8_t audilune_theme_idx, al_arp_mode[3 + 3], al_clip_ok;
+static uint8_t audilune_theme_idx, al_arp_mode[6], al_clip_ok;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
-    if (scr == UI_FX) return al_pad_list_mode ? 1u : 18u;
-
+    if (scr == UI_FX) return 11u;
     if (scr == UI_PUNCH) return 16u;
-    if (scr == UI_ENV || scr == UI_LFO) return 4u;
+    if (scr == UI_ENV) return 8u;
+    if (scr == UI_LFO) return 7u;
     if (scr == UI_LANDSCAPE) return 10u;
-    if (scr == UI_EDIT) return 16u;
-    if (scr == UI_ARP) return 7u;
-    if (scr == UI_GLO) return 8u;
-    if (scr == UI_SAVE) return 6u;
-    if (scr == UI_SEQ) return 8u;
-    if (scr == UI_CHOP_SRC) return 4u;
-    if (scr == UI_CHOP_WAVE) return 21u;
-    if (scr == UI_ALGO) return 6u + DRUM_KITS;
-
+    if (scr == UI_EDIT) return 13u;
+    if (scr == UI_ARP) return 4u;
+    if (scr == UI_GLO) return 10u;
+    if (scr == UI_SAVE) return 5u;
+    if (scr == UI_SEQ) return 6u;
+    if (scr == UI_CHOP_SRC) return 19u;
+    if (scr == UI_CHOP_WAVE) return 2u;
+    if (scr == UI_ALGO) return 7u;
     if (scr == UI_SETUP) return 13u;
     return 0u;
 }
@@ -1043,6 +1055,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     int32_t pid = -1;
 
     if (row == 0u || row == 2u || row == 3u) {
+
 
         static const int8_t T_PF[4 + 4] = {PX_HALF, PX_LOOP8, PX_STOP, PX_REV, PX_OCT, PX_RWD, PX_LOOP8T, PX_STUT};
         static const int8_t G_PF[4 + 4] = {PX_LOOP16, PX_LOOP32, PX_LOOP8T, PX_STUT, PX_CRUSH, PX_DOWN, PX_GATE, PX_FREEZE};
