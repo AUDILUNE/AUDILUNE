@@ -869,21 +869,22 @@ UI_SMALL static void layer_tap(uint32_t layer)
         ui.force = 1;
         break;
     case LY_ERASE: {
-        static uint32_t last_ed_ms;
-        uint32_t now = fm1_ms;
-        if (last_ed_ms && (now - last_ed_ms) < 300u) {
-            last_ed_ms = 0;
-            if (undo_swap(ui.edit_redo_dir)) {
-                ui_message(ui.edit_redo_dir ? "REDO" : "UNDO");
-                ui.edit_redo_dir ^= 1u;
-            } else {
-                ui_message("NOTHING TO UNDO");
-            }
-            ui.force = 1;
+        vis_on = 0;
+        ui.home = 0;
+        ui.list_sel = 0;
+        ui.list_top = 0;
+        if (ui.scr == UI_EDIT) {
+            ui.scr = UI_CHOP_SRC;
+            ui_message("CHOP");
+        } else if (ui.scr == UI_CHOP_SRC) {
+            ui.scr = UI_CHOP_WAVE;
+            ui_message("SAMPLER");
         } else {
-            last_ed_ms = now ? now : 1u;
-            audilune_toggle_scr(UI_EDIT, FAM_SEQ, "EDIT PAGE");
+            ui.scr = UI_EDIT;
+            open_family(FAM_SEQ);
+            ui_message("EDIT");
         }
+        ui.force = 1;
         break;
     }
     case LY_STEP:
@@ -892,6 +893,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             al_seq_ovw = 1u;
             al_seq_ovw_trk = ui.list_sel < NTRK ? ui.list_sel : song.sel;
             al_seq_ovw_step = 0u;
+
             ui_message("128-STEP VIEW");
         } else if (ui.scr == UI_SEQ && !ui.home && al_seq_ovw) {
             al_seq_ovw = 0u;
