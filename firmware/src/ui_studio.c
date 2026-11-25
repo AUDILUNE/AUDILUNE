@@ -1576,7 +1576,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             static uint8_t algo_eng;
             algo_eng = (uint8_t)((algo_eng + (s > 0 ? 1u : 12u)) % 13u);
             t->synth_mode = 1;
-            t->p[P_ENGINE] = (int16_t)algo_eng;
+            t->engine = algo_eng;
             audilune_hud_popup("ENGINE", (int32_t)algo_eng + 1, "");
         } else if (row == 2u) {
             t->synth_mode = 0;
@@ -1584,6 +1584,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("DRUM KIT", *(DRUM_KIT_NAMES + (t->p[P_E0] & 31)));
         } else if (row == 3u) {
             static uint8_t vox_idx;
+
             vox_idx = (uint8_t)((vox_idx + (s > 0 ? 1u : 10u)) % 11u);
             t->synth_mode = 1;
             audilune_hud_popup("VOCAL", (int32_t)vox_idx + 1, "");
