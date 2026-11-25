@@ -1558,21 +1558,43 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 arp_acc = (uint8_t)clamp((int32_t)arp_acc + s * 4, 0, 100);
                 audilune_hud_popup("ACCENT", (int32_t)arp_acc, "%");
             }
-
-                uint32_t max_s = trk_len(t) > 64u ? 64u : trk_len(t);
-                audilune_active_step = (uint8_t)((audilune_active_step + (s > 0 ? 1u : max_s - 1u)) % max_s);
-                audilune_sel_step_mask[song.sel] ^= (1u << (audilune_active_step & 31u));
-                audilune_hud_popup("STEP", (int32_t)audilune_active_step + 1, "");
-            } else {
-                uint32_t nt = (uint32_t)((song.sel + (s > 0 ? 1u : 5u)) % NTRK);
-                track_select(nt);
-                audilune_active_trk = (uint8_t)nt;
-                audilune_hud_popup("TRACK", (int32_t)nt + 1, "");
-            }
+        } else {
+            static const char *const AL_LATCH_H[] = {"OFF", "HOLD", "ADD"};
+            audilune_gen_scope = (uint8_t)((audilune_gen_scope + (s > 0 ? 1u : 2u)) % 3u);
+            audilune_hud_text("LATCH", *(AL_LATCH_H + audilune_gen_scope));
+        }
+    } else if (ui.scr == UI_ALGO) {
+        if (k == 2u) {
+            audilune_sel_vol(s);
+        } else if (row == 0u) {
+            uint8_t ng = (uint8_t)((ui.algo_genre[song.sel] + (s > 0 ? 1u : 5u)) % 6u);
+            uint32_t ti;
+            for (ti = 0u; ti < NTRK; ti++) ui.algo_genre[ti] = ng;
+            audilune_genre = ng;
+            audilune_hud_text("GENRE", *(AUDILUNE_GENRE_NAMES + ng));
+        } else if (row == 1u) {
+            static uint8_t algo_eng;
+            algo_eng = (uint8_t)((algo_eng + (s > 0 ? 1u : 12u)) % 13u);
+            t->synth_mode = 1;
+            t->p[P_ENGINE] = (int16_t)algo_eng;
+            audilune_hud_popup("ENGINE", (int32_t)algo_eng + 1, "");
+        } else if (row == 2u) {
+            t->synth_mode = 0;
+            t->p[P_E0] = (int16_t)((t->p[P_E0] + (s > 0 ? 1 : 31)) % 32);
+            audilune_hud_text("DRUM KIT", *(DRUM_KIT_NAMES + (t->p[P_E0] & 31)));
+        } else if (row == 3u) {
+            static uint8_t vox_idx;
+            vox_idx = (uint8_t)((vox_idx + (s > 0 ? 1u : 10u)) % 11u);
+            t->synth_mode = 1;
+            audilune_hud_popup("VOCAL", (int32_t)vox_idx + 1, "");
+        } else {
+            ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_popup(*(AL_ALGO_ROWS + row), (int32_t)ui.save_vault + 1, "");
         }
     } else if (ui.scr == UI_SETUP) {
         uint32_t ti;
         if (row == 1u) {
+
             ui.setup_vault = (uint8_t)((ui.setup_vault + (s > 0 ? 1u : 6u)) % 7u);
             if (ui.setup_vault == 0u) {
                 for (ti = 0; ti < NTRK; ti++) { steps_clear(&trk[ti]); trk[ti].seq_active = 0; }
