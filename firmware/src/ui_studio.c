@@ -1286,12 +1286,16 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         }
     } else if (ui.scr == UI_ENV) {
         static const uint8_t ENV_CNT[4 + 4] = {4u, 7u, 4u, 4u, 4u, 4u, 7u, 7u};
+        static uint8_t al_env_sub[4 + 4];
         if (k == 3u) {
             uint32_t cnt = *(ENV_CNT + (row & 7u));
-            t->p[P_FMODE] = (int16_t)((t->p[P_FMODE] + (s > 0 ? 1 : (int32_t)cnt - 1)) % (int32_t)cnt);
-            audilune_hud_popup(*(AL_ENV_ROWS + row), t->p[P_FMODE] + 1, "");
+            *(al_env_sub + (row & 7u)) = (uint8_t)((*(al_env_sub + (row & 7u)) + (s > 0 ? 1u : cnt - 1u)) % cnt);
+            audilune_hud_popup(*(AL_ENV_ROWS + row), (int32_t)(*(al_env_sub + (row & 7u)) + 1u), "");
+        } else if (row == 1u) {
+            t->p[P_TFLT] = (int16_t)clamp(t->p[P_TFLT] + s * 3, -64, 63);
+            audilune_hud_popup(*(AL_ENV_ROWS + row), (t->p[P_TFLT] + 64) * 100 / 127, "%");
         } else {
-            uint32_t pid = row >= 2u && row <= 5u ? P_ATK + (row - 2u) : row == 1u ? P_FRES : row == 6u ? P_FENV : P_FCUT;
+            uint32_t pid = row >= 2u && row <= 5u ? P_ATK + (row - 2u) : row == 6u ? P_LD_FLT : row == 7u ? P_DIST : P_LEVEL;
             t->p[pid] = (int16_t)clamp(t->p[pid] + s * 3, 0, 127);
             audilune_hud_popup(*(AL_ENV_ROWS + row), t->p[pid] * 100 / 127, "%");
         }
@@ -1304,6 +1308,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         } else {
             t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
             audilune_hud_popup(*(AL_LFO_ROWS + row), t->p[pid] * 100 / 127, "%");
+
         }
     } else if (ui.scr == UI_EDIT) {
 
