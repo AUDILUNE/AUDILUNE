@@ -833,8 +833,7 @@ UI_SMALL static void audilune_toggle_scr(uint8_t target, uint32_t fam, const cha
 {
     vis_on = 0;
     if (ui.scr == target && !ui.home) {
-        go_home();
-        ui_message("LIVE PLAY");
+        ui.force = 1;
         return;
     }
     ui.scr = target;
@@ -842,6 +841,7 @@ UI_SMALL static void audilune_toggle_scr(uint8_t target, uint32_t fam, const cha
     ui.list_top = 0;
     open_family(fam);
     ui_message(label);
+    ui.force = 1;
 }
 
 UI_SMALL static void layer_tap(uint32_t layer)
@@ -849,23 +849,16 @@ UI_SMALL static void layer_tap(uint32_t layer)
     switch (layer) {
     case LY_FX:
         vis_on = 0;
-        if (ui.scr == UI_FX && !ui.home && !al_pad_list_mode) {
-            if (ui.list_sel < 8u) al_pad_idx = ui.list_sel;
-            al_pad_list_mode = 1u;
-            ui.list_sel = 0;
-            ui_message(*(AL_PAD_NAMES + (al_pad_idx & 7u)));
-        } else if (ui.scr == UI_FX && !ui.home && al_pad_list_mode) {
-            al_pad_list_mode = 0u;
-            go_home();
-            ui_message("LIVE PLAY");
-        } else {
-            al_pad_list_mode = 0u;
-            ui.scr = UI_FX;
-            ui.list_sel = 0;
-            ui.list_top = 0;
-            open_family(FAM_FX);
-            ui_message("EFFECTS");
+        al_pad_list_mode = 0u;
+        if (ui.scr == UI_FX && !ui.home) {
+            ui.force = 1;
+            break;
         }
+        ui.scr = UI_FX;
+        ui.list_sel = 0;
+        ui.list_top = 0;
+        open_family(FAM_FX);
+        ui_message("FX");
         ui.force = 1;
         break;
     case LY_ERASE: {
@@ -886,6 +879,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
         }
         ui.force = 1;
         break;
+
     }
     case LY_STEP:
         vis_on = 0;
