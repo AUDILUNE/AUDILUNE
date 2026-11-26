@@ -941,7 +941,7 @@ UI_SMALL static void rec_screen_draw(void)
 static const char *const AL_FX_ROWS[] = {
     "DELAY", "PITCH", "TIME & STRETCH", "MORPH",
     "GRANULAR", "STRUM & GROOVE", "HARMONIC", "DRIVE & GRIT",
-    "STEREO & CHORUS", "REVERB", "TEXTURES", "LAYER / TIE"
+    "STEREO & CHORUS", "REVERB", "TEXTURES", "LAYER / TIE", "STUTTER"
 };
 static const char *const AL_PAD_NAMES[] = {
     "DELAY PAD", "REVERB PAD", "4-CORNER VECTOR", "DRIVE & GRIT",
@@ -958,6 +958,7 @@ static const char *const AL_SCALE_NAMES[] = {
 static const char *const AL_EDIT_ROWS[] = {
     "UNDO / REDO", "ROOT & SCALE", "LENGTH", "QUANTIZE / HUMAN",
     "TRANSPOSE", "NUDGE", "GATE", "PROBABILITY",
+
     "RATCHET", "REVERSE", "STEP FX", "CHOP MODE", "COPY & PASTE"
 };
 static const char AL_PUNCH_STR[] =
