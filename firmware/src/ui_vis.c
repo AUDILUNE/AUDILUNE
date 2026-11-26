@@ -183,20 +183,23 @@ static void vis_stars_reset(void)
 static void vis_update(void)
 {
     uint32_t i, w, now = fm1_ms;
-    int32_t pk[ 4 ], mpk = 0;
+    int32_t pk[ 3 + 3 ], mpk = 0;
     w = scope_w;
     for (i = 0; i < 512u; i++) {
         vis_l[i] = scope_buf[(w + i) & (SCOPE_N - 1u)];
         vis_r[i] = scope_bufr[(w + i) & (SCOPE_N - 1u)];
         if (vis_l[i] > mpk) mpk = vis_l[i];
         if (-vis_l[i] > mpk) mpk = -vis_l[i];
+        if (vis_r[i] > mpk) mpk = vis_r[i];
+        if (-vis_r[i] > mpk) mpk = -vis_r[i];
     }
     fm1_irq_off();
-    for (i = 0; i < NPART; i++) {
+    for (i = 0; i < NPART && i < 6u; i++) {
         pk[i] = trk[i].peak;
         trk[i].peak = 0;
     }
-    pk[ 3 ] = drums.peak;
+    if (drums.peak > pk[TRK_DRUM % 6u])
+        pk[TRK_DRUM % 6u] = drums.peak;
     drums.peak = 0;
     vis_hit = 0;
     if (vis_kick_hit) {
@@ -204,9 +207,12 @@ static void vis_update(void)
         vs.kick = 255;
     }
     fm1_irq_on();
-    for (i = 0; i < 4u; i++)
-        vs.lvl[i] = (int16_t)(trk_level(i) && !trk[i].p[P_MUTE] ? vis_lvl(pk[i]) : 0);
-    vs.lvl[ 4 ] = (int16_t)vis_lvl(mpk);
+    for (i = 0; i < 6u; i++) {
+        int16_t nl = (int16_t)(trk_level(i) && !trk[i].p[P_MUTE] ? vis_lvl(pk[i]) : 0);
+        int16_t dec = (int16_t)(vs.lvl[i] - vs.lvl[i] / 5);
+        vs.lvl[i] = nl > dec ? nl : dec;
+    }
+    vs.peak = vis_lvl(mpk);
     vs.kick = (uint8_t)(vs.kick > 20 ? vs.kick - 20 : 0);
     {
         uint32_t dt = now - vs.last_ms;
@@ -214,13 +220,12 @@ static void vis_update(void)
         if (dt > 200u) dt = 200u;
         vs.free_q8 += dt * (uint32_t)song.g[G_BPM] * 256u / 60000u;
     }
-    vs.phase += 14u + (uint32_t)(vs.lvl[ 4 ] / 40);
-    vs.peak = mpk;
+    vs.phase += 14u + (uint32_t)(vs.peak / 40);
     {
         int32_t target = mpk < 1600 ? 1600 : mpk;
         vs.scale += (target - vs.scale) / 5;
     }
-    if ((vis_style % 4u) == 1u) {
+    if ((vis_style % 4u) == 2u) {
         int16_t b[ 32 ];
         vis_fft();
         vis_bands(b);
@@ -233,6 +238,7 @@ static void vis_update(void)
             } else {
                 vs.capv[i] = (int16_t)(vs.capv[i] + 4);
                 vs.cap[i] = (int16_t)(vs.cap[i] > vs.capv[i] ? vs.cap[i] - vs.capv[i] : 0);
+
             }
         }
     } else if ((vis_style % 4u) == 3u) {
