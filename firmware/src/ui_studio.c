@@ -1971,7 +1971,7 @@ UI_SMALL static void audilune_page_draw(void)
                 int32_t vw = text_w(&FONT_S, val), bx = 232 - vw - 6;
                 if (ui.scr == UI_FX) {
 
-                    uint8_t fv = al_fx_val[r % 11u];
+                    uint8_t fv = al_fx_val[r % 12u];
                     uint16_t bc = fv > 100u ? C_WHITE : fv > 0u ? HUD_ACCENT : TE_G2;
                     cv_rect(bx, y + 2, vw + 6, 18, bc);
                     if (fv == 0u) cv_rect(bx + 1, y + 3, vw + 4, 16, C_BLACK);
