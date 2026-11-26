@@ -1993,7 +1993,7 @@ UI_SMALL static void audilune_page_draw(void)
             }
             cv_blit(0, 42);
         }
-        cv_begin(240, 212u - y0, C_BLACK);
+        cv_begin(240, 214u - y0, C_BLACK);
         for (i = 0; i < vis && (top + i) < rows; i++) {
             uint32_t r = top + i;
             int32_t y = (int32_t)i * 22;
