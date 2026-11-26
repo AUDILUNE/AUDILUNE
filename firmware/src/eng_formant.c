@@ -95,25 +95,54 @@ static const vox_ph_t VOX_PH[24] = {
     {300, 1400, 2200, 40, 80, 1} /* 23: K/G plosive */
 };
 static uint8_t vox_seq[16 + 16], vox_len, vox_idx, vox_tmr;
+uint8_t al_vox_char, al_vox_phrase;
 
 UI_SMALL static const uint8_t *vox_slot_xip(uint32_t slot)
 {
-    static const uint8_t DEF_PH[4 + 4][6 + 6] = {
-        {11,8,14,10,0,15,4,23,14,9,11,0}, /* LUNAR SIGNAL */
-        {20,5,12,6,0,19,6,12,1,20,14,0},  /* ZERO HORIZON */
-        {16,2,22,6,0,15,2,22,4,23,0,0},   /* SHADOW STATIC */
-        {23,6,14,22,9,13,0,17,5,11,22,0}, /* QUANTUM FIELD */
-        {2,15,22,12,6,0,22,12,4,17,22,0}, /* ASTRO DRIFT */
-        {15,6,11,10,0,5,23,11,4,21,15,0}, /* SOLAR ECLIPSE */
-        {22,10,13,9,11,0,21,7,11,15,0,0}, /* THERMAL PULSE */
-        {14,7,11,0,17,5,11,22,0,0,0,0}    /* NULL FIELD */
+    static const uint8_t VOX_LIB[12 + 12][8 + 8] = {
+        {19,3,11,6,0,7,14,4,17,10,15,0},         /* 1. HELLO UNIVERSE */
+        {17,5,0,1,12,0,15,22,1,12,22,7,15,22,0},   /* 2. WE ARE STARDUST */
+        {21,4,6,14,22,0,18,9,0,19,6,12,1,20,14,0}, /* 3. BEYOND THE HORIZON */
+        {23,6,14,22,9,13,0,15,4,14,23,7,11,1,12,0},/* 4. QUANTUM SINGULAR */
+        {22,1,5,13,0,4,20,0,12,3,11,9,22,4,17,0},  /* 5. TIME IS RELATIVE */
+        {23,6,15,22,0,4,14,0,13,9,16,5,14,0},      /* 6. GHOST IN MACHINE */
+        {17,3,17,20,0,4,14,0,18,10,0,0,0,0,0,0},   /* 7. WAVES IN ETHER */
+        {15,4,15,22,9,13,0,6,14,11,1,5,14,0},      /* 8. SYSTEM ONLINE */
+        {20,5,12,6,0,23,12,2,17,4,22,5,0},         /* 9. ZERO GRAVITY */
+        {3,17,3,14,22,0,19,6,12,1,20,14,0},        /* 10. EVENT HORIZON */
+        {4,14,17,4,14,9,22,0,3,23,15,21,2,14,0},   /* 11. INFINITE EXPAND */
+        {22,1,12,23,0,13,2,22,10,0,21,7,11,15,0},  /* 12. DARK MATTER PULSE */
+        {15,10,23,9,22,0,13,3,13,10,5,0,0,0,0,0},  /* 13. CIRCUIT MEMORY */
+        {4,11,3,23,22,12,4,23,0,22,12,5,13,20,0},  /* 14. ELECTRIC DREAMS */
+        {11,8,14,10,0,6,12,21,4,22,0},             /* 15. LUNAR ORBIT */
+        {21,1,5,14,10,5,0,23,6,22,0},              /* 16. BINARY CODE */
+        {12,3,20,9,14,9,14,15,0,11,6,23,0},        /* 17. RESONANCE LOCK */
+        {1,23,12,6,15,0,18,9,0,17,6,5,22,0},       /* 18. ACROSS THE VOID */
+        {22,4,23,4,22,9,11,0,13,1,5,14,22,0},      /* 19. DIGITAL MIND */
+        {2,22,9,13,20,0,4,14,0,13,6,16,9,14,0},    /* 20. ATOMS IN MOTION */
+        {3,23,6,20,0,4,14,0,22,1,5,13,0},          /* 21. ECHOES IN TIME */
+        {17,12,5,23,17,3,14,15,5,0,16,4,17,22,0},  /* 22. FREQUENCY SHIFT */
+        {22,5,21,0,15,21,3,5,15,0,15,4,23,14,9,11},/* 23. DEEP SPACE SIGNAL */
+        {6,11,0,15,4,15,22,9,13,20,0,23,6,0}       /* 24. ALL SYSTEMS GO */
     };
+    static const uint8_t DEF_PH[4 + 4][6 + 6] = {
+        {11,8,14,10,0,15,4,23,14,9,11,0}, /* 25. VOCAL 01: LUNAR SIGNAL */
+        {20,5,12,6,0,19,6,12,1,20,14,0},  /* 26. VOCAL 02: ZERO HORIZON */
+        {16,2,22,6,0,15,2,22,4,23,0,0},   /* 27. VOCAL 03: SHADOW STATIC */
+        {23,6,14,22,9,13,0,17,5,11,22,0}, /* 28. VOCAL 04: QUANTUM FIELD */
+        {2,15,22,12,6,0,22,12,4,17,22,0}, /* 29. VOCAL 05: ASTRO DRIFT */
+        {15,6,11,10,0,5,23,11,4,21,15,0}, /* 30. VOCAL 06: SOLAR ECLIPSE */
+        {22,10,13,9,11,0,21,7,11,15,0,0}, /* 31. VOCAL 07: THERMAL PULSE */
+        {14,7,11,0,17,5,11,22,0,0,0,0}    /* 32. VOCAL 08: NULL FIELD */
+    };
+    if (slot < 24u)
+        return VOX_LIB[slot];
 #if defined(ST_XIP_PTR) && FELUCCA_FLASH
     uint32_t len = 0;
     const uint8_t *xp = flash_ok ? (const uint8_t *)st_xip(OBJ_VOXBANK, &len) : 0;
-    if (xp && len >= 512u && xp[(slot & 7u) * 64u]) return xp + (slot & 7u) * 64u;
+    if (xp && len >= 512u && xp[((slot - 24u) & 7u) * 64u]) return xp + ((slot - 24u) & 7u) * 64u;
 #endif
-    return DEF_PH[slot & 7u];
+    return DEF_PH[(slot - 24u) & 7u];
 }
 
 /* Genre-locked combinatorial poetic/scientific phrase builder (4,000+ combinations, 0 B SRAM) */
@@ -123,6 +152,7 @@ static void vox_build_phrase(uint32_t vi, uint32_t slot, uint32_t custom, uint32
         {{11,8,14,10,0},{19,6,11,6,0},{15,4,11,3,14,22,0},{2,15,22,12,6,0}},   /* AMBIENT: lunar, hollow, silent, astro */
         {{16,2,22,6,0},{3,23,6,0},{2,13,21,10,0},{14,6,23,22,10,14,0}},       /* DOWNTMP: shadow, echo, amber, nocturn */
         {{15,2,22,4,23,0},{17,12,2,23,22,9,11,0},{20,5,12,6,0},{21,4,14,12,5,0}},/* GLITCH: static, fractal, zero, binary */
+
         {{23,6,14,22,9,13,0},{22,10,13,9,11,0},{15,6,11,10,0},{13,2,23,14,3,22,0}},/* PUNCHY: quantum, thermal, solar, magnet */
         {{18,12,3,16,6,11,22,0},{3,14,22,12,9,21,5,0},{11,8,13,9,14,0},{17,11,7,23,15,0}},/* EXPERIM: threshold, entropy, lumen, flux */
         {{23,1,12,21,9,14,0},{13,3,22,9,11,0},{14,7,11,0},{21,12,6,22,6,14,0}} /* INDUST: carbon, metal, null, proton */
