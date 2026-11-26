@@ -827,10 +827,18 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     t->bend_s = (int16_t)(t->bend_s + ((t->bend - t->bend_s) >> 2) + (t->bend > t->bend_s) - (t->bend < t->bend_s));
     bendq = ((int32_t)t->bend_s * clamp(song.g[G_BEND], 1, 12)) >> 1;   /* MIDI pitch bend (2.6): 1/4096 semitone,
                                                                          * gliding (a quarter of the way a block) */
-    if (e->block)                                       /* the engine's per-part work (DRAWBAR: bars, rotor) */
+    int lyr = (t == TSEL && al_layer_ready && al_layer_preset > 0u && al_layer_mix > 0u);
+   int32_t b2[CTL];
+   uint32_t k;
+   if (lyr)
+       for (k = 0; k < n; k++)
+           b2[k] = 0;
+   if (e->block)                                       /* the engine's per-part work (DRAWBAR: bars, rotor) */
         e->block(t);
     for (i = 0; i < NVOICE; i++) {
         voice_t *v = &t->v[i];
+        int is_lyr_v = lyr && i >= 4u;
+        const engine_t *ve = is_lyr_v ? ENGINES[al_layer_eng % NENGINES] : e;
         vmod_t m;
         int32_t env, pitch;
         if ((v->pend & VP_ON) && !v->active && !fade) {   /* (2.8.3) faded out: the sample's note, from silence */
@@ -853,8 +861,8 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             continue;
         {
             env = env_tick(t, v);
-            if (e->ownenv && v->active) {               /* the engine's envelopes (FM6): they end the voice */
-                if (e->done(t, v)) {
+            if (ve->ownenv && v->active) {              /* the engine's envelopes (FM6): they end the voice */
+                if (ve->done(t, v)) {
                     v->active = v->gate = 0;
                     v->stage = 0;
                     v->kill = 0;
@@ -867,10 +875,10 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
                     env = 32767;
                 }
             }
-            if (e->amp)                                 /* the engine's own amplitude curve */
-                env = e->amp(t, v, env);
-            m.envq15 = e->ownenv ? 0 : env;
-            m.amp1 = e->ownenv ? env : mulq15(env, v->vel * 258);
+            if (ve->amp)                                /* the engine's own amplitude curve */
+                env = ve->amp(t, v, env);
+            m.envq15 = ve->ownenv ? 0 : env;
+            m.amp1 = ve->ownenv ? env : mulq15(env, v->vel * 258);
             if (p[P_LD_AMP])
                 m.amp1 = mulq15(m.amp1, 32767 - mulq15(p[P_LPOL] ? lfo : (lfo + 32768) >> 1, p[P_LD_AMP] * 258));
             if (fade)                                   /* linear to 0 over the fade */
@@ -878,6 +886,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             m.amp0 = v->env_out;
             v->env_out = m.amp1;
         }
+
         if (v->pitch_cur != v->pitch16 || v->pitch_frac) {   /* glide, in 1/4096 semitone */
             int32_t q = (v->pitch_cur << 8) + v->pitch_frac, d = (v->pitch16 << 8) - q;
             int32_t st = v->gstep ? v->gstep : (int32_t)((ENV_LIN[p[P_GLIDE] & 127] * 3u) >> 10);   /* RATE: an octave in GLIDE */
