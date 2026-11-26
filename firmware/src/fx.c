@@ -30,7 +30,7 @@ static int32_t rev_l[CTL], rev_r[CTL];   /* the reverb's own return of this bloc
  * make-up gain. State per part (track_t dist_*). */
 static void track_dist(track_t *t, int32_t *b, uint32_t n)
 {
-    int32_t d = t->p[P_DIST], i, g, k, mk, bias = 2400, b0;
+    int32_t d = t->p[P_DIST], i, g, k, mk, bias = 2400 + (al_fx_val[7] > 100u ? (int32_t)(al_fx_val[7] - 100u) * 320 : 0), b0;
     if (!d) {
         t->dist_on = 0;
         return;
@@ -53,6 +53,7 @@ static void track_dist(track_t *t, int32_t *b, uint32_t n)
         t->dist_lp1 += mulq15(y - t->dist_lp1, k);         /* two poles: tames the fizz */
         t->dist_lp2 += mulq15(t->dist_lp1 - t->dist_lp2, k);
         b[i] = mulq15(t->dist_lp2, mk);
+
     }
 }
 /* master: peak limiter in front of the soft clipper, a 35 ms hold then ~46 ms release (2.6), threshold where tanh is still nearly linear,
