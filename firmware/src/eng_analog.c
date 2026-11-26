@@ -228,7 +228,10 @@ static const preset_t ANALOG_PRESETS[] = {
     {"SYNTHI AKS", {6, 78, 86, 24, 56, 78, 52, 96}, {10, 82, 88, 52}, 40, 1, FX(16, 30, 42, 46)},
     {"VCS3 MATRIX", {6, 96, 104, 32, 70, 84, 60, 112}, {4, 68, 72, 48}, 48, 1, FX(20, 36, 48, 54)},
     {"VCS3 DRONE", {6, 34, 58, 28, 52, 64, 36, 88}, {68, 104, 118, 86}, 24, 0, FX(8, 44, 52, 64)},
+    {"FLOYD VCS3", {6, 64, 88, 18, 58, 86, 54, 108}, {2, 64, 76, 42}, 46, 1, FX(14, 28, 58, 52), XP(P_GLIDE + 1, 38, P_LRATE + 1, 46, P_LD_FLT + 1, 24)},
+    {"HANZ VOLX", {5, 68, 120, 14, 48, 116, 118, 92}, {0, 52, 64, 22}, 58, 1, FX(46, 0, 16, 18), XP(P_GLIDE + 1, 32, P_LRATE + 1, 68, P_LD_FLT + 1, 36)},
 };
+
 
 /* (after Clipper 1.2) UNISON (voice.c unison_spread): both oscillators moved by r (Q32) of a turn of the note,
  * each by its share: as if started that much sooner (osc 2 took its phase from ph[0] before the spread: in phase) */
