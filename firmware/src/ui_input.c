@@ -829,13 +829,13 @@ UI_SMALL static uint32_t btn_hold_ms(uint32_t *t0, uint32_t label, uint32_t now,
     return tap ? BT_TAP : BT_NONE;
 }
 
-static uint16_t al_row_lock_mask;
 static uint8_t al_sel_hold_eat;
 
 UI_SMALL static void audilune_toggle_scr(uint8_t target, uint32_t fam, const char *label)
 {
     vis_on = 0;
     if (ui.scr == target && !ui.home) {
+
         ui.force = 1;
         return;
     }
