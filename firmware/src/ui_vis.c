@@ -299,51 +299,55 @@ static void vis_harmonic_web(void)
     }
 }
 
-/* Style 3: Moon Loop (audio-reactive crescent moon + orbital phase rings) */
-
-static void vis_moon_loop(void)
+/* Mode 3: SPECTRUM ARC (High-Definition Radial Gradient Analyzer & Peak Needles) */
+static void vis_spectrum_arc(void)
 {
-    uint32_t bq = vis_beat_q8(), i;
-    int32_t pulse = vs.kick * 14 / 255 + vs.lvl[ 4 ] * 10 / 1000;
-    int32_t r_outer = 44 + pulse;
-    int32_t orbit_r = 74 + vs.lvl[ 4 ] * 16 / 1000;
-    uint32_t moon_a = (bq * 2u + vs.phase) & 1023u;
-    int32_t cx = 120 + ((icos(moon_a) * 10) >> 15);
-    int32_t cy = 120 + ((isin(moon_a) * 10) >> 15);
-
-    vis_circle(120, 120, orbit_r, C_DIM);
-    vis_circle(120, 120, orbit_r + 12 + (vs.lvl[ 4 ] / 80), C_LINE);
-
-    for (i = 0; i < 4u; i++) {
-        uint32_t a = (bq * 2u + i * 256u) & 1023u;
-        int32_t nx = 120 + ((icos(a) * orbit_r) >> 15);
-        int32_t ny = 120 + ((isin(a) * orbit_r) >> 15);
-        int32_t nr = 3 + vs.lvl[i] * 5 / 1000;
-        vis_ellipse(nx, ny, nr, nr, i == 0u ? C_WHITE : C_ACCENT);
+    uint32_t k;
+    int32_t r0 = 36 + vs.kick * 8 / 255;
+    vis_circle(120, 148, r0, C_DIM);
+    vis_circle(120, 148, r0 + 42, C_LINE);
+    vis_circle(120, 148, r0 + 84, C_LINE);
+    for (k = 0; k < 32u; k++) {
+        uint32_t a = 512u + k * 16u + 8u;
+        int32_t ca = icos(a), sa = isin(a);
+        int32_t len = vs.bar[k] * 78 / 1000;
+        int32_t plen = vs.cap[k] * 78 / 1000;
+        int32_t x0 = 120 + ((ca * (r0 + 2)) >> 15), y0 = 148 + ((sa * (r0 + 2)) >> 15);
+        int32_t xm = 120 + ((ca * (r0 + 2 + len / 2)) >> 15), ym = 148 + ((sa * (r0 + 2 + len / 2)) >> 15);
+        int32_t x1 = 120 + ((ca * (r0 + 2 + len)) >> 15), y1 = 148 + ((sa * (r0 + 2 + len)) >> 15);
+        int32_t xp = 120 + ((ca * (r0 + 5 + plen)) >> 15), yp = 148 + ((sa * (r0 + 5 + plen)) >> 15);
+        if (len > 1) {
+            cv_line(x0, y0, xm, ym, C_DIM);
+            vis_glow_line(xm, ym, x1, y1, len > 52 ? C_WHITE : C_ACCENT, C_DIM);
+        }
+        cv_rect(xp - 1, yp - 1, 2, 2, C_WHITE);
     }
-
-    vis_ellipse(cx, cy, r_outer, r_outer, C_HI);
-    vis_ellipse(cx + r_outer * 38 / 100, cy - r_outer * 14 / 100, r_outer * 84 / 100, r_outer * 84 / 100, C_BLACK);
+    vis_sphere(120, 148, r0 - 4, -r0 / 3, -r0 / 3, 1);
 }
 
-/* Style 4: Starfield Cascade */
-static void vis_starfield(void)
+/* Mode 4: STAGE VECTOR (3D Perspective Soundstage Depth & Frequency Field) */
+static void vis_stage_vector(void)
 {
     uint32_t i;
-    int32_t warp = 1 + vs.lvl[ 4 ] / 180;
-    for (i = 0; i < 48u; i++) {
-        int32_t z = vs.sz[i] > 1 ? vs.sz[i] : 1;
-        int32_t px = 120 + (vs.sx[i] * 160) / z;
-        int32_t py = 120 + (vs.sy[i] * 160) / z;
-        int32_t pz = z + 10 * warp;
-        int32_t ox = 120 + (vs.sx[i] * 160) / pz;
-        int32_t oy = 120 + (vs.sy[i] * 160) / pz;
-        uint16_t col = z < 75 ? C_WHITE : z < 150 ? C_ACCENT : C_DIM;
-        if ((uint32_t)px < 240u && (uint32_t)py < 240u) {
-            cv_line(ox, oy, px, py, col);
-            if (z < 85)
-                cv_rect(px, py, 2, 2, C_WHITE);
-        }
+    for (i = 0; i < 6u; i++) {
+        int32_t y = 84 + (int32_t)(i * i * 4);
+        cv_line(0, y, 239, y, i < 2u ? C_LINE : C_DIM);
+    }
+    for (i = 0; i < 7u; i++) {
+        int32_t bx = (int32_t)i * 40, tx = 84 + (int32_t)i * 12;
+        cv_line(tx, 84, bx, 239, C_LINE);
+    }
+    for (i = 0; i < 6u; i++) {
+        const track_t *t = &trk[i];
+        int32_t z = clamp(127 - t->p[P_REV], 16, 127);
+        int32_t scale = 45 + z * 55 / 127;
+        int32_t px = 120 + (t->p[P_PAN] * scale) / 64;
+        int32_t gy = 104 + (z * 116) / 127;
+        int32_t lift = 18 + clamp(t->p[P_TFLT] + 64, 0, 127) * 48 / 127 + vs.lvl[i] * 28 / 1000;
+        int32_t sr = clamp((5 + vs.lvl[i] * 9 / 1000) * scale / 85, 4, 18);
+        vis_ellipse(px, gy, sr + 2, sr / 3 + 1, C_LINE);
+        cv_line(px, gy, px, gy - lift + sr, i == (uint32_t)song.sel ? C_HI : C_DIM);
+        vis_sphere(px, gy - lift, sr, -sr / 3, -sr / 3, i == (uint32_t)song.sel);
     }
 }
 
@@ -358,6 +362,7 @@ static int32_t vis_ground_y(int32_t x, uint32_t biome, int32_t jag, int32_t sway
         if (p2 < 0) p2 = -p2;
         return 196 - ((40 - p1) * (16 + jag) / 36) - ((24 - p2) * jag / 40);
     }
+
     if (biome == 1u)
         return 194 + ((isin(ph) * 6) >> 15);
     return 188 + ((isin(ph + vs.phase * 3u) * (8 + jag / 2)) >> 15);
