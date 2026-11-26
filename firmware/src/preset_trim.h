@@ -17,3 +17,4 @@ static const int8_t PRESET_TRIM[PT_ENGINES][PT_MAX] = {
     {/* 11.0 WIND */ -1, /* 11.1 RAIN */ 0, /* 11.2 NZ ARCADE */ 14, /* 11.3 NZ METAL */ 23, /* 11.4 OCEAN */ 23, /* 11.5 VINYL */ 23, /* 11.6 HISS */ -12, /* 11.7 RISER */ 0, /* 11.8 NZ SNARE */ 23, /* 11.9 BITCRUSH */ 17, /* 11.10 RADIO */ -9, /* 11.11 STORM WIND */ -2, /* 11.12 THUNDER */ 4, /* 11.13 CREEK */ 8, /* 11.14 BIRDSONG */ 12, /* 11.15 CICADAS */ 10, /* 11.16 WHALE SONG */ 8, /* 11.17 FOLEY CRK */ 14, /* 11.18 BARN OWL */ 12, /* 11.19 HORNED OWL */ 10, /* 11.20 NIGHT RAVEN */ 10, /* 11.21 WOLF HOWL */ 8, /* 11.22 NIGHT CRICKET */ 12, /* 11.23 DIAL SCAN */ 6, /* 11.24 TV STATIC */ -6, /* 11.25 GHOST BOX */ 8, /* 11.26 FOOTSTEPS */ 10, /* 11.27 GRAVEL WALK */ 12, /* 11.28 HEARTBEAT */ 6, /* 11.29 MOREPORK */ 12, /* 11.30 TUI SONG */ 12, /* 11.31 BELLBIRD */ 12},
     {/* 12.0 BREAK 16 */ 23, /* 12.1 CHOP 8 */ 23, /* 12.2 REVERSE */ 23, /* 12.3 USR SLICE */ 23},
 };
+
