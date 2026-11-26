@@ -255,34 +255,42 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         k = (k * (65536 - k)) >> 15;                    /* ease out: the mouth opens fast, then settles */
     }
     uint32_t vox_on = (t->preset >= 7u && vox_len > 0u);
-    int32_t vox_gv = 32767, vox_gn = 0, vox_burst = 0, vox_bend = 0;
+    int32_t vox_gv = 32767, vox_gn = 0, vox_burst = 0, vox_bend = 0, ch_shift = 0, ch_q = 0;
     if (vox_on) {
-        uint32_t step_b = (uint32_t)(18u - (p[P_E2] >> 3));
-        if (t->preset == 8u) step_b = (step_b * 3u) >> 1;   /* VOX-SING: slower sung syllable sustain */
+        static const int8_t CH_SHIFT[4 + 4] = {0, -80, 64, 128, 48, -32, -64, 32};
+        static const int8_t CH_Q[4 + 4] = {0, -16, 8, 18, -12, 12, 28, 10};
+        static const uint8_t CH_BRTH[4 + 4] = {0, 0, 24, 0, 110, 12, 0, 32};
+        static const uint8_t CH_PACE[4 + 4] = {16, 20, 16, 14, 18, 18, 15, 22};
+        uint32_t ci = al_vox_char & 7u;
+        uint32_t step_b = (uint32_t)(CH_PACE[ci] - (p[P_E2] >> 4));
+        if (step_b < 4u) step_b = 4u;
+        ch_shift = CH_SHIFT[ci];
+        ch_q = CH_Q[ci];
+        if (t->preset == 8u || ci == 7u) step_b = (step_b * 3u) >> 1; /* VOX-SING / ORACLE: slower sung sustain */
         else if (t->preset == 9u && (vox_idx & 1u)) step_b = (step_b >> 1) + 2u; /* VOX-BENT: uneven clock sag */
         uint32_t cur_i = vox_idx < vox_len ? vox_idx : 0u;
         uint32_t nxt_i = (cur_i + 1u) < vox_len ? (cur_i + 1u) : cur_i;
         const vox_ph_t *pa = &VOX_PH[vox_seq[cur_i] % 24u], *pb = &VOX_PH[vox_seq[nxt_i] % 24u];
         int32_t frac = step_b ? (int32_t)(((uint32_t)vox_tmr << 15) / step_b) : 0;
         if (frac > 32767) frac = 32767;
-        if (t->preset == 7u) frac = (frac * frac) >> 15;    /* DECTALK: crisp robotic phoneme snap */
-        else if (t->preset == 8u) frac = (frac * (65536 - frac)) >> 15; /* VOX-SING: lush legato vowel glide */
+        if (t->preset == 7u && ci != 7u) frac = (frac * frac) >> 15; /* DECTALK: crisp robotic phoneme snap */
+        else if (t->preset == 8u || ci == 7u) frac = (frac * (65536 - frac)) >> 15; /* lush legato vowel glide */
         fa[0 + 0] = ((int32_t)pa->f1 + (((int32_t)pb->f1 - (int32_t)pa->f1) * frac >> 15)) << 4;
         fa[1 + 0] = ((int32_t)pa->f2 + (((int32_t)pb->f2 - (int32_t)pa->f2) * frac >> 15)) << 4;
         fa[2 + 0] = ((int32_t)pa->f3 + (((int32_t)pb->f3 - (int32_t)pa->f3) * frac >> 15)) << 4;
-        if (t->preset == 9u) {                              /* VOX-BENT: circuit-bent F2/F3 cross-warp */
+        if (t->preset == 9u || ci == 6u) {                  /* VOX-BENT / CYBERNET: circuit-bent F2/F3 cross-warp */
             int32_t tmp_f = fa[1 + 0];
             fa[1 + 0] = (fa[1 + 0] >> 1) + (fa[2 + 0] >> 1);
             fa[2 + 0] = (tmp_f * 3) >> 1;
-            vox_bend = ((int32_t)(cur_i & 3u) - 1) * 48;
+            vox_bend = ((int32_t)(cur_i & 3u) - 1) * (t->preset == 9u ? 48 : 20);
         } else if (t->preset == 7u) {
             vox_bend = ((int32_t)(cur_i % 3u) - 1) * 12;    /* DECTALK: subtle prosody pitch step */
         }
         fb[0 + 0] = fa[0 + 0]; fb[1 + 0] = fa[1 + 0]; fb[2 + 0] = fa[2 + 0];
         ba[0 + 0] = 85 << 4; ba[1 + 0] = 105 << 4; ba[2 + 0] = 165 << 4;
         bb[0 + 0] = ba[0 + 0]; bb[1 + 0] = ba[1 + 0]; bb[2 + 0] = ba[2 + 0];
-        vox_gv = (pa->flg & 2u) ? 0 : (int32_t)pa->vox * 258;
-        vox_gn = (pa->flg & 2u) ? 0 : (int32_t)pa->nz * 258;
+        vox_gv = (pa->flg & 2u) ? 0 : (int32_t)pa->vox * (ci == 4u ? 64 : 258);
+        vox_gn = (pa->flg & 2u) ? 0 : clamp((int32_t)pa->nz * 258 + (int32_t)CH_BRTH[ci] * 258, 0, 32767);
         if ((pa->flg & 1u) && vox_tmr < 2u) vox_burst = 14000;
         if (++vox_tmr >= step_b) {
             vox_tmr = 0;
@@ -296,13 +304,14 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         vowel_at(v1 + m->cutoff, fb, bb);
     }
     /* SHIFT (semitones) and FOLOW (key tracking around C4, fixed), one ratio for all four */
-    ratio = fmt_ratio(p[P_E3] * 16 + vox_bend + ((FMT_FOLOW * (v->pitch_cur - 60 * 16) * 516) >> 16));
-    bws = fmt_ratio((64 - p[P_E6]) * 4);                /* Q: bandwidth x2.5 .. x0.4 */
+    ratio = fmt_ratio(p[P_E3] * 16 + ch_shift + vox_bend + ((FMT_FOLOW * (v->pitch_cur - 60 * 16) * 516) >> 16));
+    bws = fmt_ratio((64 - (p[P_E6] + ch_q)) * 4);       /* Q: bandwidth x2.5 .. x0.4 */
     f0 = (uint32_t)(((uint64_t)inc * 705600u) >> 32);   /* F0 in Hz * 16 */
     for (j = 0; j < 3; j++) {
         int32_t f = fa[j] + (((fb[j] - fa[j]) * k) >> 15), b = ba[j] + (((bb[j] - ba[j]) * k) >> 15);
         f = (int32_t)(((int64_t)f * ratio) >> 16);
         b = (int32_t)(((((int64_t)b * ratio) >> 16) * bws) >> 16);
+
         if (j == 0 && (uint32_t)f < f0 + (f0 >> 4) && f > 0) {   /* sung high: F1 follows F0 (sopranos do), */
             b = (int32_t)(((int64_t)b * (int32_t)(f0 + (f0 >> 4))) / f);   /* same Q: no boom on the fundamental */
             f = (int32_t)(f0 + (f0 >> 4));
