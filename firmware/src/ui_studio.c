@@ -1738,8 +1738,8 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     const track_t *t = TSEL;
     *lbl = 0; *val = 0;
     if (scr == UI_FX) {
-        row_kv(lbl, val, *(AL_FX_ROWS + (row % 11u)), 0);
-        fmt_int(val, *(al_fx_val + (row % 11u)));
+        row_kv(lbl, val, *(AL_FX_ROWS + (row % 12u)), 0);
+        fmt_int(val, *(al_fx_val + (row % 12u)));
         str_cpy(val + str_len(val), "%", 4);
     } else if (scr == UI_PUNCH) {
         row_kv(lbl, val, al_nth_str(AL_PUNCH_STR, row),
@@ -1763,6 +1763,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 4u) row_kv(0, val, 0, "FREE-RUN");
         else fmt_int(val, *(t->p + *(LFO_P + (row & 7u))));
     } else if (scr == UI_EDIT) {
+
         uint32_t has_sel = (*(ui.sel_step_mask + 0) | *(ui.sel_step_mask + 1) | *(ui.sel_step_mask + 2) | *(ui.sel_step_mask + 3)) != 0u;
         row_kv(lbl, val, *(AL_EDIT_ROWS + (row % 13u)), 0);
         if (row == 0u) row_kv(0, val, 0, ui.edit_redo_dir ? "REDO" : "UNDO");
