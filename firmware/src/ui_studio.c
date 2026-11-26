@@ -1029,7 +1029,7 @@ static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "STUD
 static const char *const AL_TIMER_NAMES[] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
 static const char *const AL_NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 static const char *const AL_CHOP_MODES[] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
-static uint8_t al_fx_sub[6 + 6], al_fx_val[6 + 6], al_chop_chrom;
+static uint8_t al_fx_sub[6 + 7], al_fx_val[6 + 7], al_chop_chrom;
 static uint8_t al_pad_list_mode;
 static uint8_t al_pad_z[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[2 + 2] = {0, 1, 2, 3};
 static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
@@ -1041,7 +1041,7 @@ uint8_t al_layer_preset, al_layer_mix;
 uint16_t al_row_lock_mask;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
-    if (scr == UI_FX) return 12u;
+    if (scr == UI_FX) return 13u;
 
     if (scr == UI_PUNCH) return 16u;
 
@@ -1070,6 +1070,17 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     uint32_t step = t->seq_idx % trk_len(t);
     int32_t pid = -1;
 
+    if (row == 12u) {
+        if (val == 0u) {
+            t->p[P_SLCR] = SL_OFF;
+        } else {
+            t->p[P_SLCR] = SL_STUT;
+            t->p[P_SLPAT] = (int16_t)(17 + (sub & 7u));
+            t->p[P_SLRATE] = (int16_t)(val > 100u ? 2 : 1);
+            t->p[P_SLDEPTH] = (int16_t)clamp((int32_t)val * 127 / 100, 0, 127);
+        }
+        return;
+    }
     if (row == 11u) {
         al_layer_preset = sub;
         al_layer_mix = val;
@@ -1078,6 +1089,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
             const engine_t *ep = ENGINES[e % NENGINES];
             al_layer_eng = (uint8_t)(e % NENGINES);
             if (ep->npresets) {
+
                 const preset_t *pr = &ep->presets[k % ep->npresets];
                 for (j = 0u; j < 8u; j++)
                     al_layer_e[j] = pr->e[j];
