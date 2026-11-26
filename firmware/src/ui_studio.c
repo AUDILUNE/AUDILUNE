@@ -1798,8 +1798,8 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     const track_t *t = TSEL;
     *lbl = 0; *val = 0;
     if (scr == UI_FX) {
-        row_kv(lbl, val, *(AL_FX_ROWS + (row % 12u)), 0);
-        fmt_int(val, *(al_fx_val + (row % 12u)));
+        row_kv(lbl, val, *(AL_FX_ROWS + (row % 13u)), 0);
+        fmt_int(val, *(al_fx_val + (row % 13u)));
         str_cpy(val + str_len(val), "%", 4);
     } else if (scr == UI_PUNCH) {
         row_kv(lbl, val, al_nth_str(AL_PUNCH_STR, row),
@@ -1813,6 +1813,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             fmt_int(val, *(t->p + P_ATK + (row - 2u)) * 100 / 127);
             str_cpy(val + str_len(val), "%", 4);
         } else if (row == 0u) row_kv(0, val, 0, "AMP");
+
         else if (row == 1u) row_kv(0, val, 0, "LPF-24");
         else if (row == 6u) row_kv(0, val, 0, "FILTER CUT");
         else row_kv(0, val, 0, "OFF");
