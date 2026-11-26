@@ -1278,19 +1278,25 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_popup("WET/MIX", (int32_t)al_pad_z[p] * 110 / 127, "%");
         }
     } else if (ui.scr == UI_FX) {
-        static const uint8_t FX_CNT[6 + 6] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 1u};
-        uint32_t cnt = *(FX_CNT + (row % 11u));
+        static const uint8_t FX_CNT[6 + 6] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 16u};
+        uint32_t cnt = *(FX_CNT + (row % 12u));
         if (k == 3u) {
             *(al_fx_sub + row) = (uint8_t)((*(al_fx_sub + row) + (s > 0 ? 1u : cnt - 1u)) % cnt);
             if (row == 1u && *(al_fx_sub + row) < 4u && *(al_fx_val + row) == 0u) *(al_fx_val + row) = 55u;
             audilune_fx_apply(t, row, *(al_fx_sub + row), *(al_fx_val + row));
             audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
         } else {
-            int32_t nv = clamp((int32_t)(*(al_fx_val + row)) + s * 4, 0, 110);
-            *(al_fx_val + row) = (uint8_t)nv;
-            if (row == 10u) song.g[G_DUST] = (int16_t)(nv * 127 / 110);
-            else audilune_fx_apply(t, row, *(al_fx_sub + row), (uint8_t)nv);
-            audilune_hud_popup(*(AL_FX_ROWS + row), nv, "%");
+            uint32_t mask = (al_row_lock_mask & 0x0FFFu) ? (al_row_lock_mask & 0x0FFFu) : (1u << row);
+            uint32_t ri;
+            for (ri = 0u; ri < 12u; ri++) {
+                if ((mask >> ri) & 1u) {
+                    int32_t nv = clamp((int32_t)(*(al_fx_val + ri)) + s * 4, 0, 110);
+                    *(al_fx_val + ri) = (uint8_t)nv;
+                    if (ri == 10u) song.g[G_DUST] = (int16_t)(nv * 127 / 110);
+                    else audilune_fx_apply(t, ri, *(al_fx_sub + ri), (uint8_t)nv);
+                }
+            }
+            audilune_hud_popup((al_row_lock_mask & 0x0FFFu) ? "LOCKED FX" : *(AL_FX_ROWS + row), (int32_t)(*(al_fx_val + row)), "%");
         }
     } else if (ui.scr == UI_ENV) {
         static const uint8_t ENV_CNT[4 + 4] = {4u, 7u, 4u, 4u, 4u, 4u, 7u, 7u};
@@ -1299,29 +1305,42 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             uint32_t cnt = *(ENV_CNT + (row & 7u));
             *(al_env_sub + (row & 7u)) = (uint8_t)((*(al_env_sub + (row & 7u)) + (s > 0 ? 1u : cnt - 1u)) % cnt);
             audilune_hud_popup(*(AL_ENV_ROWS + row), (int32_t)(*(al_env_sub + (row & 7u)) + 1u), "");
-        } else if (row == 1u) {
-            t->p[P_TFLT] = (int16_t)clamp(t->p[P_TFLT] + s * 3, -64, 63);
-            audilune_hud_popup(*(AL_ENV_ROWS + row), (t->p[P_TFLT] + 64) * 100 / 127, "%");
         } else {
-            uint32_t pid = row >= 2u && row <= 5u ? P_ATK + (row - 2u) : row == 6u ? P_LD_FLT : row == 7u ? P_DIST : P_LEVEL;
-            t->p[pid] = (int16_t)clamp(t->p[pid] + s * 3, 0, 127);
-            audilune_hud_popup(*(AL_ENV_ROWS + row), t->p[pid] * 100 / 127, "%");
+            uint32_t mask = (al_row_lock_mask & 0xFFu) ? (al_row_lock_mask & 0xFFu) : (1u << row);
+            uint32_t ri;
+            int32_t show_v = 0;
+            for (ri = 0u; ri < 8u; ri++) {
+                if (!((mask >> ri) & 1u)) continue;
+                if (ri == 1u) {
+                    t->p[P_TFLT] = (int16_t)clamp(t->p[P_TFLT] + s * 3, -64, 63);
+                    if (ri == row) show_v = (t->p[P_TFLT] + 64) * 100 / 127;
+                } else {
+                    uint32_t pid = ri >= 2u && ri <= 5u ? P_ATK + (ri - 2u) : ri == 6u ? P_LD_FLT : ri == 7u ? P_DIST : P_LEVEL;
+                    t->p[pid] = (int16_t)clamp(t->p[pid] + s * 3, 0, 127);
+                    if (ri == row) show_v = t->p[pid] * 100 / 127;
+                }
+            }
+            audilune_hud_popup((al_row_lock_mask & 0xFFu) ? "LOCKED ENV" : *(AL_ENV_ROWS + row), show_v, "%");
         }
     } else if (ui.scr == UI_LFO) {
         static const uint32_t LFO_P[4 + 4] = {P_LD_PIT, P_LWAVE, P_LRATE, P_LD_FLT, P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
-        uint32_t pid = *(LFO_P + (row & 7u));
         if (k == 3u && row == 1u) {
             t->p[P_LWAVE] = (int16_t)((t->p[P_LWAVE] + (s > 0 ? 1 : 7)) % 8);
             audilune_hud_popup(*(AL_LFO_ROWS + row), t->p[P_LWAVE] + 1, "");
         } else {
-            t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
-            audilune_hud_popup(*(AL_LFO_ROWS + row), t->p[pid] * 100 / 127, "%");
-
+            uint32_t mask = (k == 2u && (al_row_lock_mask & 0x7Fu)) ? (al_row_lock_mask & 0x7Fu) : (1u << row);
+            uint32_t ri;
+            for (ri = 0u; ri < 7u; ri++) {
+                if ((mask >> ri) & 1u) {
+                    uint32_t pid = *(LFO_P + ri);
+                    t->p[pid] = (int16_t)clamp(t->p[pid] + s * (k == 2u ? 3 : 1), 0, 127);
+                }
+            }
+            audilune_hud_popup((k == 2u && (al_row_lock_mask & 0x7Fu)) ? "LOCKED LFO" : *(AL_LFO_ROWS + row), t->p[*(LFO_P + (row & 7u))] * 100 / 127, "%");
         }
     } else if (ui.scr == UI_EDIT) {
 
         enum { CLIP_STEPS = 32u };
-
 
         static uint8_t clip_drum;
         static int16_t clip_len;
