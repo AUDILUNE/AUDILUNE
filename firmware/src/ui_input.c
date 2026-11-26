@@ -1322,7 +1322,6 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
     }
     {
         static uint8_t sel_on, sel_disarmed, punch_on;
-
         static uint32_t sel_t0;
         uint32_t scl_b = 1u << panel.btn[B_SCL], scl_down = (fm1_in.buttons & scl_b) != 0u;
         if (scl_down && !sel_on) {
@@ -1333,12 +1332,34 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
                 ui.force = 1;
             }
         }
-        if (scl_down && sel_on && !sel_disarmed && now_ms - sel_t0 >= 1000u) {
+        if (scl_down && sel_on && !sel_disarmed && now_ms - sel_t0 >= 700u) {
             sel_disarmed = 1;
             if (audilune_timer_alert) {
                 audilune_timer_alert = 0;
                 ui.session_timer = 0;
                 ui_message("TIMER DISARMED");
+                ui.force = 1;
+            } else if (!ui.home && (ui.scr == UI_FX || ui.scr == UI_ENV || ui.scr == UI_LFO)) {
+                uint32_t rows = audilune_page_rows(ui.scr), r;
+                uint16_t mask = al_row_lock_mask ? al_row_lock_mask : (uint16_t)(1u << (ui.list_sel % rows));
+                static const uint32_t LFO_RST[4 + 4] = {P_LD_PIT, P_LWAVE, P_LRATE, P_LD_FLT, P_LWAVE, P_LRATE, P_LD_PIT, P_LD_FLT};
+                for (r = 0u; r < rows; r++) {
+                    if (!((mask >> r) & 1u)) continue;
+                    if (ui.scr == UI_FX) {
+                        al_fx_val[r] = 0u; al_fx_sub[r] = 0u;
+                        if (r == 10u) song.g[G_DUST] = 0;
+                        else audilune_fx_apply(TSEL, r, 0u, 0u);
+                    } else if (ui.scr == UI_ENV) {
+                        if (r == 1u) TSEL->p[P_TFLT] = 0;
+                        else if (r >= 2u && r <= 5u) TSEL->p[P_ATK + (r - 2u)] = 0;
+                        else if (r == 6u) TSEL->p[P_LD_FLT] = 0;
+                        else if (r == 7u) TSEL->p[P_DIST] = 0;
+                    } else {
+                        TSEL->p[LFO_RST[r & 7u]] = (r == 2u || r == 5u) ? 32 : 0;
+                    }
+                }
+                al_sel_hold_eat = 1u;
+                ui_message("ROW RESET: 0%");
                 ui.force = 1;
             }
         }
