@@ -904,7 +904,10 @@ UI_SMALL static void layer_tap(uint32_t layer)
         audilune_toggle_scr(UI_ARP, FAM_ARP, "ARP");
         break;
     case LY_SCALE:
-
+        if (al_sel_hold_eat) {
+            al_sel_hold_eat = 0u;
+            break;
+        }
         if (rec_hud_pick) {
             rec_hud_pick = 0;
             if (rec_hud_mode == 2u || rec_hud_mode == 3u) {
@@ -918,37 +921,15 @@ UI_SMALL static void layer_tap(uint32_t layer)
             ui.force = 1;
             break;
         }
-        if (ui.scr == UI_ALGO) {
-            extern uint8_t audilune_vox_genre[];
-            uint8_t row = ui.list_sel;
-            if (row < AUDILUNE_GENRE_COUNT) {
-                TSEL->synth_mode = 1;
-                ui.algo_genre[song.sel] = row;
-                audilune_vox_genre[song.sel % NTRK] = row;
-                audilune_genre_idx = row;
-                audilune_hud_text("GENRE", AUDILUNE_GENRE_NAMES[row]);
-            } else if (row < AUDILUNE_GENRE_COUNT + DRUM_KITS) {
-                uint8_t kidx = (uint8_t)(row - AUDILUNE_GENRE_COUNT);
-                TSEL->synth_mode = 0;
-                TDRUM->p[P_E0] = (int16_t)kidx;
-                audilune_hud_text("DRUM KIT", DRUM_KIT_NAMES[kidx]);
-            }
+        if (!ui.home && ui.scr == UI_ALGO) {
+            uint8_t row = ui.list_sel % 7u;
+            if (row == 0u) audilune_hud_text("GENRE", *(AUDILUNE_GENRE_NAMES + (ui.algo_genre[song.sel] % 6u)));
+            else if (row == 1u) audilune_hud_text("SYNTH", "ENGINE SET");
+            else if (row == 2u) { TSEL->synth_mode = 0; audilune_hud_text("DRUM KIT", *(DRUM_KIT_NAMES + (TSEL->p[P_E0] & 31))); }
+            else if (row == 3u) audilune_hud_text("VOCAL", "PHRASE SET");
+            else audilune_hud_popup(*(AL_ALGO_ROWS + row), (int32_t)ui.save_vault + 1, "");
             go_home();
-        } else if (ui.scr == UI_SETUP) {
-            if (ui.list_sel == 0u) {
-
-                go_home();
-                if (ui.session_mode > 0u) {
-                    audilune_infinite_on = 1u;
-
-                    if (!song.playing)
-                        transport_req = 1;
-                    ui_message("GENERATIVE LIVE");
-                } else {
-                    ui_message("STUDIO LIVE");
-                }
-            }
-        } else if (ui.scr == UI_SEQ) {
+        } else if (!ui.home && ui.scr == UI_SEQ) {
             if (al_seq_ovw) {
                 track_t *ot = &trk[al_seq_ovw_trk < NTRK ? al_seq_ovw_trk : song.sel];
                 uint32_t st = al_seq_ovw_step & 127u;
@@ -960,6 +941,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 } else if (step_on(&ot->step[st])) {
                     memset(&ot->step[st], 0, sizeof ot->step[st]);
                 } else {
+
                     memset(&ot->step[st], 0, sizeof ot->step[st]);
                     ot->step[st].note[0] = last_note ? last_note : 60u;
                     ot->step[st].n = 1; ot->step[st].vel = 100; ot->step[st].time = ST_NOTE; ot->seq_active = 1;
