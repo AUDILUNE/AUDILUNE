@@ -1058,6 +1058,10 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     return 0u;
 }
 
+extern uint8_t al_layer_eng, al_layer_ready;
+extern int8_t al_layer_e[4 + 4];
+static uint32_t base_at(uint32_t n, uint32_t *k);
+
 UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, uint8_t val)
 {
     uint32_t rec_on = song.playing && ((song.rec >> song.sel) & 1u);
@@ -1067,6 +1071,22 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     if (row == 11u) {
         al_layer_preset = sub;
         al_layer_mix = val;
+        if (sub > 0u) {
+            uint32_t k = 0u, e = base_at((uint32_t)(sub - 1u), &k), j;
+            const engine_t *ep = ENGINES[e % NENGINES];
+            al_layer_eng = (uint8_t)(e % NENGINES);
+            if (ep->npresets) {
+                const preset_t *pr = &ep->presets[k % ep->npresets];
+                for (j = 0u; j < 8u; j++)
+                    al_layer_e[j] = pr->e[j];
+            } else {
+                for (j = 0u; j < 8u; j++)
+                    al_layer_e[j] = (int8_t)ep->edit[j].def;
+            }
+            al_layer_ready = 1u;
+        } else {
+            al_layer_ready = 0u;
+        }
         return;
     }
     if (row == 0u || row == 2u || row == 3u) {
@@ -1083,6 +1103,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
         uint32_t ti, si, nj, len = trk_len(t);
         if (sub < 4u) {
             int32_t st = clamp(((int32_t)val - 55) * 24 / 55, -24, 24);
+
             int32_t delta = st - (int32_t)last_st;
             last_st = (int8_t)st;
             if (has_step && !is_drum(t)) {
