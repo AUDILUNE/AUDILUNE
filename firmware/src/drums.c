@@ -346,14 +346,15 @@ static void drum_on(uint32_t note, uint32_t vel)
         }
         if (zid < 0)
             return;                                 /* (an empty slot, or no sound on this lane) */
-    } else if (kit >= DRUM_SAMPLED) {               /* synthesised kit */
-        drum_synth_on(note, vel, kit, DS_KITS[kit - DRUM_SAMPLED].s, DS_KITS[kit - DRUM_SAMPLED].crush, 1);
+    } else {                                        /* all 32 synthesised kits (DRUM 01..32) */
+        drum_synth_on(note, vel, kit, DS_KITS[kit % DS_NKITS].s, DS_KITS[kit % DS_NKITS].crush, 1);
         return;
     }
     if (zid < 0) {                                  /* the GM sample kit */
         if (si < 0)
             return;
         set = &SMP_SETS[si];
+
         for (i = 0; i < set->nz; i++)
             if (note >= SMP_ZONES[set->z0 + i].lo && note <= SMP_ZONES[set->z0 + i].hi)
                 zi = set->z0 + i;
