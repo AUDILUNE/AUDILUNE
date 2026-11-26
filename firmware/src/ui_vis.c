@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* AUDILUNE Parameter-Locked Generative World & Entity Engine (Full-Screen Visualizer).
- * Cycles 5 modes: 1 LIVING WORLD, 2 OSCILLOSCOPE, 3 SPECTRUM BARS, 4 MOON LOOP, 5 STARFIELD CASCADE. */
-#define VIS_N 5u
-static const char *const VIS_NAME[ 3 + 2 ] = {"LIVING WORLD", "OSCILLOSCOPE", "SPECTRUM BARS", "MOON LOOP", "STARFIELD CASCADE"};
+/* AUDILUNE High-Definition Volumetric Telemetry Visualizer (240x240 RGB565).
+ * 4 modes: 1 PHASE SCOPE, 2 HARMONIC WEB, 3 SPECTRUM ARC, 4 STAGE VECTOR. */
+#define VIS_N 4u
+static const char *const VIS_NAME[ 2 + 2 ] = {"PHASE SCOPE", "HARMONIC WEB", "SPECTRUM ARC", "STAGE VECTOR"};
 
 #define VIS_FFT 512u
 #define VIS_STARS 48u
@@ -15,21 +15,17 @@ _Static_assert(sizeof main_scratch.vis[ 0 ] == 512u * sizeof(int16_t), "scratch 
 static struct {
     int32_t scale, peak;
     int16_t bar[ 16 + 16 ], cap[ 16 + 16 ], capv[ 16 + 16 ];
-    int16_t lvl[ 3 + 2 ];
-    uint8_t kick;
+    int16_t lvl[ 3 + 3 ], trk_peak[ 3 + 3 ];
+    uint8_t kick, trk_focus, decay;
     uint32_t free_q8, last_ms, phase;
     int16_t sx[ 24 + 24 ], sy[ 24 + 24 ], sz[ 24 + 24 ];
-    int16_t mx[ 2 + 2 ];
-    int8_t mvx[ 2 + 2 ];
-    uint8_t mhop[ 2 + 2 ];
-    uint8_t world_seed;
     uint8_t stars_init;
 } vs;
 
 static const uint8_t VIS_EDGE[ 17 + 16 ] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 25, 29, 35,
                                             41, 49, 58, 69, 82, 98, 116, 138, 164, 195, 232};
 
-static int vis_shown(void) { return vis_on && !ui.home && !ui.menu && cur_page()->scope == SC_TRK; }
+static int vis_shown(void) { return vis_on && !ui.home && !ui.menu && (ui.scr == UI_VIS || cur_page()->scope == SC_TRK); }
 static void vis_open(void)
 {
     vis_on = 1;
@@ -58,6 +54,7 @@ static void vis_ellipse(int32_t cx, int32_t cy, int32_t rx, int32_t ry, uint16_t
         int32_t w = 0;
         while (w <= rx && (w * w) * (ry * ry) + (y * y) * (rx * rx) <= (rx * rx) * (ry * ry))
             w++;
+
         if (w)
             cv_rect(cx - w + 1, cy + y, 2 * w - 1, 1, c);
     }
