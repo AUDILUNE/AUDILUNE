@@ -551,13 +551,10 @@ static void strum_cancel(const track_t *t, uint32_t note, int all)
 static void trk_note_off(track_t *t, uint32_t note)
 {
     uint32_t i, k = 0, mode = smart_voice_mode(t);
-    if (t == TSEL && al_layer_ready)
-        trk_note_off(&al_layer_trk, note);
     if (is_drum(t))
 
         return;                                         /* one-shots */
-    if (t != &al_layer_trk)
-        strum_cancel(t, note, 0);
+    strum_cancel(t, note, 0);
     for (i = 0; i < t->xp_n; i++)                       /* not sounding yet (engine switch): forget it */
         if (t->xp_note[i] != note) {
             t->xp_note[k] = t->xp_note[i];
@@ -596,10 +593,7 @@ static void trk_note_off(track_t *t, uint32_t note)
 static void trk_all_off(track_t *t)
 {
     uint32_t i;
-    if (t == TSEL && al_layer_ready)
-        trk_all_off(&al_layer_trk);
-    if (t != &al_layer_trk)
-        strum_cancel(t, 0, 1);
+    strum_cancel(t, 0, 1);
     for (i = 0; i < NVOICE; i++) {
         t->v[i].gate = 0;
         t->v[i].stage = t->v[i].active ? 3 : 0;
