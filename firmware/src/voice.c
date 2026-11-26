@@ -94,7 +94,8 @@ static inline uint32_t smart_voice_mode(const track_t *t)
 static uint32_t trk_nvoice(const track_t *t)
 {
     uint32_t c = ENGINES[t->engine] == &ENG_PHYS ? phys_poly(t) : ENGINES[t->engine]->poly;   /* (PHYS: by MODEL) */
-    return c && c < NPOLY ? c : NPOLY;
+    uint32_t lim = (t == TSEL && al_layer_ready && al_layer_preset > 0u && al_layer_mix > 0u) ? 4u : NPOLY;
+    return c && c < lim ? c : lim;
 }
 
 /* ------------------------------------------------- the shared voice budget --- */
