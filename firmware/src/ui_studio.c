@@ -1035,9 +1035,10 @@ static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_ch
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
 static uint8_t audilune_theme_idx, al_arp_mode[3 + 3], al_clip_ok;
+uint8_t al_layer_preset, al_layer_mix;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
-    if (scr == UI_FX) return 11u;
+    if (scr == UI_FX) return 12u;
     if (scr == UI_PUNCH) return 16u;
 
     if (scr == UI_ENV) return 8u;
@@ -1061,6 +1062,11 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     uint32_t step = t->seq_idx % trk_len(t);
     int32_t pid = -1;
 
+    if (row == 11u) {
+        al_layer_preset = sub;
+        al_layer_mix = val;
+        return;
+    }
     if (row == 0u || row == 2u || row == 3u) {
 
 
@@ -1083,6 +1089,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
                     if (((ui.sel_step_mask[si >> 5] >> (si & 31u)) & 1u) && step_on(&t->step[si]))
                         for (nj = 0; nj < t->step[si].n && nj < 4u; nj++)
                             t->step[si].note[nj] = (uint8_t)clamp((int32_t)t->step[si].note[nj] + delta, 0, 127);
+
             } else {
                 song.g[G_TUNE] = (int16_t)st;
                 for (ti = 0; ti < NTRK; ti++)
