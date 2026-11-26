@@ -32,5 +32,5 @@ jobs:
       - name: Upload Firmware Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: AUDILUNE-1.0.fwsc
+          name: AUDILUNE-v1.0.fwsc
           path: build/*.fwsc
