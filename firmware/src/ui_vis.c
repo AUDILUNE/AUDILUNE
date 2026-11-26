@@ -497,11 +497,10 @@ static void vis_draw(void)
         cv_begin(240, 120, C_BLACK);
         cv_oy = -(int32_t)(pass * 120u);
         switch (vis_style % VIS_N) {
-        case 0: vis_living_world(); break;
-        case 1: vis_scope(); break;
-        case 2: vis_spectrum(); break;
-        case 3: vis_moon_loop(); break;
-        default: vis_starfield(); break;
+        case 0: vis_phase_scope(); break;
+        case 1: vis_harmonic_web(); break;
+        case 2: vis_spectrum_arc(); break;
+        default: vis_stage_vector(); break;
         }
         if (!pass && (vis_name_t || ui.msg_t)) {
             char n[ 4 + 4 ];
@@ -510,7 +509,7 @@ static void vis_draw(void)
             cv_text(120 - text_w(&FONT_S, s) / 2, 2, &FONT_S, s, C_WHITE);
             if (!ui.msg_t) {
                 fmt_int(n, (int32_t)(vis_style % VIS_N) + 1);
-                str_cpy(n + str_len(n), "/5", 4);
+                str_cpy(n + str_len(n), "/4", 4);
                 cv_text(4, 2, &FONT_S, n, C_DIM);
             }
         }
@@ -523,21 +522,9 @@ static void vis_draw(void)
 
 static void vis_select(int32_t s)
 {
-    if ((vis_style % VIS_N) == 0u && s > 0 && vs.world_seed < 2u) {
-        vs.world_seed++;
-        vis_name_t = 20;
-        ui.force = 1;
-        return;
-    }
-    if ((vis_style % VIS_N) == 0u && s < 0 && vs.world_seed > 0u) {
-        vs.world_seed--;
-        vis_name_t = 20;
-        ui.force = 1;
-        return;
-    }
-    vs.world_seed = 0u;
     vis_style = (uint8_t)((vis_style + (s > 0 ? 1u : VIS_N - 1u)) % VIS_N);
     vis_name_t = 30;
+
     ui.force = 1;
     settings_later = 1;
 }
