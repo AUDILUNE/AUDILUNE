@@ -989,22 +989,32 @@ UI_SMALL static void layer_tap(uint32_t layer)
             audilune_landscape_apply();
             ui_message((al_land_on & bit) ? "LAYER: ON" : "LAYER: MUTE");
             if (0) {
-
             }
-        } else if (ui.scr == UI_CHOP_WAVE) {
+        } else if (!ui.home && ui.scr == UI_CHOP_WAVE) {
+            ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 3u);
+            ui_message(ui.chop_trim == 0u ? "TRIM: WHOLE" : ui.chop_trim == 1u ? "TRIM: START [" : "TRIM: END ]");
+        } else if (!ui.home && ui.scr == UI_CHOP_SRC) {
             if (ui.list_sel >= 2u) {
-                ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 4u);
-                ui_message(ui.chop_trim == 1u ? "GRAB WHOLE" : ui.chop_trim == 2u ? "GRAB START [" : ui.chop_trim == 3u ? "GRAB END ]" : "DROPPED");
-
+                ui.chop_trim = (uint8_t)((ui.chop_trim + 1u) % 3u);
+                ui_message(ui.chop_trim == 0u ? "CHOP: WHOLE" : ui.chop_trim == 1u ? "CHOP: START [" : "CHOP: END ]");
+            } else {
+                ui_message("SOURCE LOCKED");
             }
-        } else if (ui.scr == UI_CHOP_SRC) {
-            ui.scr = UI_CHOP_WAVE;
-            ui.list_sel = 0;
-            ui.chop_sel = 0;
-            ui.chop_trim = 0;
-            ui_message("CHOP SHOP");
+        } else if (!ui.home && ui.scr == UI_GLO) {
+            uint8_t row = ui.list_sel % 10u;
+            if (row == 0u) {
+                if (ui.setup_vault == 0u) { project_new(); ui_message("NEW BLANK SONG"); }
+                else { project_load((uint32_t)(ui.setup_vault - 1u)); ui_message("SONG LOADED"); }
+                go_home();
+            } else {
+                audilune_hud_popup(*(AL_GLO_ROWS + row), (int32_t)ui.save_vault + 1, "");
+            }
+        } else if (!ui.home && ui.scr == UI_SAVE) {
+            uint8_t row = ui.list_sel % 5u;
+            if (row == 4u) project_save((uint32_t)ui.save_vault);
+            audilune_hud_popup(*(AL_SAVE_ROWS + row), (int32_t)ui.save_vault + 1, "");
+            go_home();
         } else {
-
             ui.sel_trk_mask ^= (uint8_t)(1u << (song.sel % NTRK));
             ui_message((ui.sel_trk_mask & (1u << (song.sel % NTRK))) ? "SEL: LOCKED" : "SEL: UNLOCKED");
         }
@@ -1014,6 +1024,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
         audilune_toggle_scr(UI_GLO, FAM_GLO, "GLOBAL");
         break;
     case LY_SONG:
+
         audilune_toggle_scr(UI_SAVE, FAM_SAVE, "SAVE VAULT");
         break;
     default:
