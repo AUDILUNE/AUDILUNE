@@ -238,61 +238,69 @@ static void vis_update(void)
             } else {
                 vs.capv[i] = (int16_t)(vs.capv[i] + 4);
                 vs.cap[i] = (int16_t)(vs.cap[i] > vs.capv[i] ? vs.cap[i] - vs.capv[i] : 0);
-
-            }
-        }
-    } else if ((vis_style % 4u) == 3u) {
-        int32_t spd = 4 + vs.lvl[ 4 ] / 65 + vs.kick / 28;
-        if (!vs.stars_init)
-            vis_stars_reset();
-        for (i = 0; i < 48u; i++) {
-            vs.sz[i] = (int16_t)(vs.sz[i] - spd);
-            if (vs.sz[i] <= 4) {
-                vs.sz[i] = 230;
-                vs.sx[i] = (int16_t)(((int32_t)((i * 73u + vs.phase) & 255u) - 128) * 9 / 10);
-                vs.sy[i] = (int16_t)(((int32_t)((i * 137u + vs.phase * 3u) & 255u) - 128) * 9 / 10);
             }
         }
     }
 }
 
-/* Style 1: Oscilloscope */
-static void vis_scope(void)
+/* Mode 1: PHASE SCOPE (High-Definition Stereo Lissajous & Phosphor Trajectory) */
+static void vis_phase_scope(void)
 {
-    uint32_t i0 = 0, i;
-    int32_t py = 120;
-    for (i = 1; i + 240u < 512u; i++)
-        if (vis_l[i - 1u] < 0 && vis_l[i] >= 0) {
-            i0 = i;
-            break;
+    uint32_t i, i0 = 0;
+    int32_t sc = vs.scale ? vs.scale : 1600, px = 120, py = 120;
+    vis_circle(120, 120, 96, C_LINE);
+    vis_circle(120, 120, 64, C_LINE);
+    vis_circle(120, 120, 32, C_DIM);
+    cv_line(24, 120, 216, 120, C_LINE);
+    cv_line(120, 24, 120, 216, C_LINE);
+    cv_line(52, 52, 188, 188, C_DIM);
+    cv_line(188, 52, 52, 188, C_DIM);
+    for (i = 1; i + 256u < 512u; i++)
+        if (vis_l[i - 1u] < 0 && vis_l[i] >= 0) { i0 = i; break; }
+    for (i = 0; i < 256u; i += 2u) {
+        int32_t l = vis_l[i0 + i], r = vis_r[i0 + i];
+        int32_t x = clamp(120 + ((l - r) * 68) / sc, 10, 229);
+        int32_t y = clamp(120 - ((l + r) * 68) / sc, 10, 229);
+        if (i > 0u) {
+            if (i < 120u) cv_line(px, py, x, y, C_DIM);
+            else if (i < 210u) vis_glow_line(px, py, x, y, C_ACCENT, C_DIM);
+            else vis_glow_line(px, py, x, y, C_WHITE, C_HI);
         }
-    cv_rect(0, 120, 240, 1, C_LINE);
-    for (i = 0; i < 240u; i += 40u)
-        cv_rect((int32_t)i, 116, 1, 9, C_LINE);
-    for (i = 0; i < 240u; i++) {
-        int32_t y = 120 - vis_l[i0 + i] * 100 / (vs.scale ? vs.scale : 1);
-        y = clamp(y, 2, 237);
-        if (i) {
-            cv_line((int32_t)i - 1, py - 1, (int32_t)i, y - 1, C_DIM);
-            vis_thick((int32_t)i - 1, py, (int32_t)i, y, C_HI);
-        }
-        py = y;
+        px = x; py = y;
     }
+    vis_sphere(px, py, 3 + vs.peak / 320, -1, -1, 0);
 }
 
-/* Style 2: Spectrum Bars */
-static void vis_spectrum(void)
+/* Mode 2: HARMONIC WEB (Volumetric 3D Lunar Core & 6-Track Orbital Resonance) */
+static void vis_harmonic_web(void)
 {
-    uint32_t k;
-    for (k = 0; k < 32u; k++) {
-        int32_t x0 = 4 + (int32_t)k * 7, h = vs.bar[k] * 216 / 1000, y, cy = 234 - vs.cap[k] * 216 / 1000;
-        for (y = 234; y > 234 - h; y -= 4)
-            cv_rect(x0, y - 2, 5, 3, y < 90 ? C_WHITE : C_ACCENT);
-        cv_rect(x0, cy - 1, 5, 2, C_WHITE);
+    uint32_t bq = vis_beat_q8(), i, j;
+    int32_t core_r = 22 + vs.kick * 8 / 255 + vs.peak * 6 / 1000;
+    int32_t nx[ 3 + 3 ], ny[ 3 + 3 ];
+    vis_circle(120, 120, 56, C_LINE);
+    vis_circle(120, 120, 88 + vs.peak / 70, C_DIM);
+    for (i = 0; i < 6u; i++) {
+        uint32_t a = (bq + i * 170u + (vs.phase >> 1)) & 1023u;
+        int32_t rad = 54 + (int32_t)(i & 1u) * 28 + vs.lvl[i] * 24 / 1000;
+        nx[i] = 120 + ((icos(a) * rad) >> 15);
+        ny[i] = 120 + ((isin(a) * rad) >> 15);
+    }
+    for (i = 0; i < 6u; i++) {
+        if (vs.lvl[i] <= 30 && i != (uint32_t)song.sel) continue;
+        cv_line(120, 120, nx[i], ny[i], vs.lvl[i] > 400 ? C_ACCENT : C_DIM);
+        for (j = i + 1u; j < 6u; j++)
+            if (vs.lvl[j] > 60)
+                vis_glow_line(nx[i], ny[i], nx[j], ny[j], vs.lvl[i] + vs.lvl[j] > 900 ? C_HI : C_ACCENT, C_LINE);
+    }
+    vis_sphere(120, 120, core_r, -core_r / 3, -core_r / 3, 1);
+    for (i = 0; i < 6u; i++) {
+        int32_t nr = 4 + vs.lvl[i] * 7 / 1000;
+        vis_sphere(nx[i], ny[i], nr, -nr / 3, -nr / 3, 0);
     }
 }
 
 /* Style 3: Moon Loop (audio-reactive crescent moon + orbital phase rings) */
+
 static void vis_moon_loop(void)
 {
     uint32_t bq = vis_beat_q8(), i;
