@@ -1315,17 +1315,22 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_popup("WET/MIX", (int32_t)al_pad_z[p] * 110 / 127, "%");
         }
     } else if (ui.scr == UI_FX) {
-        static const uint8_t FX_CNT[6 + 6] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 16u};
-        uint32_t cnt = *(FX_CNT + (row % 12u));
+        static const uint8_t FX_CNT[6 + 7] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 16u, 8u};
+        static const char *const AL_STUT_NAMES[4 + 4] = {
+            "3+3+2 BREATHE", "5/16 POLYSTUT", "7/8 FRACTURE", "STUTTER & GASP",
+            "TRIPLET WEAVE", "ECHO SKIP", "GALLOP STUT", "SOLAR FLARE"
+        };
+        uint32_t cnt = *(FX_CNT + (row % 13u));
         if (k == 3u) {
             *(al_fx_sub + row) = (uint8_t)((*(al_fx_sub + row) + (s > 0 ? 1u : cnt - 1u)) % cnt);
             if (row == 1u && *(al_fx_sub + row) < 4u && *(al_fx_val + row) == 0u) *(al_fx_val + row) = 55u;
             audilune_fx_apply(t, row, *(al_fx_sub + row), *(al_fx_val + row));
-            audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
+            if (row == 12u) audilune_hud_text("STUTTER", *(AL_STUT_NAMES + (*(al_fx_sub + row) & 7u)));
+            else audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
         } else {
-            uint32_t mask = (al_row_lock_mask & 0x0FFFu) ? (al_row_lock_mask & 0x0FFFu) : (1u << row);
+            uint32_t mask = (al_row_lock_mask & 0x1FFFu) ? (al_row_lock_mask & 0x1FFFu) : (1u << row);
             uint32_t ri;
-            for (ri = 0u; ri < 12u; ri++) {
+            for (ri = 0u; ri < 13u; ri++) {
                 if ((mask >> ri) & 1u) {
                     int32_t nv = clamp((int32_t)(*(al_fx_val + ri)) + s * 4, 0, 110);
                     *(al_fx_val + ri) = (uint8_t)nv;
@@ -1333,7 +1338,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                     else audilune_fx_apply(t, ri, *(al_fx_sub + ri), (uint8_t)nv);
                 }
             }
-            audilune_hud_popup((al_row_lock_mask & 0x0FFFu) ? "LOCKED FX" : *(AL_FX_ROWS + row), (int32_t)(*(al_fx_val + row)), "%");
+            audilune_hud_popup((al_row_lock_mask & 0x1FFFu) ? "LOCKED FX" : *(AL_FX_ROWS + row), (int32_t)(*(al_fx_val + row)), "%");
         }
     } else if (ui.scr == UI_ENV) {
         static const uint8_t ENV_CNT[4 + 4] = {4u, 7u, 4u, 4u, 4u, 4u, 7u, 7u};
@@ -1343,6 +1348,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             *(al_env_sub + (row & 7u)) = (uint8_t)((*(al_env_sub + (row & 7u)) + (s > 0 ? 1u : cnt - 1u)) % cnt);
             audilune_hud_popup(*(AL_ENV_ROWS + row), (int32_t)(*(al_env_sub + (row & 7u)) + 1u), "");
         } else {
+
             uint32_t mask = (al_row_lock_mask & 0xFFu) ? (al_row_lock_mask & 0xFFu) : (1u << row);
             uint32_t ri;
             int32_t show_v = 0;
