@@ -141,8 +141,10 @@ UI_SMALL static void audilune_blank_studio_init(void)
     }
     ui.setup_vault = 0;
     ui.sel_trk_mask = 0;
-    ui.scr = UI_SETUP;
+    ui.scr = UI_LIVE;
+    ui.home = 1;
     ui.list_sel = 0;
+
     ui.list_top = 0;
     ui.force = 1;
 }
