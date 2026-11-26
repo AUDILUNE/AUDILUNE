@@ -57,9 +57,32 @@ static void vis_ellipse(int32_t cx, int32_t cy, int32_t rx, int32_t ry, uint16_t
         int32_t w = 0;
         while (w <= rx && (w * w) * (ry * ry) + (y * y) * (rx * rx) <= (rx * rx) * (ry * ry))
             w++;
-
         if (w)
             cv_rect(cx - w + 1, cy + y, 2 * w - 1, 1, c);
+    }
+}
+
+static void vis_sphere(int32_t cx, int32_t cy, int32_t r, int32_t lx, int32_t ly, int tex)
+{
+    int32_t x, y, r2 = r * r;
+    if (r < 1) return;
+    for (y = -r; y <= r; y++) {
+        for (x = -r; x <= r; x++) {
+            int32_t d2 = x * x + y * y;
+            if (d2 > r2) continue;
+            int32_t dx = x - lx, dy = y - ly;
+            int32_t ld2 = dx * dx + dy * dy;
+            int32_t lit = 1000 - clamp(ld2 * 850 / (r2 * 2 + 1), 0, 1000);
+            int32_t rim = 1000 - clamp(d2 * 550 / (r2 + 1), 0, 550);
+            int32_t b = (lit * rim) / 1000;
+            if (tex && r >= 8) {
+                uint32_t h = (uint32_t)((cx + x) * 73 + (cy + y) * 151);
+                int32_t grain = (int32_t)((h ^ (h >> 5)) & 31u) - 16;
+                b = clamp(b + grain * 5, 0, 1000);
+            }
+            uint16_t col = b > 820 ? C_WHITE : b > 600 ? C_HI : b > 380 ? C_ACCENT : b > 200 ? C_GRAY : b > 90 ? C_DIM : C_LINE;
+            cv_pset(cx + x, cy + y, col);
+        }
     }
 }
 
@@ -75,10 +98,11 @@ static void vis_circle(int32_t cx, int32_t cy, int32_t r, uint16_t c)
     }
 }
 
-static void vis_thick(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t c)
+static void vis_glow_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t core, uint16_t halo)
 {
-    cv_line(x0, y0, x1, y1, c);
-    cv_line(x0, y0 + 1, x1, y1 + 1, c);
+    cv_line(x0, y0 - 1, x1, y1 - 1, halo);
+    cv_line(x0, y0 + 1, x1, y1 + 1, halo);
+    cv_line(x0, y0, x1, y1, core);
 }
 
 static uint32_t vis_beat_q8(void)
@@ -93,6 +117,7 @@ static void vis_fft(void)
     uint32_t i, j = 0, bit, len;
     for (i = 0; i < 512u; i++) {
         int32_t w = (32768 - icos(i * 2u)) >> 1;
+
         vis_re[i] = (int16_t)((vis_l[i] * w) >> 15);
         vis_im[i] = 0;
     }
