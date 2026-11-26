@@ -57,7 +57,7 @@ typedef struct {
     int32_t half;                /* recording: the first sample of a pair */
     uint32_t half_n;             /* (samples recorded this step: odd = the second of a pair) */
     uint8_t idx;                 /* step 0..15 */
-    uint8_t bit;                 /* this step's pattern bit (latched at its start) */
+    uint8_t bit;                 /* this step's pattern state (0=open, 1=stut/close, 2=gap) */
     uint8_t rec_on;              /* recording this step */
 } sl_t;
 static sl_t sl[NTRK];
@@ -73,7 +73,25 @@ static void slicer_start(uint32_t pos)   /* seq_start: step 0 of every track, po
     }
 }
 
-static uint32_t sl_pattern(const track_t *t) { return SL_PAT[(uint32_t)(t->p[P_SLPAT] - 1) % SL_NPAT]; }
+/* 8 polyrhythmic stutter patterns (2 bits/step: 0=OPEN, 1=STUT, 2=GAP) */
+static uint32_t sl_step_state(const track_t *t, uint32_t idx)
+{
+    static const uint32_t AL_STUT_PAT[4 + 4] = {
+        0x24A12140u, /* 1. 3+3+2 BREATHE:  O O X . O O X . X X . . O X . . */
+        0x2A148285u, /* 2. 5/16 POLYSTUT:  X X O . . X X O . . X O X . . . */
+        0x28492849u, /* 3. 7/8 FRACTURE:   O X X . O . X . O X X . O . . . */
+        0x18802095u, /* 4. STUTTER & GASP: X X X X . . . O O O . . X X . O */
+        0x09184984u, /* 5. TRIPLET WEAVE:  O . X X . O X . X . . O O . X . */
+        0x18281488u, /* 6. ECHO SKIP:      O O . X . . X X O . . . X . X . */
+        0x0A852814u, /* 7. GALLOP STUT:    O X X O . . X X O X X . . . O . */
+        0x19082A01u  /* 8. SOLAR FLARE:    X . O O X X X . . . O X . X X . */
+    };
+    int32_t pat = t->p[P_SLPAT];
+    idx &= 15u;
+    if (pat >= 17)
+        return (AL_STUT_PAT[(uint32_t)(pat - 17) & 7u] >> (idx * 2u)) & 3u;
+    return ((SL_PAT[(uint32_t)(pat - 1) % SL_NPAT] >> idx) & 1u) ? 0u : 1u;
+}
 
 /* the step clock enters the next step */
 static void sl_enter(const track_t *t, sl_t *s)
@@ -84,17 +102,17 @@ static void sl_enter(const track_t *t, sl_t *s)
     s->base = BEAT_U / SL_DEN[(uint32_t)t->p[P_SLRATE] % 6u];
     sw = (uint32_t)clamp(t->p[P_SSWING] + song.g[G_SWING], 0, 100) * s->base / 200u;   /* as seq.c trk_grid */
     s->len = (s->idx & 1u) ? s->base - sw : s->base + sw;
-    s->bit = (uint8_t)((sl_pattern(t) >> s->idx) & 1u);
+    s->bit = (uint8_t)sl_step_state(t, s->idx);
     s->rp = 0;
     s->loop = 0;
     s->rec_on = 0;
     if (mode != SL_STUT) {
         s->rec = 0;                                 /* nothing old to repeat when STUT comes on */
-    } else if (s->bit) {
-        s->rec = 0;                                 /* a live step: record it */
+    } else if (s->bit == 0u) {
+        s->rec = 0;                                 /* an open step: play live and record it */
         s->rec_on = 1;
         s->half_n = 0;
-    } else if (s->rec >= 2u * SL_RAMP) {            /* a repeat: the last live step, looped */
+    } else if (s->bit == 1u && s->rec >= 2u * SL_RAMP) { /* a stutter step: loop the last open step */
         uint32_t l = s->base / (uint32_t)song.g[G_BPM];   /* (in samples) */
         while (l > 2u * SL_LEN)
             l >>= 1;                                /* (a long step: a half, a quarter .. of it) */
@@ -105,11 +123,11 @@ static void sl_enter(const track_t *t, sl_t *s)
 /* m samples of one step (no boundary inside); left: samples to the step end at the first */
 static void sl_seg(const track_t *t, sl_t *s, int16_t *buf, int32_t *b, uint32_t m, uint32_t left0)
 {
-    uint32_t mode = (uint32_t)t->p[P_SLCR], j, nbit = (sl_pattern(t) >> ((s->idx + 1u) & 15u)) & 1u;
+    uint32_t mode = (uint32_t)t->p[P_SLCR], j, nst = sl_step_state(t, (s->idx + 1u) & 15u);
     int32_t depth = t->p[P_SLDEPTH] * 258;          /* Q15, 0..32766 */
-    int32_t tc = mode == SL_GATE && !s->bit ? depth : 0;           /* gate closure of this step */
-    int32_t tn = mode == SL_GATE && !nbit ? depth : 0;             /* .. of the next one */
-    int32_t tw = mode == SL_STUT && s->loop ? depth : 0;           /* repeat level */
+    int32_t tc = ((mode == SL_GATE && s->bit != 0u) || (mode == SL_STUT && s->bit == 2u)) ? depth : 0;
+    int32_t tn = ((mode == SL_GATE && nst != 0u) || (mode == SL_STUT && nst == 2u)) ? depth : 0;
+    int32_t tw = (mode == SL_STUT && s->loop) ? depth : 0;
     for (j = 0; j < m; j++) {
         int32_t x = b[j], y, tg = tc;
         uint32_t left = left0 - j;                  /* samples to the step end, >= 1 */
@@ -118,6 +136,7 @@ static void sl_seg(const track_t *t, sl_t *s, int16_t *buf, int32_t *b, uint32_t
         s->gc += clamp(tg - s->gc, -SL_SLOPE, SL_SLOPE);
         s->w += clamp(tw - s->w, -SL_SLOPE, SL_SLOPE);
         y = s->gc ? x - mulq16(x, (uint32_t)s->gc << 1) : x;
+
         if (s->rec_on) {                            /* 2:1, the pair's mean; Q15 >> 2 (the mix's headroom) */
             if ((s->half_n++) & 1u) {
                 buf[s->rec] = (int16_t)clamp((s->half + x) >> 3, -32768, 32767);
