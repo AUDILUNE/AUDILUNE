@@ -286,14 +286,13 @@ static const preset_t NOISE_PRESETS[] = {
     {"DIAL SCAN", {NZ_LFSR, 28, 78, 114, 84, 32, 124, 54}, {12, 84, 118, 58}, 0, 0, FX(16, 18, 42, 62), XP(P_LD_FLT + 1, 74, P_LRATE + 1, 38)},
     {"TV STATIC", {NZ_ANLG, 14, 104, 24, 0, 44, 18, 22}, {4, 76, 127, 34}, 0, 0, FX(18, 12, 10, 32)},
     {"GHOST BOX", {NZ_LFSR, 42, 72, 108, 96, 64, 118, 44}, {6, 68, 96, 54}, 0, 0, FX(22, 26, 56, 78), XP(P_LD_FLT + 1, 64, P_LRATE + 1, 66)},
-    {"CLOCKWORK", {NZ_DUST, 24, 94, 96, 64, 38, 8, 16}, {0, 36, 0, 28}, 0, 0, FX(8, 0, 28, 52), XP(P_LD_AMP + 1, 72, P_LRATE + 1, 76)},
-    {"STEAM VALVE", {NZ_ANLG, 32, 98, 84, 48, 28, 62, 0}, {4, 72, 24, 68}, 0, 0, FX(14, 16, 22, 74)},
-    {"DISTANT TRAIN", {NZ_ANLG, 118, 42, 64, 24, 34, 48, 0}, {34, 86, 114, 82}, 0, 0, FX(12, 22, 34, 86), XP(P_LD_AMP + 1, 56, P_LRATE + 1, 52)},
+    {"FOOTSTEPS", {NZ_ANLG, 114, 38, 42, 32, 18, 16, 0}, {4, 48, 86, 36}, 0, 0, FX(6, 10, 24, 62), XP(P_LD_AMP + 1, 96, P_LRATE + 1, 54)},
+    {"GRAVEL WALK", {NZ_DUST, 42, 86, 58, 48, 116, 28, 0}, {6, 54, 92, 42}, 0, 0, FX(8, 12, 18, 54), XP(P_LD_AMP + 1, 94, P_LRATE + 1, 54)},
+    {"HEARTBEAT", {NZ_ANLG, 127, 22, 78, 0, 0, 6, 0}, {2, 42, 74, 32}, 0, 1, FX(12, 0, 14, 48), XP(P_LD_AMP + 1, 118, P_LRATE + 1, 46)},
     {"MOREPORK", {NZ_META, 62, 68, 124, 127, 16, 64, 12}, {16, 68, 52, 78}, 0, 1, FX(0, 22, 48, 98), XP(P_GLIDE + 1, 74, P_LD_PIT + 1, 4, P_LRATE + 1, 54)},
     {"TUI SONG", {NZ_META, 16, 98, 124, 127, 32, 96, 36}, {6, 54, 38, 66}, 0, 1, FX(0, 28, 38, 94), XP(P_GLIDE + 1, 82)},
     {"BELLBIRD", {NZ_META, 10, 108, 126, 127, 0, 68, 48}, {4, 62, 28, 76}, 0, 1, FX(0, 34, 44, 98), XP(P_GLIDE + 1, 58)},
 };
-
 
 
 /* (after Clipper 1.2) UNISON (voice.c unison_spread): the phase moved by r (Q32) and the noise from its own
