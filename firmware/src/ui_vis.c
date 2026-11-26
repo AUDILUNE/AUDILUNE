@@ -19,7 +19,10 @@ static struct {
     uint8_t kick, trk_focus, decay;
     uint32_t free_q8, last_ms, phase;
     int16_t sx[ 24 + 24 ], sy[ 24 + 24 ], sz[ 24 + 24 ];
-    uint8_t stars_init;
+    int16_t mx[ 2 + 2 ];
+    int8_t mvx[ 2 + 2 ];
+    uint8_t mhop[ 2 + 2 ];
+    uint8_t world_seed, stars_init;
 } vs;
 
 static const uint8_t VIS_EDGE[ 17 + 16 ] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 25, 29, 35,
