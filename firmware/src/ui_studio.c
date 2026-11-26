@@ -365,7 +365,7 @@ UI_SMALL static void studio_tracks_draw(void)
     static uint32_t head, strip, rows[6], footer;
     static const char *const GEN_SHORT[6] = {"AMBIENT", "DOWNTMP", "GLITCH", "PUNCHY", "EXPERIM", "INDUST"};
     uint32_t i, j, disp_trks = NTRK < 6u ? 6u : NTRK;
-    int32_t row_h = (int32_t)(140u / disp_trks);
+    int32_t row_h = (int32_t)(152u / disp_trks);
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     audilune_in_arp_page = 0u;
     te_header("HOME", C_WHITE, &head, sect);
@@ -379,7 +379,7 @@ UI_SMALL static void studio_tracks_draw(void)
 
         uint32_t locked = (ui.sel_trk_mask >> i) & 1u;
         uint32_t len = has_trk ? (uint32_t)clamp(t->p[P_SLEN], 1, NSTEP) : 16u;
-        uint32_t level = !has_trk ? 0u : (!t->synth_mode && i == TRK_DRUM ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
+        uint32_t level = !has_trk ? 0u : (!t->synth_mode ? (uint32_t)song.g[G_DRLVL] : (uint32_t)t->p[P_LEVEL]);
         uint32_t silent = !has_trk || trk_silent(t) || !level;
         uint32_t pos = has_trk ? (t->seq_idx % len) : 0u;
         uint32_t rec = has_trk ? ((song.rec >> i) & 1u) : 0u;
@@ -391,7 +391,7 @@ UI_SMALL static void studio_tracks_draw(void)
             str_cpy(b, "OPEN", sizeof b);
             str_cpy(e, "AMBIENT", sizeof e);
         } else if (!t->synth_mode) {
-            uint32_t kidx = (uint32_t)clamp((int32_t)drum_kit(), 0, 31);
+            uint32_t kidx = (uint32_t)clamp(t->p[P_E0], 0, 31);
             b[0] = 0;
             str_cpy(e, "DRUM KIT: ", sizeof e);
             str_cpy(e + 10, DRUM_KIT_NAMES[kidx], sizeof e - 10);
@@ -403,6 +403,7 @@ UI_SMALL static void studio_tracks_draw(void)
 
         h = studio_hash(selected + locked * 31u + gidx * 17u + level * 7u + silent * 997u + rec * 1999u +
                         solo * 4999u + len * 37u + song.playing * 7u + pos * 71u + bank * 13u + has_trk * 3u, b[0] ? b : e);
+
 
         if (has_trk)
             for (j = 0; j < len; j++) h = h * 31u + (uint32_t)trk_step_on(t, j);
