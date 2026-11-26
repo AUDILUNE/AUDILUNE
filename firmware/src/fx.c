@@ -1298,10 +1298,13 @@ static void mix_block(int32_t *out, uint32_t n)
     {
         static int32_t ol[CTL], orr[CTL], ul[CTL], ur[CTL], side_lp;
         static uint8_t usb_was;
+        int32_t wide_ovf = al_layer_mix > 100u ? (int32_t)(al_layer_mix - 100u) : 0;
         for (i = 0; i < n; i++) {
             int32_t mid = (mix_l[i] + mix_r[i]) >> 1, side = (mix_l[i] - mix_r[i]) >> 1, m;
             side_lp += (side - side_lp) >> 6;
             side -= side_lp;
+            if (wide_ovf)
+                side += (side * wide_ovf) >> 5;
             mix_l[i] = mid + side;
             mix_r[i] = mid - side;
             m = m0 + (((m1 - m0) * (int32_t)i) >> CTL_LOG2);
