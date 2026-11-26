@@ -1640,9 +1640,11 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
                 "PHANTOM", "ARCHIVIST", "CYBERNET", "ORACLE"
             };
             extern uint8_t al_vox_char, al_vox_phrase;
+            uint32_t ei;
+            for (ei = 0u; ei < NENGINES && ENGINES[ei] != &ENG_FORMANT; ei++) ;
             t->synth_mode = 1;
-            t->engine = ENGI_FORMANT;
-            t->eng_req = ENGI_FORMANT;
+            t->engine = (uint8_t)(ei % NENGINES);
+            t->eng_req = (uint8_t)(ei % NENGINES);
             if (t->preset < 7u) t->preset = 7u;
             if (k == 3u) {
                 al_vox_char = (uint8_t)((al_vox_char + (s > 0 ? 1u : 7u)) & 7u);
@@ -1658,6 +1660,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         }
 
     } else if (ui.scr == UI_SETUP) {
+
         uint32_t ti;
         if (row == 1u) {
 
