@@ -12,7 +12,8 @@
  * declicks it); one of the part's own is restarted in place. Extra UNISON
  * voices only start when there is room. The drum track has its own voices (drums.c). */
 static uint32_t vage;                                   /* voice ages: one clock for every part */
-static uint8_t al_layer_eng, al_layer_pi, al_layer_ready;
+uint8_t al_layer_eng, al_layer_ready;
+int8_t al_layer_e[4 + 4];
 extern uint8_t al_layer_preset, al_layer_mix;
 /* engines that play recorded material (a position, not a phase): no phases kept or spread */
 #if FELUCCA_SLICE
