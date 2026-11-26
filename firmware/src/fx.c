@@ -676,7 +676,7 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
     {
         int32_t lvl = expr_gain(LEVEL_Q12[t->p[P_LEVEL] ? clamp(t->p[P_LEVEL] + t->p[P_ED_FX], 1, 127) : 0], (uint32_t)(t - trk)), pan = t->p[P_PAN];
         int32_t gl = 4096 - (pan > 0 ? pan * 64 : 0), gr = 4096 + (pan < 0 ? pan * 64 : 0);
-        int32_t c = t->p[P_CHOR] * 258, d = send_thr(t->p[P_DLY] * 258, thr_dly), r = send_thr(t->p[P_REV] * 258, thr_rev);
+        int32_t c = clamp(t->p[P_CHOR] * 258, 0, 32767), d = send_thr(clamp(t->p[P_DLY] * 258, 0, 32767), thr_dly), r = send_thr(clamp(t->p[P_REV] * 258, 0, 32767), thr_rev);
         int32_t pk = t->peak;
         int32_t xmax = c > d ? c : d;
         int32_t ga = mulq15(g0, duck.g0), gb = mulq15(g1, duck.g1);
@@ -693,6 +693,7 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
             djf_t *f = &tflt[(uint32_t)(t - trk) % NTRK];
             if (djf_block(f, t->p[P_TFLT], &fc, tflt_reso()))
                 tflt_run(f, &fc, b, n, 0);
+
         }
         int32_t lvl0, dl, gl0, dgl, gr0, dgr;
         if (!t->mix_on)
