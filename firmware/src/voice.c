@@ -898,7 +898,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         }
         if (v->penv)                                    /* the pitch envelope: ~40 ms */
             v->penv = (int16_t)(v->penv - ((v->penv * 590 + 32767) >> 15));
-        if (!env && !m.amp0 && v->stage == 2 && !eng_sampled(e))
+        if (!env && !m.amp0 && v->stage == 2 && !eng_sampled(ve))
             continue;                                   /* held at a silent sustain (SUS 0): nothing to render */
         {   /* the pitch in 1/4096 semitone: glide, LFO, the pitch envelope; the fraction goes into the increment */
             int32_t q = (v->pitch_cur << 8) + v->pitch_frac + ((lfo * p[P_LD_PIT] * 3) >> 7) +
@@ -915,8 +915,34 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         if (v->vel > 110)                               /* accent opens the filter with the env */
             m.cutoff += (m.envq15 * 24) >> 7;
         m.shape = (64 << 8) + ((lfo * p[P_LD_SHP]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7);
-        e->render(t, v, out, n, &m);
+        if (is_lyr_v) {
+            uint8_t se = t->engine;
+            int16_t sp[4 + 4];
+            uint32_t j;
+            for (j = 0; j < 8u; j++) { sp[j] = t->p[P_E0 + j]; t->p[P_E0 + j] = al_layer_e[j]; }
+            t->engine = al_layer_eng % NENGINES;
+            ve->render(t, v, b2, n, &m);
+            t->engine = se;
+            for (j = 0; j < 8u; j++) t->p[P_E0 + j] = sp[j];
+        } else {
+            ve->render(t, v, out, n, &m);
+        }
         nr++;
+    }
+    if (lyr) {
+        int32_t mx = (int32_t)al_layer_mix;
+        for (k = 0; k < n; k++) {
+            int32_t a = out[k], b = b2[k], s;
+            if (mx <= 50)
+                s = a + (b * mx) / 50;
+            else if (mx <= 100)
+                s = (a * (100 - mx)) / 50 + b;
+            else {
+                int32_t ovf = mx - 100, mag = (a + b) < 0 ? -(a + b) : (a + b);
+                s = a + b + (((mag >> 5) * ovf) >> 4);
+            }
+            out[k] = clamp(s, -131072, 131071);
+        }
     }
     if (fade) {
         for (i = 0; i < 8u; i++)
@@ -925,3 +951,4 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     }
     return nr;
 }
+
