@@ -33,11 +33,16 @@ static const char *const DRUM_KIT_STYLES[DRUM_KITS] = {"STUDIO", "SOFT", "PUNCHY
                                                        "YOUR KIT", "YOUR KIT", "YOUR KIT", "YOUR KIT", "YOUR KIT", "YOUR KIT", "BIG KIT",
                                                        "YOUR SYNTH", "YOUR SYNTH", "YOUR SYNTH", "YOUR SYNTH"};
 _Static_assert(sizeof(DRUM_KIT_NAMES) / sizeof(DRUM_KIT_NAMES[0]) == DRUM_KITS, "a name per kit");
-static uint32_t drum_kit(void) { return (uint32_t)clamp(TDRUM->p[P_E0], 0, DRUM_KITS - 1); }
+static uint32_t drum_kit(void)
+{
+    int32_t k = !TSEL->synth_mode ? TSEL->p[P_E0] : TDRUM->p[P_E0];
+    return (uint32_t)clamp(k, 0, DRUM_KITS - 1);
+}
 
-#define DRUM_DEFAULT_KIT DRUM_SAMPLED   /* power-on: 808 */
+#define DRUM_DEFAULT_KIT 0   /* power-on: 808 */
 
 static struct {
+
     voice_t v[NDRUM];
     uint32_t age;
     int16_t set;                 /* SMP_SETS index of "PERC" (GM map), -1 = none */
