@@ -342,7 +342,7 @@ static int32_t thr_rev, thr_dly;
 static inline int32_t send_thr(int32_t s, int32_t g) { return g ? s + (((127 * 258 - s) * g) >> 15) : s; }
 #define TSEL (&trk[song.sel])
 #define TDRUM (&trk[TRK_DRUM])
-static int is_drum(const track_t *t) { return t == TDRUM && !t->synth_mode; }
+static int is_drum(const track_t *t) { return !t->synth_mode; }
 static int trk_silent(const track_t *t)
 {
 
