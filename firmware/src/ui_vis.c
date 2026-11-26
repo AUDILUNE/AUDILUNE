@@ -98,6 +98,12 @@ static void vis_circle(int32_t cx, int32_t cy, int32_t r, uint16_t c)
     }
 }
 
+static void vis_thick(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t c)
+{
+    cv_line(x0, y0, x1, y1, c);
+    cv_line(x0, y0 + 1, x1, y1 + 1, c);
+}
+
 static void vis_glow_line(int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint16_t core, uint16_t halo)
 {
     cv_line(x0, y0 - 1, x1, y1 - 1, halo);
@@ -110,6 +116,7 @@ static uint32_t vis_beat_q8(void)
     if (song.playing)
         return clk_beat * 256u + clk_pos / (BEAT_U / 256u);
     return vs.free_q8;
+
 }
 
 static void vis_fft(void)
