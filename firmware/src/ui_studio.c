@@ -940,11 +940,12 @@ UI_SMALL static void rec_screen_draw(void)
 static const char *const AL_FX_ROWS[] = {
     "DELAY", "PITCH", "TIME & STRETCH", "MORPH",
     "GRANULAR", "STRUM & GROOVE", "HARMONIC", "DRIVE & GRIT",
-    "STEREO & CHORUS", "REVERB", "TEXTURES"
+    "STEREO & CHORUS", "REVERB", "TEXTURES", "LAYER / TIE"
 };
 static const char *const AL_PAD_NAMES[] = {
     "DELAY PAD", "REVERB PAD", "4-CORNER VECTOR", "DRIVE & GRIT",
     "MODULATION PAD", "PITCH & TIME", "GRANULAR CLOUD", "HARMONIC STRUM"
+
 };
 static const char *const AL_FREQ_NAMES[] = {"AUTO", "OFF", "LOW", "MED"};
 static const char *const AL_SCALE_NAMES[] = {
