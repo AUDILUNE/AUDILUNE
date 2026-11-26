@@ -140,7 +140,12 @@ static const preset_t DIGITAL_PRESETS[] = {
     {"TUBE BELL", {4, 6, 1, 13, 50, 90, 0, 0}, {0, 100, 0, 90}, 0, 0, FX(0, 10, 25, 50)},
     {"FM PLUCK", {4, 2, 1, 3, 70, 15, 0, 0}, {0, 78, 0, 54}, 0, 0, FX(0, 10, 28, 30)},
     {"FM GRAND", {4, 1, 2, 12, 60, 40, 10, 0}, {0, 90, 20, 60}, 0, 0, FX(0, 20, 14, 30)},
+    {"DERBYSHIRE TAPE", {5, 3, 6, 11, 48, 86, 14, 0}, {18, 96, 84, 78}, 0, 1, FX(0, 28, 52, 68), XP(P_GLIDE + 1, 64, P_LD_PIT + 1, 1, P_LRATE + 1, 34)},
+    {"RADIOPHONIC WHO", {1, 2, 5, 9, 76, 94, 42, 0}, {8, 88, 92, 64}, 0, 1, FX(12, 24, 46, 58), XP(P_GLIDE + 1, 78, P_LD_PIT + 1, 3, P_LRATE + 1, 58)},
+    {"ENO AMBIENT", {6, 1, 2, 4, 32, 112, 6, 0}, {88, 108, 120, 110}, 0, 0, FX(0, 54, 48, 96), XP(P_LD_PIT + 1, 1, P_LRATE + 1, 18)},
+    {"UPRIGHT PNO", {4, 1, 2, 4, 46, 36, 8, 0}, {0, 84, 26, 44}, 0, 0, FX(0, 14, 10, 24)},
 };
+
 
 /* (after Clipper 1.2) UNISON (voice.c unison_spread): the four operators moved together by r (Q32) of a turn of
  * the note, each by its ratio's share (phases 0 at each note: every voice in phase) */
