@@ -949,64 +949,47 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 fm1_irq_on();
                 sync_reload = 1;
                 audilune_hud_popup("STEP", (int32_t)st + 1, "");
-            } else if (ui.list_sel >= 7u) {
-                ui.seq_grab = 0;
-                ui.scr = UI_CHOP_SRC;
-                ui.list_sel = 0;
-                ui.list_top = 0;
-                ui_message("CHOP SHOP");
-            } else if (ui.list_sel < 6u) {
-                al_seq_ovw = 1u;
-                al_seq_ovw_trk = ui.list_sel;
-                al_seq_ovw_step = 0u;
-                ui_message("128-STEP VIEW");
             } else {
-                ui.seq_grab = (uint8_t)(!ui.seq_grab);
-                ui_message(ui.seq_grab ? "GRABBED: K4 SHIFT" : "DROPPED");
+                uint16_t bit = (uint16_t)(1u << (ui.list_sel % 6u));
+                al_row_lock_mask ^= bit;
+                ui_message((al_row_lock_mask & bit) ? "CELL: LOCKED" : "CELL: UNLOCKED");
             }
-         } else if (ui.scr == UI_FX) {
-            if (!al_pad_list_mode) {
-                if (ui.list_sel < 8u) {
-                    al_pad_idx = ui.list_sel;
-                    al_pad_list_mode = 1u;
-                    ui_message(*(AL_PAD_NAMES + (al_pad_idx & 7u)));
-                } else {
-                    audilune_list_knob(3u, 1);
-                }
+        } else if (!ui.home && (ui.scr == UI_FX || ui.scr == UI_ENV || ui.scr == UI_LFO)) {
+            uint32_t rows = audilune_page_rows(ui.scr);
+            uint16_t bit = (uint16_t)(1u << (ui.list_sel % rows));
+            al_row_lock_mask ^= bit;
+            ui_message((al_row_lock_mask & bit) ? "ROW: LOCKED" : "ROW: UNLOCKED");
+        } else if (!ui.home && ui.scr == UI_EDIT) {
+            uint8_t row = ui.list_sel % 13u;
+            if (row == 0u) {
+                ui_message(undo_swap(ui.edit_redo_dir) ? (ui.edit_redo_dir ? "REDO" : "UNDO") : "NOTHING TO UNDO");
             } else {
-                uint8_t p = (uint8_t)(al_pad_idx & 7u);
-                uint8_t bit = (uint8_t)(1u << p);
-                if (p == 2u) {
-                    al_vec_sel = (uint8_t)((al_vec_sel + 1u) & 3u);
-                    *(al_vec_corner + al_vec_sel) = (uint8_t)((*(al_vec_corner + al_vec_sel) + 1u) & 3u);
-                }
-
-                al_pad_latch ^= bit;
-                audilune_chaos_apply(TSEL);
-                ui_message((al_pad_latch & bit) ? "PAD: ON/LATCH" : "PAD: OFF");
+                uint16_t bit = (uint16_t)(1u << row);
+                al_row_lock_mask ^= bit;
+                ui_message((al_row_lock_mask & bit) ? "STEP: LOCKED" : "STEP: UNLOCKED");
+            }
+        } else if (!ui.home && ui.scr == UI_ARP) {
+            uint8_t row = ui.list_sel & 3u;
+            if (row == 0u) {
+                uint8_t *mp = al_arp_mode + (song.sel % 6u);
+                uint8_t m = (uint8_t)(*mp % 10u);
+                *mp = (uint8_t)((*mp & 0xF0u) | (m ? 0u : 1u));
+                ui_message(m ? "ARP: OFF" : "ARP: ON");
+            } else if (row == 3u) {
+                audilune_gen_scope = (uint8_t)((audilune_gen_scope + 1u) % 3u);
+                ui_message(audilune_gen_scope == 0u ? "LATCH: OFF" : audilune_gen_scope == 1u ? "LATCH: HOLD" : "LATCH: ADD");
+            } else {
+                uint16_t bit = (uint16_t)(1u << row);
+                al_row_lock_mask ^= bit;
+                ui_message((al_row_lock_mask & bit) ? "ROW: LOCKED" : "ROW: UNLOCKED");
             }
         } else if (ui.scr == UI_LANDSCAPE) {
             uint16_t bit = (uint16_t)(1u << (ui.list_sel % 10u));
             al_land_on ^= bit;
             audilune_landscape_apply();
             ui_message((al_land_on & bit) ? "LAYER: ON" : "LAYER: MUTE");
-        } else if (ui.scr == UI_EDIT) {
-            if (ui.list_sel == 0u) {
-                ui_message(undo_swap(ui.edit_redo_dir) ? (ui.edit_redo_dir ? "REDO" : "UNDO") : "NOTHING TO UNDO");
-            } else if (ui.list_sel == 1u) {
-                undo_mark(TSEL, (undo_sess += 4u) | 3u);
-                fm1_irq_off();
-                track_defaults_steps(TSEL);
-                fm1_irq_on();
-                ui_message("TRACK CLEARED");
-            }
-        } else if (ui.scr == UI_ARP) {
-            if (ui.list_sel == 0u) {
-                audilune_infinite_on = (uint8_t)!audilune_infinite_on;
-                ui_message(audilune_infinite_on ? "AUTO ENGINE: ON" : "AUTO ENGINE: OFF");
-            } else if (ui.morph_scope == 4u) {
-                audilune_song_dj_trig = 1u;
-                ui_message("SONG DJ MORPH");
+            if (0) {
+
             }
         } else if (ui.scr == UI_CHOP_WAVE) {
             if (ui.list_sel >= 2u) {
