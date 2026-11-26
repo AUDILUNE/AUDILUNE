@@ -28,15 +28,16 @@ static int32_t rev_l[CTL], rev_r[CTL];   /* the reverb's own return of this bloc
 /* DIST: low cut -> drive (1x..8x, exponential) -> asymmetric soft clip
  * (a little bias = even harmonics) -> tone low-pass that closes with drive ->
  * make-up gain. State per part (track_t dist_*). */
+extern uint8_t al_layer_preset, al_layer_mix;
 static void track_dist(track_t *t, int32_t *b, uint32_t n)
 {
-    int32_t d = t->p[P_DIST], i, g, k, mk, bias = 2400 + (al_fx_val[7] > 100u ? (int32_t)(al_fx_val[7] - 100u) * 320 : 0), b0;
+    int32_t d = t->p[P_DIST], i, g, k, mk, bias = 2400 + (d > 115 ? (d - 115) * 320 : 0), b0;
     if (!d) {
         t->dist_on = 0;
         return;
     }
     if (!t->dist_on) {                                  /* coming on: no stale high-pass state (a thump) */
-        t->dist_on = 1;
+
         t->dist_hp = b[0];
         t->dist_lp1 = t->dist_lp2 = 0;
     }
