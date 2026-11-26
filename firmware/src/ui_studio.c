@@ -1615,7 +1615,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_hud_text("LATCH", *(AL_LATCH_H + audilune_gen_scope));
         }
     } else if (ui.scr == UI_ALGO) {
-        if (k == 2u) {
+        if (k == 2u && row != 3u) {
             audilune_sel_vol(s);
         } else if (row == 0u) {
             uint8_t ng = (uint8_t)((ui.algo_genre[song.sel] + (s > 0 ? 1u : 5u)) % 6u);
@@ -1632,17 +1632,31 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         } else if (row == 2u) {
             t->synth_mode = 0;
             t->p[P_E0] = (int16_t)((t->p[P_E0] + (s > 0 ? 1 : 31)) % 32);
+            if (song.g[G_DRLVL] < 40) song.g[G_DRLVL] = 100;
             audilune_hud_text("DRUM KIT", *(DRUM_KIT_NAMES + (t->p[P_E0] & 31)));
         } else if (row == 3u) {
-            static uint8_t vox_idx;
-
-            vox_idx = (uint8_t)((vox_idx + (s > 0 ? 1u : 10u)) % 11u);
+            static const char *const AL_VOX_CHARS[4 + 4] = {
+                "PROFESSOR", "COLOSSUS", "SELENA", "MR PROTON",
+                "PHANTOM", "ARCHIVIST", "CYBERNET", "ORACLE"
+            };
+            extern uint8_t al_vox_char, al_vox_phrase;
             t->synth_mode = 1;
-            audilune_hud_popup("VOCAL", (int32_t)vox_idx + 1, "");
+            t->engine = ENGI_FORMANT;
+            t->eng_req = ENGI_FORMANT;
+            if (t->preset < 7u) t->preset = 7u;
+            if (k == 3u) {
+                al_vox_char = (uint8_t)((al_vox_char + (s > 0 ? 1u : 7u)) & 7u);
+                audilune_hud_text("CHARACTER", *(AL_VOX_CHARS + al_vox_char));
+            } else {
+                al_vox_phrase = (uint8_t)((al_vox_phrase + (s > 0 ? 1u : 32u)) % 33u);
+                if (al_vox_phrase == 32u) audilune_hud_text("PHRASE", "POETIC GEN");
+                else audilune_hud_popup("PHRASE", (int32_t)al_vox_phrase + 1, "");
+            }
         } else {
             ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
             audilune_hud_popup(*(AL_ALGO_ROWS + row), (int32_t)ui.save_vault + 1, "");
         }
+
     } else if (ui.scr == UI_SETUP) {
         uint32_t ti;
         if (row == 1u) {
