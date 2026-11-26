@@ -1036,9 +1036,11 @@ UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const ch
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
 static uint8_t audilune_theme_idx, al_arp_mode[3 + 3], al_clip_ok;
 uint8_t al_layer_preset, al_layer_mix;
+uint16_t al_row_lock_mask;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
     if (scr == UI_FX) return 12u;
+
     if (scr == UI_PUNCH) return 16u;
 
     if (scr == UI_ENV) return 8u;
