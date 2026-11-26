@@ -1334,6 +1334,8 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
                         TSEL->p[LFO_RST[r & 7u]] = (r == 2u || r == 5u) ? 32 : 0;
                     }
                 }
+                al_row_lock_mask = 0u;
+
                 al_sel_hold_eat = 1u;
                 ui_message("ROW RESET: 0%");
                 ui.force = 1;
