@@ -213,9 +213,10 @@ static void formant_note_on(track_t *t, voice_t *v)
     if (t->preset >= 7u) {
         uint32_t ti = (uint32_t)(t - trk);
         uint32_t g = ti < NTRK ? audilune_vox_genre[ti] : audilune_vox_genre[song.sel % NTRK];
-        uint32_t slot = t->preset >= 10u ? (uint32_t)(t->preset - 10u) : 0u;
+        uint32_t use_lib = (t->preset >= 10u) || (al_vox_phrase < 32u);
+        uint32_t slot = t->preset >= 10u ? (24u + (uint32_t)(t->preset - 10u)) : (uint32_t)al_vox_phrase;
         if (!(t->preset == 8u && (v->env || v->env_out) && vox_len > 0u)) {
-            vox_build_phrase(vi, slot, t->preset >= 10u, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
+            vox_build_phrase(vi, slot, use_lib, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
             vox_idx = 0;
             vox_tmr = 0;
         }
@@ -238,6 +239,7 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     const int16_t *p = t->p;
     fres_t r1, r2, r3, r4;
     int32_t fa[1 + 2], ba[1 + 2], fb[1 + 2], bb[1 + 2], k, j, buzz, oq, tilt, gv, gn, og, ogk;
+
     uint32_t inc = m->inc, i, te, tp, rp, rn, ratio, bws, f0;
     uint32_t ph = v->ph[0 + 0];
     int32_t y1 = v->s[0 + 0], y2 = v->s[1 + 0], y3 = v->s[2 + 0], y4 = v->s[3 + 0], y5 = v->s[4 + 0], y6 = v->s[5 + 0];
