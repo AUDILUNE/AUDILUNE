@@ -210,7 +210,7 @@ static void formant_note_on(track_t *t, voice_t *v)
     formant_nz ^= (int32_t)((uint32_t)formant_nz >> 17);
     formant_nz ^= formant_nz << 5;
     v->s[7 + 0] = (int32_t)(((uint32_t)formant_nz >> 25) << 25);   /* TALK starts over, random vowel kept */
-    if (t->preset >= 7u) {
+    if (t->preset >= 7u && t->preset < 18u) {
         uint32_t ti = (uint32_t)(t - trk);
         uint32_t g = ti < NTRK ? audilune_vox_genre[ti] : audilune_vox_genre[song.sel % NTRK];
         uint32_t use_lib = (t->preset >= 10u) || (al_vox_phrase < 32u);
@@ -218,6 +218,7 @@ static void formant_note_on(track_t *t, voice_t *v)
         if (!(t->preset == 8u && (v->env || v->env_out) && vox_len > 0u)) {
             vox_build_phrase(vi, slot, use_lib, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
             vox_idx = 0;
+
             vox_tmr = 0;
         }
     } else {
