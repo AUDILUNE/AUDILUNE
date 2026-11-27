@@ -103,6 +103,10 @@ static void smp_user_scan(uint32_t k)
     slc_user_scan(k, 1);
 }
 
+#define AL_REC_SLOTS 4u
+static smp_zone_t al_rec_zone[AL_REC_SLOTS] __attribute__((section(".pool")));
+static uint8_t al_rec_valid[AL_REC_SLOTS] __attribute__((section(".pool")));
+
 /* zone index in a voice: < 0x8000 built-in, >= 0xC000 LIVE REC, else 0x8000 | slot << 5 | zone */
 static inline const smp_zone_t *smp_zone(uint32_t zi)
 {
@@ -118,6 +122,7 @@ static inline int32_t sample_next(const smp_zone_t *z, voice_t *v, int loop)
     if (code & 2u) vd += step >> 1;
     if (code & 1u) vd += step >> 2;
     *(v->s + 0) = clamp(*(v->s + 0) + ((code & 8u) ? -vd : vd), -32768, 32767);
+
     *(v->s + 1) = clamp(*(v->s + 1) + IMA_IDX[code & 7u], 0, 88);
     pos++;
     if (pos > z->le && z->looped && loop && (z->looped != SMP_LOOP_HELD || v->gate)) {
