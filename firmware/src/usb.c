@@ -137,6 +137,13 @@ static struct {
     uint32_t ph;                 /* the next output's phase, 0..159 */
 } rs;
 #endif
+#else
+static void uac_in_read(int32_t *out, uint32_t n)
+{
+    uint32_t i;
+    for (i = 0; i < n; i++)
+        out[i] = 0;
+}
 #endif
 
 static struct {
@@ -148,6 +155,7 @@ static struct {
     uint16_t frame, frame_same;  /* last SOF frame number and how long it has not moved (x 10 ms) */
     uint8_t detached;            /* usb_detach() was called: no retry */
     volatile uint8_t suspended;  /* bus idle > 3 ms (unplugged or host asleep): the UI hides "USB" */
+
     uint8_t last_setup[8];
     uint8_t sysex[16];
     uint8_t sx_len, sx_on;
