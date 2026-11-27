@@ -405,7 +405,7 @@ static const preset_t FORMANT_PRESETS[] = {
      XP(P_LD_AMP + 1, 18, P_LRATE + 1, 80, P_LFADE + 1, 60)},
     {"ROBOT", {40, 40, 0, 0, 127, 0, 110, 0}, {0, 60, 110, 20}, 0, 1, FX(10, 0, 20, 15), XP(P_GLIDE + 1, 20)},
     {"VOX PAD", {20, 100, 110, 0, 50, 30, 60, 10}, {80, 90, 118, 90}, 0, 0, FX(0, 60, 15, 70)},
-    /* AUDILUNE DECtalk / Klatt Formant Speech Presets (7..17) */
+    /* AUDILUNE DECtalk / Klatt Formant Speech Presets (7..19) */
     {"DECTALK", {0, 64, 56, 0, 115, 12, 85, 0}, {4, 40, 112, 35}, 0, 1, FX(10, 20, 25, 35)},
     {"VOX-SING", {0, 64, 48, 2, 75, 22, 70, 0}, {55, 85, 118, 80}, 0, 0, FX(0, 40, 35, 65),
      XP(P_LD_PIT + 1, 4, P_LRATE + 1, 72)},
@@ -418,6 +418,8 @@ static const preset_t FORMANT_PRESETS[] = {
     {"PHRASE 6", {0, 64, 56, 0, 110, 12, 85, 0}, {4, 40, 112, 35}, 0, 1, FX(10, 20, 25, 35)},
     {"PHRASE 7", {0, 64, 56, 0, 110, 12, 85, 0}, {4, 40, 112, 35}, 0, 1, FX(10, 20, 25, 35)},
     {"PHRASE 8", {0, 64, 56, 0, 110, 12, 85, 0}, {4, 40, 112, 35}, 0, 1, FX(10, 20, 25, 35)},
+    {"WILHELM", {16, 86, 78, 5, 118, 34, 88, 0}, {2, 74, 110, 32}, 0, 1, FX(20, 35, 30, 55)},
+    {"JOKER LAUGH", {10, 34, 82, 4, 122, 28, 96, 0}, {0, 68, 95, 28}, 0, 1, FX(25, 30, 35, 50)},
 };
 
 static const engine_t ENG_FORMANT = {
@@ -432,6 +434,6 @@ static const engine_t ENG_FORMANT = {
         {"Q", F_PCT, 0, 127, 64, 0, 0},
         {"RAND", F_PCT, 0, 127, 0, 0, 0},
     },
-    FORMANT_PRESETS, sizeof(FORMANT_PRESETS) / sizeof(FORMANT_PRESETS[0]), 0, formant_note_on, formant_render,
+    FORMANT_PRESETS, sizeof(FORMANT_PRESETS) / sizeof(*FORMANT_PRESETS), 0, formant_note_on, formant_render,
     0xF81F, {P_E0, P_E4, P_E5, P_E2}, 4,
 };
