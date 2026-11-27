@@ -1335,6 +1335,12 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
                 rec_hud_pick = 0;
                 rec_wait = 0;
                 ui_message("CAPTURE FINISHED");
+            } else if (ui.home && TSEL->synth_mode && TSEL->eng_req == 4u && TSEL->preset == 13u) {
+                rec_wait = 0u;
+                rec_hud_pick = 1u;
+                rec_hud_mode = 4u;
+                al_rec_cap_arm(al_rec_slot_sel, 1u, (uint8_t)(TSEL->seq_idx & 127u), (uint8_t)((TSEL->seq_idx >> 4) & 7u));
+                audilune_hud_popup("LIVE REC", (int32_t)al_rec_slot_sel + 1, " ARMED");
             } else {
                 ft_owns_press();
                 rec_toggle();
@@ -1348,6 +1354,7 @@ UI_SMALL static void holds_input(uint32_t pressed, uint32_t now_ms)
             ui.force = 1;
         }
         rc_on = 0;
+
     }
     {
         static uint8_t sel_on, sel_disarmed, punch_on;
