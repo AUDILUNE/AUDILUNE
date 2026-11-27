@@ -230,6 +230,7 @@ static const preset_t ANALOG_PRESETS[] = {
     {"VCS3 DRONE", {6, 34, 58, 28, 52, 64, 36, 88}, {68, 104, 118, 86}, 24, 0, FX(8, 44, 52, 64)},
     {"FLOYD VCS3", {6, 64, 88, 18, 58, 86, 54, 108}, {2, 64, 76, 42}, 46, 1, FX(14, 28, 58, 52), XP(P_GLIDE + 1, 38, P_LRATE + 1, 46, P_LD_FLT + 1, 24)},
     {"HANZ VOLX", {5, 68, 120, 14, 48, 116, 118, 92}, {0, 52, 64, 22}, 58, 1, FX(46, 0, 16, 18), XP(P_GLIDE + 1, 32, P_LRATE + 1, 68, P_LD_FLT + 1, 36)},
+    {"RUBBER BALL", {2, 5, 40, 0, 42, 78, 28, 32}, {0, 58, 44, 24}, 58, 1, FX(14, 0, 12, 8), XP(P_GLIDE + 1, 44, P_GLMODE + 1, 1, P_ED_PIT + 1, 34, P_TRANS + 1, -12)},
 };
 
 
@@ -238,6 +239,7 @@ static const preset_t ANALOG_PRESETS[] = {
 static void analog_spread(track_t *t, voice_t *v, uint32_t r)
 {
     *(v->ph + 0) += r;
+
     *(v->ph + 1) += uni_turns(r, v->pitch16, t->p[P_E1] * 16 / 100);
 }
 
