@@ -1600,20 +1600,28 @@ UI_SMALL static void ui_input(void)
 
     if ((s = panel_enc(EN_PRESET)) != 0) {
         ui_input_ms = fm1_ms;
-        {
-            uint32_t total, cur;
-            if (!TSEL->synth_mode) {
-                TSEL->synth_mode = 1;
-                ui.force = 1;
-            }
-            cur = preset_pos(&total);
-            if (total) {
-                uint32_t next_p = (uint32_t)(((int32_t)cur + s % (int32_t)total + (int32_t)total) % (int32_t)total);
-
-                preset_go(next_p);
-                audilune_hud_popup("PRESET", (int32_t)(next_p + 1u), "");
+        vis_on = 0;
+        if (ui.scr < UI_PRESET_CAT || ui.scr > UI_PRESET_LIST) {
+            ui.scr = UI_PRESET_CAT;
+            ui.home = 0u;
+            ui.list_sel = 0u;
+            ui.list_top = 0u;
+            audilune_hud_text("PRESETS", "CATEGORY");
+        } else {
+            uint32_t rows = audilune_page_rows(ui.scr);
+            if (rows) {
+                ui.list_sel = (uint8_t)(((int32_t)ui.list_sel + s % (int32_t)rows + (int32_t)rows) % (int32_t)rows);
+                if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 0u) {
+                    if (!TSEL->synth_mode) TSEL->synth_mode = 1;
+                    if (TSEL->eng_req != (ui.preset_sub % 12u)) select_engine(ui.preset_sub % 12u);
+                    apply_preset(ui.list_sel);
+                } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 1u) {
+                    TSEL->synth_mode = 0;
+                    TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u);
+                }
             }
         }
+        ui.force = 1;
     }
 
     if ((s = panel_enc(EN_ALGO)) != 0 && !ft_on) {
@@ -1628,6 +1636,7 @@ UI_SMALL static void ui_input(void)
             ui.scr = UI_ALGO;
             ui.list_top = 0;
         } else {
+
             pos = (int32_t)ui.list_sel;
         }
         pos = ((pos + s) % span + span) % span;
