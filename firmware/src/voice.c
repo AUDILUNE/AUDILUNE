@@ -15,6 +15,26 @@ static uint32_t vage;                                   /* voice ages: one clock
 uint8_t al_layer_eng, al_layer_ready;
 int8_t al_layer_e[4 + 4];
 extern uint8_t al_layer_preset, al_layer_mix;
+/* AUDILUNE Priority #1: Poly/Mono Aftertouch, 3D Orbital Pan & Analog Warmth (.pool = 0 bytes .bss) */
+__attribute__((section(".pool"))) uint8_t al_voice_at_tgt[NTRK][NVOICE];
+__attribute__((section(".pool"))) uint8_t al_voice_at[NTRK][NVOICE];
+__attribute__((section(".pool"))) int16_t al_voice_drift[NTRK][NVOICE];
+__attribute__((section(".pool"))) int8_t al_trk_orbit_pan[NTRK];
+__attribute__((section(".pool"))) uint8_t al_trk_at_max[NTRK];
+static void al_voice_at_set(uint32_t ti, uint32_t note, uint32_t pressure, int poly)
+{
+    uint32_t i;
+    uint8_t p = (uint8_t)(pressure > 127u ? 127u : pressure);
+    if (ti >= NTRK)
+        return;
+    for (i = 0; i < NVOICE; i++) {
+        if (!poly) {
+            al_voice_at_tgt[ti][i] = p;
+        } else if (trk[ti].v[i].active && trk[ti].v[i].gate && trk[ti].v[i].note == (uint8_t)note) {
+            al_voice_at_tgt[ti][i] = p;
+        }
+    }
+}
 /* engines that play recorded material (a position, not a phase): no phases kept or spread */
 #if FELUCCA_SLICE
 static int eng_sampled(const engine_t *e) { return e == &ENG_SAMPLE || e == &ENG_SLICE; }
