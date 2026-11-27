@@ -284,13 +284,12 @@ static void sample_spread(track_t *t, voice_t *v, uint32_t r)
                                                                  /* gave many voices the same start) */
 }
 
-/* AUDILUNE 5.0s User Sample Capture (USR1..6, 36,750 B) & 4 x 120s Shared LIVE RECORD Vault (LIVE REC 01..04) */
+/* AUDILUNE 5.0s Sample Capture (SAMPLE 01..06, 36,750 B) & 6 x 60s Shared LIVE REC Vault (LIVE REC 01..06 @ 29.4 kHz) */
 #define AL_CAP_MAX_BYTES 36750u
-#define AL_REC_SLOTS 4u
 #define AL_REC_BASE 0x280000u
-#define AL_REC_SIZE 0x144000u                         /* 1,327,104 B per slot (header + 120s @ 22.05 kHz ADPCM) */
+#define AL_REC_SIZE 0xDA000u                          /* 892,928 B per slot (header + 60s @ 29.4 kHz ADPCM) */
 #define AL_REC_OFF(k) (AL_REC_BASE + (uint32_t)(k) * AL_REC_SIZE)
-#define AL_REC_MAX_BYTES 1323000u                     /* 120s x 22,050 Hz / 2 nibbles = 1,323,000 B */
+#define AL_REC_MAX_BYTES 882000u                      /* 60s x 29,400 Hz / 2 nibbles = 882,000 B */
 #define AL_REC_MAGIC 0x43455241u                      /* "AREC" */
 #define AL_CAP_RING 512u
 typedef struct {
@@ -308,8 +307,6 @@ static uint8_t al_cap_rec_mode __attribute__((section(".pool")));
 static uint8_t al_rec_slot_sel __attribute__((section(".pool")));
 static uint32_t al_rec_start_step[AL_REC_SLOTS] __attribute__((section(".pool")));
 static uint32_t al_rec_start_bar[AL_REC_SLOTS] __attribute__((section(".pool")));
-static smp_zone_t al_rec_zone[AL_REC_SLOTS] __attribute__((section(".pool")));
-static uint8_t al_rec_valid[AL_REC_SLOTS] __attribute__((section(".pool")));
 static uint8_t al_cap_ring[256 + 256] __attribute__((section(".pool")));
 
 #define AL_TAPE_N 176400u                             /* 4.0s circular rolling tape buffer @ 44.1 kHz (.pool) */
@@ -323,6 +320,7 @@ static void al_tape_push(int16_t pcm)
     uint32_t w = al_tape_w;
     al_tape_buf[w % AL_TAPE_N] = pcm;
     al_tape_w = w + 1u;
+
     if (!al_tape_rate16 || al_tape_rate16 == 65536)
         al_tape_pos16 = (w + 1u) << 16;
 }
