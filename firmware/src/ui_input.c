@@ -914,6 +914,10 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 rec_wait = 0u;
                 al_smp_cap_arm(rec_hud_usr, rec_hud_mode == 3u);
                 ui_message(rec_hud_mode == 3u ? "USB CAPTURE ARMED" : "SAMPLE CAP ARMED");
+            } else if (rec_hud_mode == 4u) {
+                rec_wait = 0u;
+                al_rec_cap_arm(al_rec_slot_sel, 1u, (uint8_t)(TSEL->seq_idx & 127u), (uint8_t)((TSEL->seq_idx >> 4) & 7u));
+                ui_message("LIVE 120S ARMED");
             } else {
                 al_smp_cap_stop();
                 ui_message("REC TARGET SET");
@@ -923,6 +927,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
         }
         if (!ui.home && ui.scr == UI_ALGO) {
             uint8_t row = ui.list_sel % 7u;
+
             if (row == 0u) audilune_hud_text("GENRE", *(AUDILUNE_GENRE_NAMES + (ui.algo_genre[song.sel] % 6u)));
             else if (row == 1u) audilune_hud_text("SYNTH", "ENGINE SET");
             else if (row == 2u) { TSEL->synth_mode = 0; audilune_hud_text("DRUM KIT", *(DRUM_KIT_NAMES + (TSEL->p[P_E0] & 31))); }
