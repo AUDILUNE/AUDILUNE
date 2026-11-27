@@ -354,8 +354,8 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     tp = (te >> 8) * 166u;                              /* opening: 65 % of it, closing 35 % */
     rp = (1u << 30) / ((tp >> 16) | 1u);
     rn = (1u << 30) / (((te - tp) >> 16) | 1u);
-    gv = vox_on ? vox_gv : (32767 - p[P_E5] * p[P_E5] * 2);   /* BREATH: voicing fades at the top */
-    gn = vox_on ? clamp(vox_gn + (p[P_E5] * 128), 0, 32767) : (p[P_E5] * 258);   /* noise: Q15, up to 1.0 */
+    gv = (vox_on || t->preset >= 18u) ? vox_gv : (32767 - p[P_E5] * p[P_E5] * 2);   /* BREATH: voicing fades at the top */
+    gn = (vox_on || t->preset >= 18u) ? clamp(vox_gn + (p[P_E5] * 128), 0, 32767) : (p[P_E5] * 258);   /* noise: Q15, up to 1.0 */
     og = 13000 - ((p[P_E6] - 64) * 50);                 /* output: narrower bands ring louder */
     og = (int32_t)(((int64_t)og * fmt_ratio((60 * 16 - v->pitch_cur) / 4)) >> 16);   /* 1.5 dB / oct: low notes are sparse pulses */
     ogk = (og >> 2) * (4 + (buzz >> 10));               /* presence k = 1 .. 4.9 */
@@ -363,6 +363,7 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
     for (i = 0; i < n; i++) {
         int32_t e, x, a, s;
         if (ph < tp)                                    /* opening: + sin(pi u) * Tn / Tp */
+
             e = (sine_i(((ph >> 16) * rp) << 1) * 17644) >> 15;
         else if (ph < te)                               /* closing: - sin(pi / 2 u) */
             e = -sine_i(((ph - tp) >> 16) * rn);
