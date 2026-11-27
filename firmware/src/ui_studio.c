@@ -1578,21 +1578,25 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         if (k == 2u) {
             audilune_sel_vol(s);
         } else if (row == 0u) {
+            ui.radio_part = (uint8_t)((ui.radio_part + (s > 0 ? 1u : 2u)) % 3u);
+            audilune_hud_text("PARTITION", *(AL_PART_NAMES + ui.radio_part));
+        } else if (row == 1u) {
             ui.setup_vault = (uint8_t)((ui.setup_vault + (s > 0 ? 1u : 6u)) % 7u);
             if (ui.setup_vault == 0u) audilune_hud_text("SONG", "NEW BLANK");
             else audilune_hud_popup("SONG SLOT", (int32_t)ui.setup_vault, "");
-        } else if (row >= 1u && row <= 4u) {
+        } else if (row >= 2u && row <= 5u) {
             ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
             audilune_hud_popup(*(AL_GLO_ROWS + row), (int32_t)ui.save_vault + 1, "");
-        } else if (row == 5u) {
+        } else if (row == 6u) {
             static const char *const AL_THM_H[] = {"TEAL", "ORANGE", "BURGUNDY", "PURPLE", "PINK", "BLUE", "MINT", "GREY"};
             audilune_theme_idx = (uint8_t)((audilune_theme_idx + (s > 0 ? 1u : 7u)) & 7u);
             palette_set(audilune_theme_idx);
             audilune_hud_text("THEME", *(AL_THM_H + audilune_theme_idx));
-        } else if (row == 6u) {
+        } else if (row == 7u) {
             uint32_t gp = song.sel < 5u ? G_CH1 + song.sel : G_DRCH;
             song.g[gp] = (int16_t)((song.g[gp] + (s > 0 ? 1 : 16)) % 17);
             audilune_hud_popup("MIDI CH", song.g[gp], "");
+
         } else if (row == 7u) {
             static const char *const AL_MROUTE[] = {"SEND+RECV", "SEND", "RECV", "INT"};
             song.g[G_MIDI] = (int16_t)((song.g[G_MIDI] + (s > 0 ? 1 : 3)) & 3);
