@@ -1324,10 +1324,17 @@ static void mix_block(int32_t *out, uint32_t n)
         n = CTL;
     {
         static int32_t ol[CTL], orr[CTL], ul[CTL], ur[CTL], side_lp;
+        static int32_t xfmr_lp __attribute__((section(".pool"))), xfmr_hp __attribute__((section(".pool")));
         static uint8_t usb_was;
         int32_t wide_ovf = al_layer_mix > 100u ? (int32_t)(al_layer_mix - 100u) : 0;
         for (i = 0; i < n; i++) {
-            int32_t mid = (mix_l[i] + mix_r[i]) >> 1, side = (mix_l[i] - mix_r[i]) >> 1, m;
+            int32_t mid = (mix_l[i] + mix_r[i]) >> 1, side = (mix_l[i] - mix_r[i]) >> 1, m, sub80, mx_s, mx_2;
+            xfmr_lp += (mid - xfmr_lp) >> 6;            /* ~110 Hz LP */
+            xfmr_hp += (xfmr_lp - xfmr_hp) >> 7;        /* ~55 Hz HP -> ~80 Hz resonant transformer weight */
+            sub80 = (xfmr_lp - xfmr_hp) >> 3;
+            mx_s = clamp(mid >> 2, -32767, 32767);
+            mx_2 = (mx_s * mx_s) >> 18;                 /* subtle Class-A even-harmonic warmth */
+            mid += sub80 + (mid >= 0 ? mx_2 : -mx_2);
             side_lp += (side - side_lp) >> 6;
             side -= side_lp;
             if (wide_ovf)
