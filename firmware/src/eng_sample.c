@@ -133,7 +133,7 @@ static uint8_t al_rec_valid[AL_REC_SLOTS] __attribute__((section(".pool")));
 
 static inline const smp_zone_t *smp_zone(uint32_t zi)
 {
-    return zi < 0x8000u ? &SMP_ZONES[zi] : zi >= 0xC000u ? &al_rec_zone[zi & 3u] : &usr_zone[(zi >> 5) & 7u][zi & 31u];
+    return zi < 0x8000u ? &SMP_ZONES[zi] : zi >= 0xC000u ? &al_rec_zone[(zi & 7u) % AL_REC_SLOTS] : &usr_zone[(zi >> 5) & 7u][zi & 31u];
 }
 
 static inline int32_t sample_next(const smp_zone_t *z, voice_t *v, int loop)
@@ -148,6 +148,7 @@ static inline int32_t sample_next(const smp_zone_t *z, voice_t *v, int loop)
 
     *(v->s + 1) = clamp(*(v->s + 1) + IMA_IDX[code & 7u], 0, 88);
     pos++;
+
     if (pos > z->le && z->looped && loop && (z->looped != SMP_LOOP_HELD || v->gate)) {
         pos = z->ls; *(v->s + 0) = z->pred; *(v->s + 1) = z->idx;
     }
