@@ -2318,22 +2318,25 @@ static void key_down(uint32_t k)
             *(*(kb_nt + k) + 0) = (uint8_t)n;
             *(kb_n + k) = 1;
         }
-        in_key = (uint8_t)(k + 1u);
-        for (tr = 0; tr < NTRK; tr++) {
-            if (!((lmask >> tr) & 1u))
-                continue;
-            mc = trk_midi_ch(tr);
-            for (i = 0; i < *(kb_n + k); i++) {
-                uint32_t nt = *(*(kb_nt + k) + i);
-                in_chord = *(kb_n + k) > 1u ? *(kb_nt + k) : 0;
-                in_chord_n = *(kb_n + k);
-                in_chord_i = i;
-                input_on(trk + tr, nt, 100);
-                in_chord = 0;
-                midi_out_note(mc, nt, 100u);
+        {
+            uint32_t vel = al_kb_vel();
+            in_key = (uint8_t)(k + 1u);
+            for (tr = 0; tr < NTRK; tr++) {
+                if (!((lmask >> tr) & 1u))
+                    continue;
+                mc = trk_midi_ch(tr);
+                for (i = 0; i < *(kb_n + k); i++) {
+                    uint32_t nt = *(*(kb_nt + k) + i);
+                    in_chord = *(kb_n + k) > 1u ? *(kb_nt + k) : 0;
+                    in_chord_n = *(kb_n + k);
+                    in_chord_i = i;
+                    input_on(trk + tr, nt, vel);
+                    in_chord = 0;
+                    midi_out_note(mc, nt, vel);
+                }
             }
+            in_key = 0;
         }
-        in_key = 0;
         if (!(kb_prev & ~(1u << k)) || pen_n >= 4u)
             pen_n = 0;
         for (i = 0; i < *(kb_n + k) && pen_n < 4u; i++)
@@ -2343,6 +2346,7 @@ static void key_down(uint32_t k)
 
 static void key_up(uint32_t k)
 {
+
     uint32_t i, tr, mc, kind = *(kb_kind + k), lmask = *(kb_lmask + k);
     track_t *t = trk + (*(kb_trk + k) % NTRK);
     *(kb_kind + k) = KS_NONE;
