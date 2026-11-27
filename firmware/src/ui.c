@@ -115,6 +115,14 @@ static struct {
     uint8_t session_timer;       /* 0=OFF, 1=15m, 2=30m, 3=45m, 4=60m, 5=90m, 6=120m */
     uint8_t edit_redo_dir;       /* Edit Page Row 0: 0=UNDO, 1=REDO */
     uint8_t morph_scope;         /* ARP Page: 0=SONG, 1=TRACK, 2=STEP, 3=PART A->B, 4=SONG DJ */
+    uint8_t preset_cat;          /* Two-Step Preset Browser: 0..8 category */
+    uint8_t preset_sub;          /* Two-Step Preset Browser: sub-category index */
+    uint8_t radio_part;          /* 3-Mode Partition: 0=AUDILUNE HOME, 1=BT SPEAKER, 2=AUDILUNE LIBRARY */
+    uint8_t trans_target;        /* Partition Transition target mode (0..2) */
+    uint32_t trans_t0;           /* Partition Transition start timestamp (3000ms) */
+    uint8_t bt_dev_idx;          /* BT SPEAKER: scanned speaker index */
+    uint8_t bt_cat;              /* BT SPEAKER: 0=SONGS,1=BOUNCES,2=LOOPS,3=CHOPS,4=SAMPLES,5=VOCALS */
+    uint8_t wifi_cat;            /* AUDILUNE LIBRARY: vault folder index (0..7) */
     /* drawn-state cache */
     char col[4][32];
     char focus_l[8], focus_v[8], focus_u[8];   /* the touched column, shown large */
@@ -128,8 +136,10 @@ static struct {
 enum {
     UI_LIVE, UI_VIS, UI_FX, UI_PUNCH, UI_ENV, UI_LANDSCAPE, UI_LFO, UI_EDIT,
     UI_GLO, UI_SAVE, UI_ARP, UI_SEQ, UI_CHOP_SRC, UI_CHOP_WAVE,
-    UI_ALGO, UI_SETUP, UI_SCREEN_COUNT
+    UI_ALGO, UI_SETUP, UI_PRESET_CAT, UI_PRESET_SUB, UI_PRESET_LIST,
+    UI_BT_AUDIO, UI_WIFI_LIB, UI_PART_TRANS, UI_SCREEN_COUNT
 };
+
 
 UI_SMALL static void audilune_blank_studio_init(void)
 {
