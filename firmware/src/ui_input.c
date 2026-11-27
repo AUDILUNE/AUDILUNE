@@ -1700,7 +1700,8 @@ UI_SMALL static void ui_input(void)
             audilune_hud_popup("STEP", (int32_t)al_seq_ovw_step + 1, "");
             ui.force = 1;
         } else if (ui.scr >= UI_FX) {
-            int32_t next_row = (int32_t)ui.list_sel + (s > 0 ? 1 : -1);
+            uint32_t rows = audilune_page_rows(ui.scr);
+            int32_t next_row = rows ? (((int32_t)ui.list_sel + s) % (int32_t)rows + (int32_t)rows) % (int32_t)rows : (int32_t)ui.list_sel + (s > 0 ? 1 : -1);
 
             if (next_row < 0) next_row = 0;
             ui.seq_grab = 0;
@@ -1708,6 +1709,14 @@ UI_SMALL static void ui_input(void)
             ui.list_sel = (uint8_t)next_row;
             if (ui.scr == UI_CHOP_WAVE)
                 ui.chop_sel = (uint8_t)(ui.list_sel >= 2u ? (ui.list_sel - 2u) & 15u : 0u);
+            else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 0u) {
+                if (!TSEL->synth_mode) TSEL->synth_mode = 1;
+                if (TSEL->eng_req != (ui.preset_sub % 12u)) select_engine(ui.preset_sub % 12u);
+                apply_preset(ui.list_sel);
+            } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 1u) {
+                TSEL->synth_mode = 0;
+                TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u);
+            }
             ui.force = 1;
         } else {
             uint32_t next_trk = (uint32_t)((song.sel + (s > 0 ? 1 : NTRK - 1)) % NTRK);
@@ -1733,6 +1742,7 @@ UI_SMALL static void ui_input(void)
             continue;
         if (ui.home || pg->scope == SC_STEP || pg->scope == SC_TRK || page_desc(pg, k, &hv) ||
             (pg->graph == GR_USER && k == 0u)) {
+
             ui.hot_col = (uint8_t)k;
             ui.hot_t = 40;
         }
