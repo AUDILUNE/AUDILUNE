@@ -380,9 +380,9 @@ static void al_smp_cap_stop(void)
 
 static void al_smp_cap_push(int16_t pcm)
 {
-
     int32_t diff, step, delta, vp;
-    uint32_t code = 0u;
+    uint32_t code = 0u, max_b = al_cap_rec_mode ? AL_REC_MAX_BYTES : AL_CAP_MAX_BYTES;
+    uint8_t dec_n = al_cap_rec_mode ? 2u : 3u;
     if (al_cap.state == 0u || al_cap.state >= 3u)
         return;
     if (al_cap.state == 1u) {
@@ -390,10 +390,10 @@ static void al_smp_cap_push(int16_t pcm)
             return;
         al_cap.state = 2u;
     }
-    if (++al_cap.dec_cnt < 3u)
+    if (++al_cap.dec_cnt < dec_n)
         return;
     al_cap.dec_cnt = 0u;
-    if (al_cap.total_bytes >= AL_CAP_MAX_BYTES) {
+    if (al_cap.total_bytes >= max_b) {
         al_cap.state = 3u;
         return;
     }
@@ -418,7 +418,7 @@ static void al_smp_cap_push(int16_t pcm)
             al_cap.wr++;
         }
         al_cap.total_bytes++;
-        if (al_cap.total_bytes >= AL_CAP_MAX_BYTES)
+        if (al_cap.total_bytes >= max_b)
             al_cap.state = 3u;
     }
 }
