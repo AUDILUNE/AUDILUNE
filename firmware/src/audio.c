@@ -24,6 +24,10 @@ static volatile uint32_t t5_nested_ticks;              /* TIMER4 ticks TIMER5 sp
 #define SCOPE_N 512u
 static int16_t scope_buf[SCOPE_N], scope_bufr[SCOPE_N];   /* left, right (the visualiser): the mix at full level */
 static uint32_t scope_w;
+static struct {
+    int32_t env, prev;
+    uint32_t samp, last, avg;
+} al_bpm_det;                                             /* 20 B: external AUDIO BPM onset detector */
 
 static void audio_block(int32_t *out, uint32_t n)       /* mix (fx.c), then Q15 -> 24 bit */
 {
@@ -33,8 +37,24 @@ static void audio_block(int32_t *out, uint32_t n)       /* mix (fx.c), then Q15 
     uac_tap(usb_full_now ? usb_out : out, n);           /* the USB audio input: the master output, or at full level */
 #endif
     for (i = 0; i < n; i++) {
+        int32_t mono = ((int32_t)vis_tap[2u * i] + (int32_t)vis_tap[2u * i + 1u]) >> 1;
         if (al_cap.state == 1u || al_cap.state == 2u)
-            al_smp_cap_push((int16_t)(((int32_t)vis_tap[2u * i] + (int32_t)vis_tap[2u * i + 1u]) >> 1));
+            al_smp_cap_push((int16_t)mono);
+        if (song.g[G_SYNC] == 3) {                        /* CLOCK SYNC = AUDIO BPM */
+            int32_t mag = mono < 0 ? -mono : mono;
+            al_bpm_det.samp++;
+            al_bpm_det.env += (mag - al_bpm_det.env) >> (mag > al_bpm_det.env ? 4 : 9);
+            if (al_bpm_det.env > 2400 && al_bpm_det.env > al_bpm_det.prev + 320 &&
+                al_bpm_det.samp - al_bpm_det.last > (uint32_t)FS / 4u) {
+                uint32_t dt = al_bpm_det.samp - al_bpm_det.last;
+                al_bpm_det.last = al_bpm_det.samp;
+                if (dt >= BEAT_U / 240u && dt <= BEAT_U / 45u) {
+                    al_bpm_det.avg = al_bpm_det.avg ? (al_bpm_det.avg * 3u + dt) >> 2 : dt;
+                    song.g[G_BPM] = (int16_t)clamp((int32_t)(BEAT_U / al_bpm_det.avg), 45, 240);
+                }
+            }
+            al_bpm_det.prev = al_bpm_det.env;
+        }
         if (i & 1u)
         {
             scope_bufr[scope_w & (SCOPE_N - 1u)] = vis_tap[2u * i + 1u];   /* (fx.c: MASTER all the way up) */
@@ -43,6 +63,7 @@ static void audio_block(int32_t *out, uint32_t n)       /* mix (fx.c), then Q15 
         out[2u * i] <<= OUT_SHIFT;
         out[2u * i + 1u] <<= OUT_SHIFT;
     }
+
 }
 
 
