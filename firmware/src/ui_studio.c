@@ -1057,16 +1057,20 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_ENV) return 8u;
     if (scr == UI_LFO) return 7u;
     if (scr == UI_LANDSCAPE) return 10u;
-
     if (scr == UI_EDIT) return 13u;
     if (scr == UI_ARP) return 4u;
-    if (scr == UI_GLO) return 10u;
+    if (scr == UI_GLO) return 12u;
     if (scr == UI_SAVE) return 5u;
     if (scr == UI_SEQ) return 6u;
     if (scr == UI_CHOP_SRC) return 19u;
     if (scr == UI_CHOP_WAVE) return 2u;
     if (scr == UI_ALGO) return 7u;
     if (scr == UI_SETUP) return 13u;
+    if (scr == UI_PRESET_CAT) return 9u;
+    if (scr == UI_PRESET_SUB) return ui.preset_cat == 0u ? 12u : ui.preset_cat == 2u ? 6u : ui.preset_cat == 3u ? 8u : 6u;
+    if (scr == UI_PRESET_LIST) return ui.preset_cat == 0u ? (uint32_t)ENGINES[ui.preset_sub % 12u]->npresets : ui.preset_cat == 1u ? 32u : ui.preset_cat == 3u ? 33u : 6u;
+    if (scr == UI_BT_AUDIO) return 9u;
+    if (scr == UI_WIFI_LIB) return 10u;
     return 0u;
 }
 
@@ -1083,6 +1087,7 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     if (row == 12u) {
         if (val == 0u) {
             t->p[P_SLCR] = SL_OFF;
+
         } else {
             t->p[P_SLCR] = SL_STUT;
             t->p[P_SLPAT] = (int16_t)(17 + (sub & 7u));
