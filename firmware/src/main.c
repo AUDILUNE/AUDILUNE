@@ -148,6 +148,11 @@ UI_SMALL static void felucca_init(void)
     for (i = 0; i < G_COUNT; i++)
         song.g[i] = GP[i].def;
     fm6_init();
+#if FELUCCA_FLASH
+    if (flash_ok)
+        for (i = 0; i < AL_REC_SLOTS; i++)
+            al_rec_scan(i);
+#endif
     for (i = 0; i < NTRK; i++) {
         track_t *t = &trk[i];
         track_defaults(t);
@@ -168,6 +173,7 @@ UI_SMALL static void felucca_init(void)
     song.g[G_CH1] = midi_set[0], song.g[G_CH2] = midi_set[1], song.g[G_CH3] = midi_set[2];
     song.g[G_DRCH] = midi_set[3], song.g[G_CHOTH] = midi_set[4], song.g[G_BEND] = midi_set[5];
     song.g[G_FXCH] = midi_set[6];
+
     song.g[G_DRMAP] = midi_set[7];
     song.g[G_CLKOUT] = midi_set[9];
     song.g[G_RMCH] = midi_set[8];
