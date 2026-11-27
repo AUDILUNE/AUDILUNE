@@ -373,6 +373,66 @@ UI_SMALL static void fm1_main(void)
 #if FELUCCA_ARRANGER
         sections_flush();
 #endif
+#if FELUCCA_FLASH
+        if (flash_ok && al_cap.state != 0u) {
+            static uint8_t al_cap_pg[256] __attribute__((section(".pool")));
+            static uint32_t al_cap_fl_off __attribute__((section(".pool")));
+            uint32_t base = al_cap_rec_mode ? AL_REC_OFF(al_cap.slot) : SMP_USER_OFF(al_cap.slot);
+            uint32_t avail = al_cap.wr - al_cap.rd;
+            if (avail >= 256u || (al_cap.state == 3u && avail > 0u)) {
+                uint32_t n = avail >= 256u ? 256u : avail, j, dst = base + SMP_USER_DATA + al_cap_fl_off, took;
+                for (j = 0u; j < n; j++)
+                    al_cap_pg[j] = al_cap_ring[(al_cap.rd + j) & (AL_CAP_RING - 1u)];
+                al_cap.rd += n;
+                if (al_cap_fl_off == 0u)
+                    fl_erase4k_quiet(base, &took);
+                else if ((dst & 0xFFFu) == 0u)
+                    fl_erase4k_quiet(dst, &took);
+                fl_write(dst, al_cap_pg, n);
+                al_cap_fl_off += n;
+            } else if (al_cap.state == 3u && avail == 0u) {
+                if (al_cap_fl_off > 0u) {
+                    if (al_cap_rec_mode) {
+                        al_rec_hdr_t *rh = (al_rec_hdr_t *)al_cap_pg;
+                        memset(al_cap_pg, 0, sizeof al_cap_pg);
+                        rh->magic = AL_REC_MAGIC;
+                        rh->data_len = al_cap_fl_off;
+                        rh->start_step = al_rec_start_step[al_cap.slot % AL_REC_SLOTS];
+                        rh->start_bar = al_rec_start_bar[al_cap.slot % AL_REC_SLOTS];
+                        rh->zone.n = al_cap_fl_off * 2u;
+                        rh->zone.le = rh->zone.n - 1u;
+                        rh->zone.rate = 32768u;
+                        rh->zone.root16 = 60 * 16;
+                        rh->zone.hi = 127;
+                        fl_write(base, al_cap_pg, sizeof *rh);
+                        al_rec_scan(al_cap.slot);
+                    } else {
+                        smp_user_hdr_t *uh = (smp_user_hdr_t *)al_cap_pg;
+                        memset(al_cap_pg, 0, sizeof al_cap_pg);
+                        uh->magic = SMP_USER_MAGIC;
+                        uh->version = 1u;
+                        uh->nz = 1u;
+                        uh->name[0] = 'U'; uh->name[1] = 'S'; uh->name[2] = 'R';
+                        uh->name[3] = (char)('1' + (al_cap.slot % SMP_USER_SLOTS));
+                        uh->data_len = al_cap_fl_off;
+                        uh->zone[0].n = al_cap_fl_off * 2u;
+                        uh->zone[0].le = uh->zone[0].n - 1u;
+                        uh->zone[0].rate = 14700u * 65536u / 44100u;
+                        uh->zone[0].root16 = 60 * 16;
+                        uh->zone[0].hi = 127;
+                        fl_write(base, al_cap_pg, 256u);
+                        memset(al_cap_pg, 0, sizeof al_cap_pg);
+                        memcpy(al_cap_pg, &uh->zone[0], sizeof uh->zone[0]);
+                        fl_write(base + 256u, al_cap_pg, 256u);
+                        smp_user_scan(al_cap.slot);
+                    }
+                }
+                al_cap_fl_off = 0u;
+                al_cap.state = 0u;
+                ui.force = 1;
+            }
+        }
+#endif
         felucca_dbg.stage = 9;
         while (fm1_ms - m < 15u) {
             ui_input();
@@ -393,6 +453,7 @@ UI_SMALL void fm1_cstart(void)
     p3 = fm1_boot.p3_rst;
     src = fm1_boot.rst_src;
     wdt = fm1_boot.wdt_con;
+
     fm1_wdt_arm(0x0D);
     if ((p3 & 1u) && !(p3 & (4u | 0x40u)))
         bootguard_clear(&bootguard);
