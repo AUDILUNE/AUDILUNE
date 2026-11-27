@@ -1236,9 +1236,23 @@ static uint32_t uac_packet(uint32_t *d)
 static void uac_service(void)
 {
     uint32_t csr, n;
-    if (!usb.up || !usb.config || !uac.alt)
+    if (!usb.up || !usb.config)
         return;
     sie_wr(S_INDEX, 4);
+    csr = sie_rd(S_RXCSR1);
+    if (csr & 0x01u) {
+        uint32_t rxn = sie_rd(S_RXCOUNT1) | (sie_rd(S_RXCOUNT2) << 8), nf = rxn >> 2, i, w = ua_in_w;
+        if (nf > UA_MAXF)
+            nf = UA_MAXF;
+        fm1_usb_rx_sync();
+        for (i = 0; i < nf; i++)
+            ua_in_ring[(w + i) & (UA_N - 1u)] = ep4rx[i];
+        RING_PUBLISH();
+        ua_in_w = w + nf;
+        sie_wr(S_RXCSR1, csr & ~0x05u);
+    }
+    if (!uac.alt)
+        return;
     csr = sie_rd(S_TXCSR1);
     if (csr & 0x01u) {                                  /* still queued */
         if (uac.wait < 255u && ++uac.wait == 40u && uac.flowing) {
@@ -1263,6 +1277,7 @@ static void uac_service(void)
 static void usb_poll(void)                              /* TIMER5 ISR, 2 kHz */
 {
     uint32_t iu, it, ir;
+
     if (!usb.up)
         return;
     if (fm1_usb_sof_take()) {                           /* SOF pending: not a reliable "host is there", */
