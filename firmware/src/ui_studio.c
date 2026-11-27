@@ -1075,7 +1075,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 
     if (scr == UI_PRESET_CAT) return 11u;
     if (scr == UI_PRESET_SUB) return ui.preset_cat == 2u ? 12u : ui.preset_cat == 4u ? 6u : ui.preset_cat == 5u ? 8u : 6u;
-    if (scr == UI_PRESET_LIST) return ui.preset_cat == 2u ? (uint32_t)ENGINES[ui.preset_sub % 12u]->npresets : ui.preset_cat == 3u ? 32u : ui.preset_cat == 5u ? 35u : 6u;
+    if (scr == UI_PRESET_LIST) return ui.preset_cat == 1u ? 4u : ui.preset_cat == 2u ? (uint32_t)ENGINES[ui.preset_sub % 12u]->npresets : ui.preset_cat == 3u ? 32u : ui.preset_cat == 5u ? 35u : 6u;
     if (scr == UI_BT_AUDIO) return 9u;
     if (scr == UI_WIFI_LIB) return 10u;
     return 0u;
@@ -1084,6 +1084,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 extern uint8_t al_layer_eng, al_layer_ready;
 extern int8_t al_layer_e[4 + 4];
 static uint32_t base_at(uint32_t n, uint32_t *k);
+
 
 UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, uint8_t val)
 {
