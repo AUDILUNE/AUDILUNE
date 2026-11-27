@@ -313,7 +313,7 @@ UI_SMALL static void ui_leds(void)
 #define ACC_FAST_MS 45u
 UI_SMALL static int32_t accel(uint32_t role, int32_t s, int32_t range)
 {
-    uint32_t now = fm1_ms & 0xFFFFFFu, st = ui.enc_t[role], up = s > 0, prev_m = (st >> 25) & 7u, a, dt, m = 1u;
+    uint32_t now = fm1_ms & 0xFFFFFFu, st = ui.enc_t[role], up = s > 0, prev_m = (st >> 25) & 15u, a, dt, m = 1u;
     if (knob_accel_off || range <= 16 || !s)
         return s;
     a = (uint32_t)(s < 0 ? -s : s);
@@ -321,16 +321,39 @@ UI_SMALL static int32_t accel(uint32_t role, int32_t s, int32_t range)
     if (!st || ((st >> 24) & 1u) != up || dt >= ACC_SLOW_MS) {
         m = 1u;
     } else if (dt < ACC_FAST_MS) {
-        uint32_t target = dt < 16u ? 6u : dt < 28u ? 4u : 2u;
-        uint32_t cap = range > 80 ? 6u : range > 40 ? 4u : 2u;
+        uint32_t target = dt < 10u ? 8u : dt < 18u ? 6u : dt < 30u ? 4u : 2u;
+        uint32_t cap = range > 120 ? 8u : range > 80 ? 6u : range > 40 ? 4u : 2u;
         if (target > cap)
             target = cap;
-        m = prev_m < target ? (prev_m == 1u ? 2u : prev_m == 2u ? 4u : 6u) : target;
+        m = prev_m < target ? (prev_m <= 1u ? 2u : prev_m == 2u ? 4u : prev_m == 4u ? 6u : 8u) : target;
     } else {
         m = prev_m > 2u ? 2u : 1u;
     }
-    ui.enc_t[role] = now | (up << 24) | ((m & 7u) << 25);
+    ui.enc_t[role] = now | (up << 24) | ((m & 15u) << 25);
     return s * (int32_t)m;
+}
+
+UI_SMALL static void al_key_aftertouch_poll(uint32_t now_ms)
+{
+    static uint32_t key_t0[27] __attribute__((section(".pool")));
+    uint32_t k, notes = fm1_in.notes, ti = song.sel % NTRK;
+    if (is_drum(TSEL) || !TSEL->synth_mode)
+        return;
+    for (k = 0; k < 27u; k++) {
+        uint32_t note = kb_map(TSEL, k);
+        if (note == KB_SILENT)
+            continue;
+        if ((notes >> k) & 1u) {
+            if (!key_t0[k])
+                key_t0[k] = now_ms ? now_ms : 1u;
+            uint32_t held = now_ms - key_t0[k];
+            uint32_t p = held <= 160u ? 0u : held >= 920u ? 127u : ((held - 160u) * 127u) / 760u;
+            al_voice_at_set(ti, note, p, smart_voice_mode(TSEL) == V_POLY);
+        } else if (key_t0[k]) {
+            key_t0[k] = 0u;
+            al_voice_at_set(ti, note, 0u, smart_voice_mode(TSEL) == V_POLY);
+        }
+    }
 }
 
 /* AUDILUNE v2.3 Main Layer Knobs (Live Play Page):
@@ -340,6 +363,7 @@ UI_SMALL static int32_t accel(uint32_t role, int32_t s, int32_t range)
  * Knob 4: Pattern A-F navigation */
 UI_SMALL static void audilune_main_knobs(uint32_t slot, int32_t steps)
 {
+
     track_t *t = TSEL;
     switch (slot) {
     case 0: {
