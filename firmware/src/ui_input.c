@@ -1468,6 +1468,8 @@ UI_SMALL static void ui_input(void)
     if (pressed || notes)
         ui_input_ms = fm1_ms;
     remote_poll();
+    al_key_aftertouch_poll(fm1_ms);
+
     pc_poll();
     midi_chan_fix();
     fm6_poll();
