@@ -1751,6 +1751,12 @@ UI_SMALL static void ui_input(void)
             rec_hud_usr = (uint8_t)((rec_hud_usr + (s > 0 ? 1u : 5u)) % 6u);
             audilune_hud_popup("REC USR", (int32_t)rec_hud_usr + 1, "");
             ui.force = 1;
+        } else if (ui.scr >= UI_PRESET_CAT && ui.scr <= UI_PRESET_LIST && k == 3u && s < 0) {
+            ui.list_sel = 0u; ui.list_top = 0u;
+            if (ui.scr == UI_PRESET_LIST) ui.scr = (ui.preset_cat == 0u || ui.preset_cat == 2u || ui.preset_cat == 3u) ? UI_PRESET_SUB : UI_PRESET_CAT;
+            else if (ui.scr == UI_PRESET_SUB) ui.scr = UI_PRESET_CAT;
+            else go_home();
+            ui.force = 1;
         } else if (ui.scr == UI_SEQ && al_seq_ovw && k == 3u) {
             al_seq_ovw_step = (uint8_t)((al_seq_ovw_step + (s > 0 ? 1u : 127u)) & 127u);
             audilune_hud_popup("STEP", (int32_t)al_seq_ovw_step + 1, "");
@@ -1763,6 +1769,7 @@ UI_SMALL static void ui_input(void)
         } else if (ui.scr >= UI_FX) {
             audilune_list_knob(k, s);
         } else {
+
 
             edit_param(k, s);
         }
