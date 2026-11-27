@@ -1506,8 +1506,14 @@ UI_SMALL static void ui_input(void)
         pressed &= ~(1u << panel.btn[B_HOME]);
         ui_input_ms = fm1_ms;
         vis_on = 0;
-        go_home();
-        ui_message("HOME");
+        if (ui.radio_part != 0u || ui.scr == UI_BT_AUDIO || ui.scr == UI_WIFI_LIB) {
+            ui.trans_target = 0u;
+            ui.trans_t0 = fm1_ms;
+            ui.scr = UI_PART_TRANS;
+        } else {
+            go_home();
+            ui_message("HOME");
+        }
         ui.list_sel = 0;
         ui.list_top = 0;
         ui.force = 1;
@@ -1528,6 +1534,7 @@ UI_SMALL static void ui_input(void)
             ui.sheet = 0;
             pressed &= ~ob;
         }
+
         if (ev)
             ui.force = 1;
     }
