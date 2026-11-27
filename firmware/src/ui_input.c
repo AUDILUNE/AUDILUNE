@@ -1016,16 +1016,34 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 audilune_hud_popup(*(AL_GLO_ROWS + row), (int32_t)ui.save_vault + 1, "");
             }
         } else if (!ui.home && ui.scr == UI_PRESET_CAT) {
-            ui.preset_cat = ui.list_sel % 9u;
+            ui.preset_cat = ui.list_sel % 11u;
             ui.list_sel = 0u; ui.list_top = 0u;
-            ui.scr = (ui.preset_cat == 0u || ui.preset_cat == 2u || ui.preset_cat == 3u) ? UI_PRESET_SUB : UI_PRESET_LIST;
+            if (ui.preset_cat == 0u) {
+                TSEL->synth_mode = 1; TSEL->eng_req = 4u; TSEL->preset = 13u;
+                ui_message("USB-C AUDIO IN");
+                go_home();
+            } else if (ui.preset_cat == 1u) {
+                TSEL->synth_mode = 1; TSEL->eng_req = 4u; TSEL->preset = 12u;
+                ui_message("LIVE REC (120S)");
+                go_home();
+            } else {
+                ui.scr = (ui.preset_cat == 2u || ui.preset_cat == 4u || ui.preset_cat == 5u) ? UI_PRESET_SUB : UI_PRESET_LIST;
+            }
         } else if (!ui.home && ui.scr == UI_PRESET_SUB) {
             ui.preset_sub = ui.list_sel;
             ui.list_sel = 0u; ui.list_top = 0u;
             ui.scr = UI_PRESET_LIST;
         } else if (!ui.home && ui.scr == UI_PRESET_LIST) {
-            if (ui.preset_cat == 0u) { select_engine(ui.preset_sub % 12u); apply_preset(ui.list_sel); }
-            else if (ui.preset_cat == 1u) { TSEL->synth_mode = 0; TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u); }
+            if (ui.preset_cat == 2u) { select_engine(ui.preset_sub % 12u); apply_preset(ui.list_sel); }
+            else if (ui.preset_cat == 3u) { TSEL->synth_mode = 0; TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u); }
+            else if (ui.preset_cat == 5u) {
+                uint32_t ei;
+                for (ei = 0u; ei < NENGINES && ENGINES[ei] != &ENG_FORMANT; ei++) ;
+                select_engine(ei);
+                al_vox_char = ui.preset_sub & 7u;
+                if (ui.list_sel >= 33u) apply_preset(ui.list_sel == 33u ? 18u : 19u);
+                else { al_vox_phrase = ui.list_sel % 33u; apply_preset(7u); }
+            }
             ui_message("SOUND LOADED");
             go_home();
         } else if (!ui.home && ui.scr == UI_BT_AUDIO) {
@@ -1050,6 +1068,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
     case LY_MIX:
         audilune_toggle_scr(UI_GLO, FAM_GLO, "GLOBAL");
         break;
+
     case LY_SONG:
 
         audilune_toggle_scr(UI_SAVE, FAM_SAVE, "SAVE VAULT");
