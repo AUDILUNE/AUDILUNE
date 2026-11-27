@@ -2018,7 +2018,7 @@ UI_SMALL static void audilune_page_draw(void)
             uint32_t r = top + i;
             int32_t y = (int32_t)i * 22;
             uint32_t row_locked = (ui.scr == UI_FX || ui.scr == UI_ENV || ui.scr == UI_LFO) && ((al_row_lock_mask >> r) & 1u);
-            char lbl, val;
+            char lbl[24], val[16];
             audilune_row_text(ui.scr, r, lbl, val);
             if (r == sel) cv_rect(2, y + 1, 236, 20, C_WHITE);
             else if (row_locked) {
@@ -2028,7 +2028,7 @@ UI_SMALL static void audilune_page_draw(void)
             cv_text(8, y + 3, &FONT_S, lbl, r == sel ? C_BLACK : C_WHITE);
             if (row_locked)
                 cv_text(8 + text_w(&FONT_S, lbl) + 5, y + 3, &FONT_S, "[L]", r == sel ? C_BLACK : HUD_ACCENT);
-            if (val) {
+            if (val[0]) {
                 int32_t vw = text_w(&FONT_S, val), bx = 232 - vw - 6;
                 if (ui.scr == UI_FX) {
 
@@ -2045,8 +2045,8 @@ UI_SMALL static void audilune_page_draw(void)
         cv_blit(0, y0);
     }
     {
-        static const char *const HUD_L = {"BPM", "CLICK", "VAL", "OPT"};
-        static const char *const HUD_V = {"", "", "", ""};
+        static const char *const HUD_L[4] = {"BPM", "CLICK", "VAL", "OPT"};
+        static const char *const HUD_V[4] = {"", "", "", ""};
         audilune_hud_bar(HUD_L, HUD_V, sect, &footer);
     }
 }
