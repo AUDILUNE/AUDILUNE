@@ -1896,7 +1896,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 6u) str_cpy(val, *(AL_THM + (audilune_theme_idx & 7u)), 14);
         else if (row == 7u) str_cpy(val, "CH 1-6", 14);
         else if (row == 8u) str_cpy(val, "SEND+RECV", 14);
-        else if (row == 9u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : "INT", 14);
+        else if (row == 9u) str_cpy(val, song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : song.g[G_SYNC] == 3 ? "AUDIO BPM" : "INT", 14);
         else if (row == 10u) str_cpy(val, "STEREO+IN", 14);
         else str_cpy(val, "VIEW", 14);
     } else if (scr == UI_PRESET_CAT) {
@@ -1923,6 +1923,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 1u) row_kv(lbl, val, "CATEGORY", *(AL_BT_CATS + (ui.bt_cat % 6u)));
         else if (row == 8u) row_kv(lbl, val, "VISUALIZER", "OPEN");
         else { str_cpy(lbl, "SLOT 0", 18); fmt_int(lbl + 6, (int32_t)row - 1); row_kv(0, val, 0, "PLAY"); }
+
     } else if (scr == UI_WIFI_LIB) {
         if (row == 0u) row_kv(lbl, val, "WI-FI STATUS", "READY");
         else if (row <= 8u) row_kv(lbl, val, *(AL_WIFI_CATS + ((row - 1u) & 7u)), "SYNC");
