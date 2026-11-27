@@ -893,7 +893,7 @@ static const struct { uint8_t kind, e; const char *name; } BANK[] = {
     {BK_FX, ENGI_NOISE, "FOLEY CRK"}, {BK_FX, 3, "CHIP NOISE"},
     {BK_BASS, 0, "MOOG BASS"}, {BK_LEAD, 0, "MINIMOOG D"}, {BK_LEAD, 0, "MOOG LEAD"}, {BK_STAB, 0, "MOOG BRASS"},
     {BK_LEAD, 0, "EMS VCS3"}, {BK_LEAD, 0, "SYNTHI AKS"}, {BK_FX, 0, "VCS3 MATRIX"}, {BK_PAD, 0, "VCS3 DRONE"},
-    {BK_LEAD, 0, "FLOYD VCS3"}, {BK_LEAD, 0, "HANZ VOLX"},
+    {BK_LEAD, 0, "FLOYD VCS3"}, {BK_LEAD, 0, "HANZ VOLX"}, {BK_BASS, 0, "RUBBER BALL"},
     {BK_LEAD, 1, "DERBYSHIRE TAPE"}, {BK_FX, 1, "RADIOPHONIC WHO"}, {BK_PAD, 1, "ENO AMBIENT"}, {BK_KEYS, 1, "UPRIGHT PNO"},
     {BK_LEAD, 6, "HILLAGE GLISS"}, {BK_STAB, 6, "VANGELIS CS80"}, {BK_PAD, 6, "JARRE EMINENT"},
     {BK_BASS, 6, "TANGERINE MOOG"}, {BK_LEAD, 6, "CARLOS MODULAR"}, {BK_LEAD, 6, "KRAFTWERK SYNC"},
@@ -910,6 +910,7 @@ static const struct { uint8_t kind, e; const char *name; } BANK[] = {
     {BK_FX, ENGI_SLICE, "USR SLICE"},
 #endif
 };
+
 #define NBANK (sizeof BANK / sizeof BANK[0])
 #define WHEEL_USMP_N 6u
 static uint8_t bank_pi[NBANK];                       /* the preset index of each entry in its engine */
