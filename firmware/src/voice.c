@@ -808,6 +808,18 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     const engine_t *e = ENGINES[t->engine];
     const int16_t *p = t->p;
     uint32_t i;
+    if (t->engine == 4u && t->preset == 13u) {          /* USB-C AUDIO IN: live pass-through + rolling tape + 120s rec */
+        uac_in_read(out, n);
+        for (i = 0; i < n; i++) {
+            int16_t s = (int16_t)clamp(out[i], -32768, 32767);
+            al_tape_push(s);
+            if (al_cap_rec_mode && (al_cap.state == 1u || al_cap.state == 2u))
+                al_smp_cap_push(s);
+        }
+        if (al_tape_rate16 && al_tape_rate16 != 65536)
+            al_tape_read(out, n);
+        return 1u;
+    }
     int32_t lfo = mulq15(t->lfo_val, t->lfo_fade);
     /* TUNE in cents: whole 1/16 semitones in the pitch, the rest as a fine factor (no dead zone) */
     int32_t tune = song.g[G_TUNE] >= 0 ? song.g[G_TUNE] * 16 / 100 : -((-song.g[G_TUNE] * 16 + 99) / 100);
@@ -828,6 +840,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     bendq = ((int32_t)t->bend_s * clamp(song.g[G_BEND], 1, 12)) >> 1;   /* MIDI pitch bend (2.6): 1/4096 semitone,
                                                                          * gliding (a quarter of the way a block) */
     int lyr = (t == TSEL && al_layer_ready && al_layer_preset > 0u && al_layer_mix > 0u);
+
    int32_t b2[CTL];
    uint32_t k;
    if (lyr)
