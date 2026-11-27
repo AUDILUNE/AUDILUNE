@@ -56,7 +56,8 @@ typedef struct {
 } smp_user_hdr_t;                                   /* 32 + 16 x 28 = 480 B, data at +512 */
 static smp_zone_t usr_zone[SMP_USER_SLOTS][16];     /* RAM copy, off rebased onto SMP_DATA */
 static uint8_t usr_nz[SMP_USER_SLOTS];
-static const char *const SMP_ALL_NAMES[SMP_NALL] = {SMP_SET_NAMES_INIT, "USR1", "USR2", "USR3", "USR4", "USR5", "USR6"};
+static uint8_t usr_is_factory[SMP_USER_SLOTS] __attribute__((section(".pool")));
+static const char *const SMP_ALL_NAMES[SMP_NALL] = {SMP_SET_NAMES_INIT, "SMP 01", "SMP 02", "SMP 03", "SMP 04", "SMP 05", "SMP 06"};
 
 #ifndef SMP_USER_XIP                                /* host tests: a RAM image of the slots */
 #define SMP_USER_XIP(k) fm1_xip_ptr(SMP_USER_OFF((uint32_t)(k)))
@@ -77,6 +78,21 @@ static int smp_zone_ok(const smp_zone_t *z, uint32_t data_len)
     return z->off <= data_len && z->n <= 2u * SMP_USER_SIZE && z->off + (z->n + 1u) / 2u <= data_len &&
            z->idx <= 88u && z->rate && z->rate <= 4u << 16 && z->ls <= z->le && z->le < z->n && z->lo <= z->hi;
 }
+static void smp_user_factory_fill(uint32_t k)
+{
+    if (SMP_NSETS > 0u) {
+        const smp_set_t *set = &SMP_SETS[(k * SMP_NSETS) / SMP_USER_SLOTS];
+        uint32_t zi = set->z0 + (set->nz >> 1);
+        fm1_irq_off();
+        usr_zone[k][0] = SMP_ZONES[zi];
+        usr_zone[k][0].lo = 0;
+        usr_zone[k][0].hi = 127;
+        usr_nz[k] = 1u;
+        usr_is_factory[k] = 1u;
+        fm1_irq_on();
+        slc_user_scan(k, 1);
+    }
+}
 static void smp_user_scan(uint32_t k)
 {
     const smp_user_hdr_t *h = (const smp_user_hdr_t *)smp_user_xip(k);
@@ -84,30 +100,37 @@ static void smp_user_scan(uint32_t k)
     uint32_t i, base;
     smp_user_gen++;
     usr_nz[k] = 0;                                  /* (from here no new voice takes the slot) */
+    usr_is_factory[k] = 0;
     slc_user_scan(k, 0);
     if (h->magic != SMP_USER_MAGIC || h->version != 1 || !h->nz || h->nz > 16u ||
-        h->data_len > SMP_USER_SIZE - SMP_USER_DATA)
+        h->data_len > SMP_USER_SIZE - SMP_USER_DATA) {
+        smp_user_factory_fill(k);
         return;
+    }
     base = (uint32_t)(uintptr_t)(smp_user_xip(k) + SMP_USER_DATA) - (uint32_t)(uintptr_t)SMP_DATA;
     for (i = 0; i < h->nz; i++) {                   /* checked in a copy: a voice still playing the slot */
         zs[i] = h->zone[i];                         /* never reads a zone that is not valid */
-        if (!smp_zone_ok(&zs[i], h->data_len))
-            return;                                 /* zone outside the data or malformed: slot unusable */
+        if (!smp_zone_ok(&zs[i], h->data_len)) {
+            smp_user_factory_fill(k);
+            return;                                 /* zone outside the data or malformed: restore factory */
+        }
         zs[i].off += base;
     }
     fm1_irq_off();
     for (i = 0; i < h->nz; i++)
         usr_zone[k][i] = zs[i];
     usr_nz[k] = h->nz;
+    usr_is_factory[k] = 0;
     fm1_irq_on();
     slc_user_scan(k, 1);
 }
 
-#define AL_REC_SLOTS 4u
+#define AL_REC_SLOTS 6u
 static smp_zone_t al_rec_zone[AL_REC_SLOTS] __attribute__((section(".pool")));
 static uint8_t al_rec_valid[AL_REC_SLOTS] __attribute__((section(".pool")));
 
 /* zone index in a voice: < 0x8000 built-in, >= 0xC000 LIVE REC, else 0x8000 | slot << 5 | zone */
+
 static inline const smp_zone_t *smp_zone(uint32_t zi)
 {
     return zi < 0x8000u ? &SMP_ZONES[zi] : zi >= 0xC000u ? &al_rec_zone[zi & 3u] : &usr_zone[(zi >> 5) & 7u][zi & 31u];
