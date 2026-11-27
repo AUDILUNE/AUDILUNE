@@ -218,7 +218,6 @@ static void formant_note_on(track_t *t, voice_t *v)
         if (!(t->preset == 8u && (v->env || v->env_out) && vox_len > 0u)) {
             vox_build_phrase(vi, slot, use_lib, g, (uint32_t)formant_nz + (uint32_t)v->note * 17u);
             vox_idx = 0;
-
             vox_tmr = 0;
         }
     } else {
@@ -248,16 +247,35 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
 
     /* vowel: VOWEL -> VOWL2 over TALK after note-on; ENV / LFO -> FLT move both */
     k = 0;
+    uint32_t talk_g = 0;
     if (p[P_E2]) {
         uint32_t g = ((uint32_t)v->s[7 + 0] & FMT_TALK_MASK) + ENV_LIN[p[P_E2] & 127];
         g = g > (1u << 24) ? 1u << 24 : g;
         v->s[7 + 0] = (int32_t)(((uint32_t)v->s[7 + 0] & ~(uint32_t)FMT_TALK_MASK) | g);
+        talk_g = g;
         k = (int32_t)(g >> 9);                          /* Q15 */
         k = (k * (65536 - k)) >> 15;                    /* ease out: the mouth opens fast, then settles */
     }
-    uint32_t vox_on = (t->preset >= 7u && vox_len > 0u);
+    uint32_t vox_on = (t->preset >= 7u && t->preset < 18u && vox_len > 0u);
     int32_t vox_gv = 32767, vox_gn = 0, vox_burst = 0, vox_bend = 0, ch_shift = 0, ch_q = 0;
-    if (vox_on) {
+    if (t->preset == 18u || t->preset == 19u) {
+        int32_t ph8 = (int32_t)(talk_g >> 16), st16 = 0;
+        if (t->preset == 18u) {                         /* WILHELM: sharp rise + descending cry */
+            st16 = ph8 < 48 ? ((ph8 * 56) / 48) : (ph8 < 192 ? (56 - (((ph8 - 48) * 224) / 144)) : -168);
+            vox_gn = ph8 < 192 ? 9500 : 3000;
+        } else {                                        /* JOKER LAUGH: 6-syllable manic cackle */
+            static const int8_t JOK_ST[3 + 3] = {0, 32, 64, 96, 127, 112};
+            int32_t syl = ph8 / 42, sub = ph8 - syl * 42;
+            if (syl < 6) {
+                st16 = JOK_ST[syl] + (sub >> 1);
+                if (sub < 10) { vox_gv = 5000; vox_gn = 28000; }
+                else if (sub < 31) { vox_gv = 32767; vox_gn = 8500; }
+                else { vox_gv = 0; vox_gn = 1500; }
+            } else { vox_gv = 0; vox_gn = 0; }
+        }
+        inc = (uint32_t)(((uint64_t)inc * fmt_ratio(st16)) >> 16);
+        vox_bend = st16 >> 1;
+    } else if (vox_on) {
         static const int8_t CH_SHIFT[4 + 4] = {0, -80, 64, 128, 48, -32, -64, 32};
         static const int8_t CH_Q[4 + 4] = {0, -16, 8, 18, -12, 12, 28, 10};
         static const uint8_t CH_BRTH[4 + 4] = {0, 0, 24, 0, 110, 12, 0, 32};
@@ -273,6 +291,7 @@ static void formant_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, con
         uint32_t nxt_i = (cur_i + 1u) < vox_len ? (cur_i + 1u) : cur_i;
         const vox_ph_t *pa = &VOX_PH[vox_seq[cur_i] % 24u], *pb = &VOX_PH[vox_seq[nxt_i] % 24u];
         int32_t frac = step_b ? (int32_t)(((uint32_t)vox_tmr << 15) / step_b) : 0;
+
         if (frac > 32767) frac = 32767;
         if (t->preset == 7u && ci != 7u) frac = (frac * frac) >> 15; /* DECTALK: crisp robotic phoneme snap */
         else if (t->preset == 8u || ci == 7u) frac = (frac * (65536 - frac)) >> 15; /* lush legato vowel glide */
