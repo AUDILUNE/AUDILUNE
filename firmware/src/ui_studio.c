@@ -1612,8 +1612,8 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             song.g[G_MIDI] = (int16_t)((song.g[G_MIDI] + (s > 0 ? 1 : 3)) & 3);
             audilune_hud_text("ROUTING", *(AL_MROUTE + (song.g[G_MIDI] & 3)));
         } else if (row == 9u) {
-            song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
-            audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
+            song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 3)) & 3);
+            audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : song.g[G_SYNC] == 3 ? "AUDIO BPM" : "INT");
         } else if (row == 10u) {
             static const char *const AL_USBIO[] = {"STEREO+IN", "STEREO ONLY", "DRY MON"};
             static uint8_t usb_io_m;
@@ -1628,6 +1628,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
     } else if (ui.scr == UI_BT_AUDIO) {
         if (k == 2u) {
             audilune_sel_vol(s);
+
         } else if (row == 0u) {
             ui.bt_dev_idx = (uint8_t)((ui.bt_dev_idx + (s > 0 ? 1u : 4u)) % 5u);
             audilune_hud_popup("BT SCAN", (int32_t)ui.bt_dev_idx + 1, "");
