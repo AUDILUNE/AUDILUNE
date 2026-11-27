@@ -2103,10 +2103,21 @@ static void roll_block(uint32_t adv)
         }
     }
 }
+static uint8_t al_vel_curve;
+static const uint8_t AL_VEL_CURVE[4][4] = {
+    {48, 100, 114, 127},  /* 0: LINEAR */
+    {32,  76,  96, 118},  /* 1: SOFT */
+    {72, 112, 122, 127},  /* 2: HARD */
+    {112, 112, 112, 112}, /* 3: FIXED */
+};
 static uint32_t key_lvl(void)
 {
     uint32_t b = fm1_in.buttons;
     return (b & dyn_bit[0]) ? LV_GHOST : (b & dyn_bit[1]) ? LV_HARD : LV_NORM;
+}
+static uint32_t al_kb_vel(void)
+{
+    return AL_VEL_CURVE[al_vel_curve & 3u][key_lvl() & 3u];
 }
 
 static uint32_t chord_mods(void)
@@ -2118,6 +2129,7 @@ static uint32_t chord_mods(void)
     return m;
 }
 static void chord_revoice(uint32_t sel)
+
 {
     uint32_t k, i, j, mods = chord_mods(), mc = trk_midi_ch(sel);
     track_t *t = &trk[sel % NTRK];
