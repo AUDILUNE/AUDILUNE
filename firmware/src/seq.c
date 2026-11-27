@@ -2737,62 +2737,36 @@ static track_t *midi_route(uint32_t ch, uint32_t note, int on)
         return 0;
     t = TSEL;
     if (on)
-        midi_sel_set(ch, note, song.sel + 1u);
-    else if (midi_sel_get(ch, note)) {
-        t = &trk[(midi_sel_get(ch, note) - 1u) % NTRK];
-        midi_sel_set(ch, note, 0);
+        }
+        {
+            uint32_t vel = al_kb_vel();
+            in_key = (uint8_t)(k + 1u);
+            for (tr = 0; tr < NTRK; tr++) {
+                if (!((lmask >> tr) & 1u))
+                    continue;
+                mc = trk_midi_ch(tr);
+                for (i = 0; i < *(kb_n + k); i++) {
+                    uint32_t nt = *(*(kb_nt + k) + i);
+                    in_chord = *(kb_n + k) > 1u ? *(kb_nt + k) : 0;
+                    in_chord_n = *(kb_n + k);
+                    in_chord_i = i;
+                    input_on(trk + tr, nt, vel);
+                    in_chord = 0;
+                    midi_out_note(mc, nt, vel);
+                }
+            }
+            in_key = 0;
+        }
+        if (!(kb_prev & ~(1u << k)) || pen_n >= 4u)
+            pen_n = 0;
+        for (i = 0; i < *(kb_n + k) && pen_n < 4u; i++)
+            *(pen_note + pen_n++) = *(*(kb_nt + k) + i);
     }
-    return t;
 }
 
-static uint8_t ch_sus[16], ch_bend[16];
-static uint8_t ch_bank[16];
-static void sus_set(track_t *t, int on);
-static void midi_pedal(uint32_t ch, track_t *t, uint32_t value)
+static void key_up(uint32_t k)
 {
-    uint32_t was = ch_sus[ch & 15u];
-    if (was && was - 1u != trk_index(t))
-        sus_set(&trk[(was - 1u) % NTRK], 0);
-    ch_sus[ch & 15u] = (uint8_t)(value >= 64u ? trk_index(t) + 1u : 0u);
-}
-static void midi_bend(uint32_t ch, track_t *t, uint32_t d1, uint32_t d2)
-{
-    uint32_t was = ch_bend[ch & 15u];
-    if (was && was - 1u != trk_index(t))
-        trk[(was - 1u) % NTRK].bend = 0;
-    t->bend = (int16_t)((int32_t)(d1 | d2 << 7) - 8192);
-    ch_bend[ch & 15u] = (uint8_t)(trk_index(t) + 1u);
-}
-#define MCC_RES 0xFFu
-#define MCC_CUT 0xFEu
-static const uint8_t MIDI_CC_MAP[][2] = {
-    {5, P_GLIDE}, {7, P_LEVEL}, {10, P_PAN}, {71, MCC_RES}, {72, P_REL}, {73, P_ATK}, {74, MCC_CUT}, {75, P_DEC},
-    {91, P_REV}, {93, P_CHOR}, {94, P_DLY},
-};
-#define ML_N 16u
-#define ML_E0 120u
-_Static_assert(P_E0 < ML_E0 && P_COUNT - P_E0 == 8, "MIDI LEARN: a code per parameter");
-static volatile uint16_t ml_tab[ML_N];
-static volatile uint8_t ml_arm, ml_heard;
-static uint32_t ml_id(uint32_t code)
-{
-    return code >= ML_E0 ? (code - ML_E0 < 8u ? P_E0 + code - ML_E0 : P_COUNT) : code && code <= P_E0 ? code - 1u : P_COUNT;
-}
-static int ml_free_cc(uint32_t cc)
-{
-    return cc && cc < 120u && cc != 1u && cc != 6u && cc != 11u && cc != 32u && cc != 38u && cc != 64u &&
-           (cc < 96u || cc > 101u);
-}
-static void sus_set(track_t *t, int on)
-{
-    uint32_t ti = trk_index(t) % NTRK, n;
-    if (is_drum(t))
-        return;
-    sus_on[ti] = (uint8_t)(on != 0);
-    if (on)
-        return;
-    for (n = 0; n < 128u; n++)
-        if ((sus_wait[ti][n >> 5] >> (n & 31u)) & 1u) {
+
             sus_wait[ti][n >> 5] &= ~(1u << (n & 31u));
             input_off(t, n);
         }
