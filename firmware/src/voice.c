@@ -928,7 +928,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             int32_t st = v->gstep ? v->gstep : (int32_t)((ENV_LIN[p[P_GLIDE] & 127] * 3u) >> 10);   /* RATE: an octave in GLIDE */
             if (st < 1)
                 st = 1;
-            q += d > 0 ? (d < st ? d : st) : (-d < st ? d : -st);
+               q += d > 0 ? (d < st ? d : st) : (-d < st ? d : -st);
             v->pitch_cur = q >> 8;
             v->pitch_frac = (uint8_t)(q & 255);
         }
@@ -936,21 +936,42 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             v->penv = (int16_t)(v->penv - ((v->penv * 590 + 32767) >> 15));
         if (!env && !m.amp0 && v->stage == 2 && !eng_sampled(ve))
             continue;                                   /* held at a silent sustain (SUS 0): nothing to render */
-        {   /* the pitch in 1/4096 semitone: glide, LFO, the pitch envelope; the fraction goes into the increment */
-            int32_t q = (v->pitch_cur << 8) + v->pitch_frac + ((lfo * p[P_LD_PIT] * 3) >> 7) +
-                        ((v->penv * p[P_ED_PIT] * 3) >> 7) + bendq;
-            pitch = (q >> 8) + tune;
-            m.pitch16 = clamp(pitch, 0, 2047);
-            m.inc = pitch_inc(m.pitch16);
-            q = (q & 255) * 3792 >> 16;                 /* the fraction, as fine (1/16 st = 14.8) */
-            m.fine = v->fine + tune_fine + q;
-            if (m.fine)                                 /* unison detune, fine tune and the fraction */
-                m.inc += (uint32_t)((int32_t)(m.inc >> 12) * m.fine);
+        {   /* AUDILUNE Priority #1: Per-Voice Aftertouch, Analog Voice-Card Tolerance & 3D Orbital Pan */
+            uint32_t ti = (uint32_t)(t - trk) % NTRK;
+            uint8_t tgt = v->gate ? al_voice_at_tgt[ti][i] : 0u;
+            int32_t cur_at = (int32_t)al_voice_at[ti][i];
+            int32_t eff_tgt = tgt > 12u ? (int32_t)(tgt - 12u) * 127 / 115 : 0;
+            int32_t step_at = eff_tgt > cur_at ? ((eff_tgt - cur_at + 1) >> 1) : ((eff_tgt - cur_at - 3) >> 2);
+            int32_t at_q, card_det = 0, orb;
+            cur_at = clamp(cur_at + step_at, 0, 127);
+            al_voice_at[ti][i] = (uint8_t)cur_at;
+            if ((uint8_t)cur_at > al_trk_at_max[ti])
+                al_trk_at_max[ti] = (uint8_t)cur_at;
+            at_q = cur_at * 258;                        /* Q15 aftertouch (0..32766) */
+            if (!eng_sampled(ve) && smart_voice_mode(t) == V_POLY && t->p[P_TRANS] > -12) {
+                static const int8_t CARD_CENTS[8] = {-4, 3, -2, 5, -3, 4, -5, 2};
+                al_voice_drift[ti][i] = (int16_t)(al_voice_drift[ti][i] + ((int32_t)(i & 1u ? 1 : -1)));
+                card_det = (int32_t)CARD_CENTS[i & 7u] * 2 + (al_voice_drift[ti][i] >> 13);
+            }
+            orb = (((int32_t)(i & 7u) - 3) * 24) + (lfo >> 9);
+            if (v->gate)
+                al_trk_orbit_pan[ti] = (int8_t)clamp(((int32_t)al_trk_orbit_pan[ti] + clamp(orb, -127, 127)) >> 1, -127, 127);
+            {   /* the pitch in 1/4096 semitone: glide, LFO, pitch envelope, aftertouch vibrato, analog card spread */
+                int32_t q = (v->pitch_cur << 8) + v->pitch_frac + ((lfo * p[P_LD_PIT] * 3) >> 7) +
+                            ((v->penv * p[P_ED_PIT] * 3) >> 7) + bendq;
+                pitch = (q >> 8) + tune;
+                m.pitch16 = clamp(pitch, 0, 2047);
+                m.inc = pitch_inc(m.pitch16);
+                q = (q & 255) * 3792 >> 16;             /* the fraction, as fine (1/16 st = 14.8) */
+                m.fine = v->fine + tune_fine + q + card_det + ((at_q * (lfo >> 9)) >> 16);
+                if (m.fine)                             /* unison detune, fine tune, card spread & fraction */
+                    m.inc += (uint32_t)((int32_t)(m.inc >> 12) * m.fine);
+            }
+            m.cutoff = ((lfo * p[P_LD_FLT]) >> 7) + ((m.envq15 * p[P_ED_FLT]) >> 7) + ((at_q * 44) >> 15);
+            if (v->vel > 110)                           /* accent opens the filter with the env */
+                m.cutoff += (m.envq15 * 24) >> 7;
+            m.shape = (64 << 8) + ((lfo * p[P_LD_SHP]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7) + ((at_q * 28) >> 7);
         }
-        m.cutoff = ((lfo * p[P_LD_FLT]) >> 7) + ((m.envq15 * p[P_ED_FLT]) >> 7);
-        if (v->vel > 110)                               /* accent opens the filter with the env */
-            m.cutoff += (m.envq15 * 24) >> 7;
-        m.shape = (64 << 8) + ((lfo * p[P_LD_SHP]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7);
         if (is_lyr_v) {
             uint8_t se = t->engine;
             int16_t sp[4 + 4];
@@ -980,6 +1001,13 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             out[k] = clamp(s, -131072, 131071);
         }
     }
+    if (nr) {                                           /* non-degrading Class-A analog harmonic warmth */
+        for (k = 0; k < n; k++) {
+            int32_t s = out[k], x = clamp(s >> 2, -32767, 32767);
+            int32_t x2 = (x * x) >> 15, x3 = (x2 * x) >> 15;
+            out[k] = clamp(s - ((x3 * 3) >> 2), -131072, 131071);
+        }
+    }
     if (fade) {
         for (i = 0; i < 8u; i++)
             t->p[P_E0 + i] = pe_new[i];
@@ -987,4 +1015,3 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     }
     return nr;
 }
-
