@@ -1005,9 +1005,18 @@ static const char *const AL_LFO_ROWS[] = {
     "TRIGGER", "FADE-IN / SLEW", "VELOCITY -> LFO"
 };
 static const char *const AL_GLO_ROWS[] = {
-    "LOAD SONG", "LOAD / RESTORE SMP", "LOAD BOUNCE", "LOAD CHOP KIT",
+    "RADIO MODE", "LOAD SONG", "LOAD / RESTORE SMP", "LOAD BOUNCE", "LOAD CHOP KIT",
     "LOAD ARP PATTERN", "COLOR THEME", "MIDI CHANNELS", "MIDI ROUTING",
-    "CLOCK SYNC", "USB AUDIO I/O"
+    "CLOCK SYNC", "USB AUDIO I/O", "CREDITS / ABOUT"
+};
+static const char *const AL_PART_NAMES[] = {"AUDILUNE HOME", "BT SPEAKER", "AUDILUNE LIBRARY"};
+static const char *const AL_PRESET_CATS[] = {
+    "SYNTHS & INST", "DRUMS (01-32)", "TEXTURES (32)", "VOCALS (DECTALK)",
+    "SAMPLES (USR1-6)", "BOUNCES (01-06)", "CHOPS (01-06)", "LOOPS (01-06)", "USER PRESETS"
+};
+static const char *const AL_BT_CATS[] = {"SONGS", "BOUNCES", "LOOPS", "CHOPS", "SAMPLES", "VOCALS"};
+static const char *const AL_WIFI_CATS[] = {
+    "SAMPLES", "BOUNCES", "CHOPS", "LOOPS", "USER PRESETS", "SONGS", "ARP PATTERNS", "VOCALS"
 };
 static const char *const AL_SAVE_ROWS[] = {
     "SAVE SAMPLE", "BOUNCE / FLATTEN", "SAVE CHOP KIT",
@@ -1048,6 +1057,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_ENV) return 8u;
     if (scr == UI_LFO) return 7u;
     if (scr == UI_LANDSCAPE) return 10u;
+
     if (scr == UI_EDIT) return 13u;
     if (scr == UI_ARP) return 4u;
     if (scr == UI_GLO) return 10u;
