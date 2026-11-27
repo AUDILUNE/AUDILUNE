@@ -1689,13 +1689,21 @@ UI_SMALL static void ui_input(void)
             uint32_t rows = audilune_page_rows(ui.scr);
             if (rows) {
                 ui.list_sel = (uint8_t)(((int32_t)ui.list_sel + s % (int32_t)rows + (int32_t)rows) % (int32_t)rows);
-                if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 0u) {
+                if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 2u) {
                     if (!TSEL->synth_mode) TSEL->synth_mode = 1;
                     if (TSEL->eng_req != (ui.preset_sub % 12u)) select_engine(ui.preset_sub % 12u);
                     apply_preset(ui.list_sel);
-                } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 1u) {
+                } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 3u) {
                     TSEL->synth_mode = 0;
                     TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u);
+                } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 5u) {
+                    uint32_t ei;
+                    for (ei = 0u; ei < NENGINES && ENGINES[ei] != &ENG_FORMANT; ei++) ;
+                    if (!TSEL->synth_mode) TSEL->synth_mode = 1;
+                    if (TSEL->eng_req != (ei % NENGINES)) select_engine(ei);
+                    al_vox_char = ui.preset_sub & 7u;
+                    if (ui.list_sel >= 33u) apply_preset(ui.list_sel == 33u ? 18u : 19u);
+                    else { al_vox_phrase = ui.list_sel % 33u; apply_preset(7u); }
                 }
             }
         }
@@ -1713,6 +1721,7 @@ UI_SMALL static void ui_input(void)
                                    : AUDILUNE_GENRE_COUNT + clamp((int32_t)TDRUM->p[P_E0], 0, (int32_t)DRUM_KITS - 1);
             ui.scr = UI_ALGO;
             ui.list_top = 0;
+
         } else {
 
             pos = (int32_t)ui.list_sel;
