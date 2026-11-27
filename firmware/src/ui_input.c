@@ -1857,8 +1857,15 @@ UI_SMALL static void ui_input(void)
         }
 
         if (rec_hud_pick && k == 3u) {
-            rec_hud_usr = (uint8_t)((rec_hud_usr + (s > 0 ? 1u : 5u)) % 6u);
-            audilune_hud_popup("REC USR", (int32_t)rec_hud_usr + 1, "");
+            if (rec_hud_mode == 4u) {
+                al_rec_slot_sel = (uint8_t)((al_rec_slot_sel + (s > 0 ? 1u : 3u)) & 3u);
+                if (al_cap.state == 1u || al_cap.state == 2u)
+                    al_rec_cap_arm(al_rec_slot_sel, 1u, (uint8_t)(TSEL->seq_idx & 127u), (uint8_t)((TSEL->seq_idx >> 4) & 7u));
+                audilune_hud_popup("LIVE REC", (int32_t)al_rec_slot_sel + 1, "");
+            } else {
+                rec_hud_usr = (uint8_t)((rec_hud_usr + (s > 0 ? 1u : 5u)) % 6u);
+                audilune_hud_popup("REC USR", (int32_t)rec_hud_usr + 1, "");
+            }
             ui.force = 1;
         } else if (ui.scr >= UI_PRESET_CAT && ui.scr <= UI_PRESET_LIST && k == 3u && s < 0) {
             ui.list_sel = 0u; ui.list_top = 0u;
@@ -1894,5 +1901,3 @@ UI_SMALL static void panel_setup(void)
     layers_init();
     ui.force = 1;
 }
-
-
