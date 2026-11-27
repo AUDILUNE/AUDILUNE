@@ -1898,13 +1898,15 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 10u) str_cpy(val, "STEREO+IN", 14);
         else str_cpy(val, "VIEW", 14);
     } else if (scr == UI_PRESET_CAT) {
-        row_kv(lbl, val, *(AL_PRESET_CATS + (row % 11u)), row < 2u ? "SEL" : ">");
+        row_kv(lbl, val, *(AL_PRESET_CATS + (row % 11u)), row == 0u ? "SEL" : ">");
     } else if (scr == UI_PRESET_SUB) {
         if (ui.preset_cat == 2u) row_kv(lbl, val, ENGINES[row % 12u]->name, ">");
         else if (ui.preset_cat == 5u) row_kv(lbl, val, "VOICE", ">");
         else { str_cpy(lbl, "SLOT ", 18); fmt_int(lbl + 5, (int32_t)row + 1); row_kv(0, val, 0, "LOAD"); }
     } else if (scr == UI_PRESET_LIST) {
-        if (ui.preset_cat == 2u) {
+        if (ui.preset_cat == 1u) {
+            str_cpy(lbl, "LIVE REC 0", 18); fmt_int(lbl + 10, (int32_t)(row & 3u) + 1); row_kv(0, val, 0, "SEL");
+        } else if (ui.preset_cat == 2u) {
             const engine_t *ep = ENGINES[ui.preset_sub % 12u];
             row_kv(lbl, val, ep->npresets ? ep->presets[row % ep->npresets].name : "INIT", "SEL");
         } else if (ui.preset_cat == 3u) {
