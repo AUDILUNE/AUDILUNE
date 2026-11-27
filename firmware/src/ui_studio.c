@@ -1892,17 +1892,19 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else if (row == 10u) str_cpy(val, "STEREO+IN", 14);
         else str_cpy(val, "VIEW", 14);
     } else if (scr == UI_PRESET_CAT) {
-        row_kv(lbl, val, *(AL_PRESET_CATS + (row % 9u)), ">");
+        row_kv(lbl, val, *(AL_PRESET_CATS + (row % 11u)), row < 2u ? "SEL" : ">");
     } else if (scr == UI_PRESET_SUB) {
-        if (ui.preset_cat == 0u) row_kv(lbl, val, ENGINES[row % 12u]->name, ">");
-        else if (ui.preset_cat == 3u) row_kv(lbl, val, "VOICE", ">");
+        if (ui.preset_cat == 2u) row_kv(lbl, val, ENGINES[row % 12u]->name, ">");
+        else if (ui.preset_cat == 5u) row_kv(lbl, val, "VOICE", ">");
         else { str_cpy(lbl, "SLOT ", 18); fmt_int(lbl + 5, (int32_t)row + 1); row_kv(0, val, 0, "LOAD"); }
     } else if (scr == UI_PRESET_LIST) {
-        if (ui.preset_cat == 0u) {
+        if (ui.preset_cat == 2u) {
             const engine_t *ep = ENGINES[ui.preset_sub % 12u];
             row_kv(lbl, val, ep->npresets ? ep->presets[row % ep->npresets].name : "INIT", "SEL");
-        } else if (ui.preset_cat == 1u) {
+        } else if (ui.preset_cat == 3u) {
             row_kv(lbl, val, *(DRUM_KIT_NAMES + (row & 31u)), "SEL");
+        } else if (ui.preset_cat == 5u && row >= 33u) {
+            row_kv(lbl, val, row == 33u ? "WILHELM" : "JOKER LAUGH", "SEL");
         } else {
             str_cpy(lbl, "ITEM ", 18); fmt_int(lbl + 5, (int32_t)row + 1); row_kv(0, val, 0, "SEL");
         }
@@ -1914,6 +1916,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
     } else if (scr == UI_WIFI_LIB) {
         if (row == 0u) row_kv(lbl, val, "WI-FI STATUS", "READY");
         else if (row <= 8u) row_kv(lbl, val, *(AL_WIFI_CATS + ((row - 1u) & 7u)), "SYNC");
+
         else row_kv(lbl, val, "DIRECTION", "DOWNLOAD");
     } else if (scr == UI_SAVE) {
         str_cpy(lbl, *(AL_SAVE_ROWS + (row % 5u)), 18);
