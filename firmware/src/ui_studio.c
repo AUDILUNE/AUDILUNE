@@ -2035,14 +2035,37 @@ UI_SMALL static void audilune_chaos_apply(track_t *t)
 UI_SMALL static void audilune_page_draw(void)
 {
     static uint32_t head, strip, footer;
-    static const char *const TITLES[] = {"FX", "PUNCH-IN FX", "ENV", "LANDSCAPER", "LFO", "EDIT", "GLOBAL", "SAVE", "ARP", "SEQ", "CHOP", "SAMPLER", "ALGORITHM", "STUDIO SETUP"};
+    static const char *const TITLES[] = {
+        "FX", "PUNCH-IN FX", "ENV", "LANDSCAPER", "LFO", "EDIT", "GLOBAL", "SAVE",
+        "ARP", "SEQ", "CHOP", "SAMPLER", "ALGORITHM", "STUDIO SETUP",
+        "PRESETS", "PRESETS", "PRESETS", "BT SPEAKER", "AUDILUNE LIBRARY", "PARTITION"
+    };
     uint32_t is_wave = (ui.scr == UI_CHOP_SRC || ui.scr == UI_CHOP_WAVE);
     uint32_t rows = audilune_page_rows(ui.scr), sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
     uint32_t y0 = is_wave ? 110u : 56u, vis = is_wave ? 4u : 5u, top = sel >= vis ? sel - vis + 1u : 0u, i, j;
+    if (ui.scr == UI_PART_TRANS) {
+        uint32_t el = fm1_ms - ui.trans_t0;
+        cv_begin(240, 240, C_BLACK);
+        te_disc(120, 88, 30, C_WHITE);
+        te_disc(132, 80, 25, C_BLACK);
+        te_text_c(120, 138, *(AL_PART_NAMES + (ui.trans_target % 3u)), C_WHITE);
+        te_text_c(120, 162, el < 2400u ? "SWITCHING MODALITY..." : "READY", HUD_ACCENT);
+        cv_blit(0, 0);
+        if (el >= 3000u) {
+            ui.radio_part = ui.trans_target % 3u;
+            ui.list_sel = 0u;
+            ui.list_top = 0u;
+            if (ui.radio_part == 1u) { ui.scr = UI_BT_AUDIO; ui.home = 0u; }
+            else if (ui.radio_part == 2u) { ui.scr = UI_WIFI_LIB; ui.home = 0u; }
+            else { go_home(); }
+            ui.force = 1u;
+        }
+        return;
+    }
     audilune_in_arp_page = (uint8_t)(!ui.home && ui.scr == UI_ARP);
     audilune_active_trk = song.sel;
-    te_header(ui.scr >= UI_FX && ui.scr <= UI_SETUP ? *(TITLES + (ui.scr - UI_FX)) : "HOME", C_WHITE, &head, sect);
+    te_header(ui.scr >= UI_FX && ui.scr <= UI_PART_TRANS ? *(TITLES + (ui.scr - UI_FX)) : "HOME", C_WHITE, &head, sect);
     if (!is_wave)
         audilune_sel_strip(&strip);
     if (ui.scr == UI_SEQ && al_seq_ovw) {
@@ -2063,6 +2086,7 @@ UI_SMALL static void audilune_page_draw(void)
     } else {
         if (is_wave) {
             int32_t sx = 6 + (int32_t)al_chop_trim_s * 226 / 100;
+
             int32_t ex = 6 + (int32_t)al_chop_trim_e * 226 / 100;
             cv_begin(240, 66, C_BLACK);
             cv_rect(2, 2, 236, 62, C_WHITE);
