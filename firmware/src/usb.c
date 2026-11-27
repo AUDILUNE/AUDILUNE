@@ -90,10 +90,11 @@ _Static_assert(UA_HI48 + UA_REND48 + UA_MAXF < UA_N, "the ring holds the band, a
 _Static_assert(UA_HI + HALF_FRAMES + UA_MAXF < UA_N, "the ring holds the band, a render and a packet");
 static uint32_t ua_ring[UA_N];
 static uint32_t ua_in_ring[UA_N] __attribute__((section(".pool")));
-static volatile uint32_t ua_w, ua_r, ua_in_w, ua_in_r;
+static volatile uint32_t ua_w, ua_r;
+static volatile uint32_t ua_in_w __attribute__((section(".pool"))), ua_in_r __attribute__((section(".pool")));
 static uint32_t ep4tx[UA_MAXF] __attribute__((aligned(4)));
-static uint32_t ep4rx[UA_MAXF] __attribute__((aligned(4)));
-static uint32_t ua_in_last;
+static uint32_t ep4rx[UA_MAXF] __attribute__((section(".pool"), aligned(4)));
+static uint32_t ua_in_last __attribute__((section(".pool")));
 static void uac_in_read(int32_t *out, uint32_t n)
 {
     uint32_t i, r = ua_in_r, w = ua_in_w;
@@ -110,6 +111,7 @@ static struct {
     volatile uint8_t r48;        /* the host's rate (SET_CUR): 1 = 48 kHz, 0 = 44.1 (bus reset) */
     uint8_t ring48;              /* the rate the ring was primed for (the render's; a change re-primes) */
     volatile uint8_t go;         /* the ring is primed: the consumer reads it (0: silence packets) */
+
     volatile uint8_t flowing;    /* the host takes our packets (it may set alt 1 well before it reads) */
     uint8_t queued;              /* a packet was queued since the stream (re)started */
     uint8_t feed;                /* this render feeds the ring (sampled when it starts) */
