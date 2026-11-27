@@ -1011,6 +1011,7 @@ static const char *const AL_GLO_ROWS[] = {
 };
 static const char *const AL_PART_NAMES[] = {"AUDILUNE HOME", "BT SPEAKER", "AUDILUNE LIBRARY"};
 static const char *const AL_PRESET_CATS[] = {
+    "USB-C AUDIO IN", "LIVE RECORD (120S)",
     "SYNTHS & INST", "DRUMS (01-32)", "TEXTURES (32)", "VOCALS (DECTALK)",
     "SAMPLES (USR1-6)", "BOUNCES (01-06)", "CHOPS (01-06)", "LOOPS (01-06)", "USER PRESETS"
 };
@@ -1066,6 +1067,7 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
     if (scr == UI_CHOP_WAVE) return 2u;
     if (scr == UI_ALGO) return 7u;
     if (scr == UI_SETUP) return 13u;
+
     if (scr == UI_PRESET_CAT) return 9u;
     if (scr == UI_PRESET_SUB) return ui.preset_cat == 0u ? 12u : ui.preset_cat == 2u ? 6u : ui.preset_cat == 3u ? 8u : 6u;
     if (scr == UI_PRESET_LIST) return ui.preset_cat == 0u ? (uint32_t)ENGINES[ui.preset_sub % 12u]->npresets : ui.preset_cat == 1u ? 32u : ui.preset_cat == 3u ? 33u : 6u;
