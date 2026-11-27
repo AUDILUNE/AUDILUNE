@@ -423,9 +423,16 @@ static void al_smp_cap_push(int16_t pcm)
             return;
         al_cap.state = 2u;
     }
-    if (++al_cap.dec_cnt < dec_n)
-        return;
-    al_cap.dec_cnt = 0u;
+    if (al_cap_rec_mode) {
+        uint8_t ph = al_cap.dec_cnt;
+        al_cap.dec_cnt = (uint8_t)(ph >= 2u ? 0u : ph + 1u);
+        if (ph == 1u)
+            return;                                   /* 2:3 fractional decimation: 44.1 kHz -> 29.4 kHz */
+    } else {
+        if (++al_cap.dec_cnt < 3u)
+            return;
+        al_cap.dec_cnt = 0u;
+    }
     if (al_cap.total_bytes >= max_b) {
         al_cap.state = 3u;
         return;
