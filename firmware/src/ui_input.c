@@ -1562,16 +1562,7 @@ UI_SMALL static void ui_input(void)
             continue;
         b = panel_btn_of(id);
         switch (b) {
-
         case B_PLAY:
-#if FELUCCA_ARRANGER
-            if (!song.playing && arrangement_enabled && !arr_valid(&arrangement, arrangement_ready())) {
-                ui_message("EMPTY SECTION: REC");
-                break;
-            }
-#endif
-            if (!ft_owns_press())
-                transport_req = song.playing ? 2 : 1;
             break;
         case B_OCTDN:
         case B_OCTUP: {
@@ -1614,6 +1605,73 @@ UI_SMALL static void ui_input(void)
             break;
          }
     }
+    {
+        static uint32_t play_t0;
+        uint32_t play_ev = btn_hold_ms(&play_t0, B_PLAY, now, 1, 3000u);
+        if (play_ev == BT_TAP) {
+            if (song.playing || song.rec || rec_wait || ft_on) {
+                song.rec = 0;
+                rec_wait = 0;
+                al_smp_cap_stop();
+                transport_req = 2;
+                panic_req = (1u << NTRK) - 1u;
+                ui_message("STOPPED");
+                ui.force = 1;
+            } else if (!ft_owns_press()) {
+#if FELUCCA_ARRANGER
+                if (arrangement_enabled && !arr_valid(&arrangement, arrangement_ready())) {
+                    ui_message("EMPTY SECTION: REC");
+                } else
+#endif
+                transport_req = 1;
+            }
+        } else if (play_ev == BT_HOLD) {
+            static const uint8_t GEN_DEG[4 + 4] = {0, 2, 4, 5, 7, 9, 11, 12};
+            static const uint8_t GEN_BPM[3 + 3] = {76, 86, 108, 122, 96, 128};
+            uint32_t g = ui.algo_genre[song.sel] % 6u, ti, si;
+            uint8_t root = (uint8_t)(48 + (trk[0].p[P_ROOT] % 12));
+            song.g[G_BPM] = GEN_BPM[g];
+            fm1_irq_off();
+            for (ti = 0u; ti < NTRK; ti++) {
+                steps_clear(&trk[ti]);
+                trk[ti].p[P_SLEN] = 16;
+                trk[ti].seq_active = 1;
+                if (ti == 0u) {
+                    trk[ti].synth_mode = 0;
+                    for (si = 0u; si < 16u; si += 4u) dstep_set(&trk[ti].dstep[si], 0u, LV_NORM, 0u);
+                    for (si = 4u; si < 16u; si += 8u) dstep_set(&trk[ti].dstep[si], 2u, LV_NORM, 0u);
+                    for (si = 0u; si < 16u; si += 2u) dstep_set(&trk[ti].dstep[si], 4u, LV_SOFT, 0u);
+                } else if (ti == 1u) {
+                    trk[ti].synth_mode = 1;
+                    for (si = 0u; si < 16u; si += 4u) {
+                        trk[ti].step[si].note[0] = (uint8_t)(root - 12u + ((si == 8u) ? 7u : 0u));
+                        trk[ti].step[si].n = 1; trk[ti].step[si].vel = 104; trk[ti].step[si].time = ST_NOTE;
+                    }
+                } else if (ti == 2u) {
+                    trk[ti].synth_mode = 1;
+                    for (si = 0u; si < 16u; si += 8u) {
+                        trk[ti].step[si].note[0] = root;
+                        trk[ti].step[si].note[1] = (uint8_t)(root + 7u);
+                        trk[ti].step[si].note[2] = (uint8_t)(root + 12u);
+                        trk[ti].step[si].n = 3; trk[ti].step[si].vel = 84; trk[ti].step[si].time = ST_NOTE;
+                    }
+                } else if (ti == 3u) {
+                    trk[ti].synth_mode = 1;
+                    for (si = 0u; si < 16u; si += 2u) {
+                        uint8_t deg = GEN_DEG[(si + g * 3u) & 7u];
+                        trk[ti].step[si].note[0] = (uint8_t)(root + 12u + deg);
+                        trk[ti].step[si].n = 1; trk[ti].step[si].vel = (uint8_t)(72 + ((si & 2u) ? 18 : 0));
+                        trk[ti].step[si].time = ST_NOTE;
+                    }
+                }
+            }
+            fm1_irq_on();
+            sync_reload = 1;
+            transport_req = 1;
+            ui_message("GENERATIVE PLAY");
+            ui.force = 1;
+        }
+    }
     if (song.seq_mode && cur_page()->scope == SC_STEP && !ui.sheet)
         seq_entry(notes);
 
@@ -1623,6 +1681,7 @@ UI_SMALL static void ui_input(void)
         if (ui.scr < UI_PRESET_CAT || ui.scr > UI_PRESET_LIST) {
             ui.scr = UI_PRESET_CAT;
             ui.home = 0u;
+
             ui.list_sel = 0u;
             ui.list_top = 0u;
             audilune_hud_text("PRESETS", "CATEGORY");
