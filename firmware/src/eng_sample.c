@@ -103,10 +103,10 @@ static void smp_user_scan(uint32_t k)
     slc_user_scan(k, 1);
 }
 
-/* zone index in a voice: < 0x8000 built-in, else 0x8000 | slot << 5 | zone */
+/* zone index in a voice: < 0x8000 built-in, >= 0xC000 LIVE REC, else 0x8000 | slot << 5 | zone */
 static inline const smp_zone_t *smp_zone(uint32_t zi)
 {
-    return zi < 0x8000u ? &SMP_ZONES[zi] : &usr_zone[(zi >> 5) & 7u][zi & 31u];
+    return zi < 0x8000u ? &SMP_ZONES[zi] : zi >= 0xC000u ? &al_rec_zone[zi & 3u] : &usr_zone[(zi >> 5) & 7u][zi & 31u];
 }
 
 static inline int32_t sample_next(const smp_zone_t *z, voice_t *v, int loop)
@@ -134,7 +134,13 @@ static void sample_note_on(track_t *t, voice_t *v)
 {
     const uint8_t *const WHITE_OFF = (const uint8_t[]){0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 25, 26};
     uint32_t si = (uint32_t)t->p[P_E0] % SMP_NALL, i, zi = 0xFFFFu;
-    if (si < SMP_NSETS) {
+    if (t->preset == 12u) {
+        uint32_t rk = (uint32_t)t->p[P_E0] % AL_REC_SLOTS;
+        if (al_rec_valid[rk]) {
+            zi = 0xC000u | rk;
+            *(v->s + 4) = (int32_t)zi;
+        }
+    } else if (si < SMP_NSETS) {
         const smp_set_t *set = &SMP_SETS[si];
 
         for (i = 0; i < set->nz; i++)
@@ -143,6 +149,7 @@ static void sample_note_on(track_t *t, voice_t *v)
     } else {
         uint32_t k = si - SMP_NSETS;
         if (usr_nz[k] == 1u) {
+
             zi = 0x8000u | (k << 5); *(v->s + 4) = (int32_t)zi;
         } else if (usr_nz[k] > 1u) {
             if (audilune_chop_chromatic) {
