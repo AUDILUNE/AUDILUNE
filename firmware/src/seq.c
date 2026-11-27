@@ -3219,6 +3219,16 @@ static void events_block(uint32_t n)
                 pc_bank[song.sel % NTRK] = ch_bank[ch & 15u];
                 continue;
             }
+            if (st == 0xA0u) {
+                if (!is_drum(TSEL))
+                    al_voice_at_set(song.sel % NTRK, d1, d2, 0);
+                continue;
+            }
+            if (st == 0xD0u) {
+                if (!is_drum(TSEL))
+                    al_voice_at_set(song.sel % NTRK, 0xFFu, d1, 1);
+                continue;
+            }
             if (st != 0x90u && st != 0x80u)
                 continue;
             if (st == 0x90u && d2) {
@@ -3255,6 +3265,16 @@ static void events_block(uint32_t n)
                     midi_bend(ch, t, d1, d2);
                 continue;
             }
+            if (st == 0xA0u) {
+                if (!song.g[G_ROUTE] && (t = midi_track(ch)) != 0 && !is_drum(t))
+                    al_voice_at_set(trk_index(t) % NTRK, d1, d2, 0);
+                continue;
+            }
+            if (st == 0xD0u) {
+                if (!song.g[G_ROUTE] && (t = midi_track(ch)) != 0 && !is_drum(t))
+                    al_voice_at_set(trk_index(t) % NTRK, 0xFFu, d1, 1);
+                continue;
+            }
             if (st != 0x90u && st != 0x80u)
                 continue;
             if (song.g[G_ROUTE] && st == 0x90u && d2)
@@ -3268,6 +3288,7 @@ static void events_block(uint32_t n)
             if (st == 0x90u && d2) { drum_input(ln, vel_lvl(d2), 0, 1); seq_out_on(t, LANE_NOTE[ln], d2); }
             else seq_out_off(t, LANE_NOTE[ln]);
         } else {
+
             int32_t mn = clamp((int32_t)d1 + t->p[P_TRANS], 0, 127);
             if (t->p[P_QUANT] || t->p[P_SCALE]) { uint32_t msk = scale_mask(t), g = 12; while (g-- && !((msk >> (uint32_t)((mn - t->p[P_ROOT] + 120) % 12)) & 1u)) mn--; mn = clamp(mn, 0, 127); }
             uint32_t qn = (uint32_t)mn;
