@@ -802,6 +802,8 @@ static int32_t env_tick(track_t *t, voice_t *v)
     return v->env >> 9;
 }
 
+static void uac_in_read(int32_t *out, uint32_t n);
+
 /* render one block of a part into out (cleared here); returns the voices rendered */
 static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
 {
@@ -833,6 +835,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         for (i = 0; i < 8u; i++) {
             pe_new[i] = t->p[P_E0 + i];
             t->p[P_E0 + i] = t->pe_old[i];
+
         }
     track_lfo_tick(t);
     esync_coef(t);                                      /* this block's envelope steps for env_tick (ENV SYNC) */
