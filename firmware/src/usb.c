@@ -89,8 +89,22 @@ _Static_assert(UA_HI48 + UA_REND48 + UA_MAXF < UA_N, "the ring holds the band, a
 #define UAC_MAXP (UA_MAXF * 4u)
 _Static_assert(UA_HI + HALF_FRAMES + UA_MAXF < UA_N, "the ring holds the band, a render and a packet");
 static uint32_t ua_ring[UA_N];
-static volatile uint32_t ua_w, ua_r;
+static uint32_t ua_in_ring[UA_N] __attribute__((section(".pool")));
+static volatile uint32_t ua_w, ua_r, ua_in_w, ua_in_r;
 static uint32_t ep4tx[UA_MAXF] __attribute__((aligned(4)));
+static uint32_t ep4rx[UA_MAXF] __attribute__((aligned(4)));
+static uint32_t ua_in_last;
+static void uac_in_read(int32_t *out, uint32_t n)
+{
+    uint32_t i, r = ua_in_r, w = ua_in_w;
+    for (i = 0; i < n; i++) {
+        uint32_t f = (r < w) ? ua_in_ring[r++ & (UA_N - 1u)] : ua_in_last;
+        int32_t l = (int16_t)(f & 0xFFFFu), rr = (int16_t)(f >> 16);
+        ua_in_last = f;
+        out[i] = (l + rr) >> 1;
+    }
+    ua_in_r = r;
+}
 static struct {
     volatile uint8_t alt;        /* streaming interface setting: 1 = the host records */
     volatile uint8_t r48;        /* the host's rate (SET_CUR): 1 = 48 kHz, 0 = 44.1 (bus reset) */
@@ -103,6 +117,7 @@ static struct {
     uint8_t e0_rx;               /* SET_CUR sampling frequency: data stage pending */
     volatile uint32_t fill_min;  /* ring fill when the last render started */
     uint32_t acc;                /* 44.1 frames per ms: 0.1 frame steps */
+
     uint32_t last;               /* the last frame sent, repeated on an underrun */
     uint32_t starts, pkts, frames;               /* frames in packets sent from the ring */
     uint32_t underruns, overruns, missed;        /* glitches: ring empty (repeat), ring full (drop), no packet ready */
