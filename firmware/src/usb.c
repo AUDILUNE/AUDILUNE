@@ -520,8 +520,12 @@ static void ep1_config(void)
 #endif
 #if FELUCCA_UAC
     fm1_usb_ep4_txbuf(ep4tx);
+    fm1_usb_ep_rxbuf(4, ep4rx);
     sie_wr(S_INDEX, 4);
     sie_wr(S_TXMAXP, 0xFF);
+    sie_wr(S_RXMAXP, 0xFF);
+    sie_wr(S_RXCSR1, 0x90);
+    sie_wr(S_RXCSR2, 0x40);
     uac_ep4_reset();
     fm1_usb_ep_enable(1u << 4);
     uac_stream(0);
