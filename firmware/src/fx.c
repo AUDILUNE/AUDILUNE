@@ -696,33 +696,59 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
                 tflt_run(f, &fc, b, n, 0);
 
         }
-        int32_t lvl0, dl, gl0, dgl, gr0, dgr;
-        if (!t->mix_on)
-            t->lvl = lvl, t->gpl = gl, t->gpr = gr, t->mix_on = 1;
-        lvl0 = t->lvl, gl0 = t->gpl, gr0 = t->gpr;
-        t->lvl = mix_glide(lvl0, lvl), t->gpl = mix_glide(gl0, gl), t->gpr = mix_glide(gr0, gr);
-        dl = (t->lvl - lvl0) >> CTL_LOG2, dgl = t->gpl - gl0, dgr = t->gpr - gr0;
-        for (i = 0; i < n; i++) {
-            int32_t lv = lvl0 + dl * (int32_t)i, bi = b[i], x = MULQ12R(bi, lv, 2), a;
-            int32_t xs, g = ga + (((gb - ga) * (int32_t)i) >> CTL_LOG2);
-            if (g < 32767) {
-                g >>= 3;
-                x = MULQ12R(x, g, 4);
+        {   /* AUDILUNE Priority #1: 3D Spatial Orbit + 32-Sample ITD Haas Micro-Delay + Head-Shadow (.pool) */
+            static int16_t al_itd_ring[NPART][32] __attribute__((section(".pool")));
+            static int32_t al_hs_lp[NPART] __attribute__((section(".pool")));
+            static uint8_t al_itd_w[NPART] __attribute__((section(".pool")));
+            uint32_t ti = (uint32_t)(t - trk) % NPART;
+            int poly_stage = (smart_voice_mode(t) == V_POLY && t->p[P_TRANS] > -12);
+            int32_t orb_pan = poly_stage ? ((int32_t)al_trk_orbit_pan[ti] >> 2) : 0;
+            int32_t eff_pan = clamp((int32_t)t->p[P_PAN] + orb_pan, -64, 63);
+            int32_t lvl0, dl, gl0, dgl, gr0, dgr, abs_p = eff_pan < 0 ? -eff_pan : eff_pan;
+            uint32_t itd_d = poly_stage && abs_p > 4 ? (uint32_t)((abs_p * 28) >> 6) : 0u;
+            gl = 4096 - (eff_pan > 0 ? eff_pan * 64 : 0);
+            gr = 4096 + (eff_pan < 0 ? eff_pan * 64 : 0);
+            if (!t->mix_on)
+                t->lvl = lvl, t->gpl = gl, t->gpr = gr, t->mix_on = 1;
+            lvl0 = t->lvl, gl0 = t->gpl, gr0 = t->gpr;
+            t->lvl = mix_glide(lvl0, lvl), t->gpl = mix_glide(gl0, gl), t->gpr = mix_glide(gr0, gr);
+            dl = (t->lvl - lvl0) >> CTL_LOG2, dgl = t->gpl - gl0, dgr = t->gpr - gr0;
+            for (i = 0; i < n; i++) {
+                int32_t lv = lvl0 + dl * (int32_t)i, bi = b[i], x = MULQ12R(bi, lv, 2), a;
+                int32_t xs, g = ga + (((gb - ga) * (int32_t)i) >> CTL_LOG2), xl = x, xr = x;
+                if (g < 32767) {
+                    g >>= 3;
+                    x = MULQ12R(x, g, 4);
+                    xl = xr = x;
+                }
+                a = x < 0 ? -x : x;
+                xs = clamp(x, -xmax, xmax);
+                if (a > pk)
+                    pk = a;
+                if (c)
+                    mx->sc[i] += mulq15(xs, c);
+                if (d)
+                    mx->sd[i] += mulq15(xs, d);
+                if (r)
+                    mx->sr[i] += mulq15(xs, r);
+                if (itd_d) {
+                    uint8_t w = al_itd_w[ti];
+                    int32_t del = (int32_t)al_itd_ring[ti][(w - itd_d) & 31u] << 2;
+                    al_itd_ring[ti][w & 31u] = (int16_t)clamp(x >> 2, -32767, 32767);
+                    al_itd_w[ti] = (uint8_t)((w + 1u) & 31u);
+                    al_hs_lp[ti] += (del - al_hs_lp[ti]) >> 1;
+                    del = al_hs_lp[ti] + ((del - al_hs_lp[ti]) >> 1);
+                    if (eff_pan < 0)
+                        xr = del;
+                    else
+                        xl = del;
+                }
+                gl = gl0 + ((dgl * (int32_t)i) >> CTL_LOG2), gr = gr0 + ((dgr * (int32_t)i) >> CTL_LOG2);
+                mx->l[i] += (xl * (gl >> 4) + 128) >> 8;
+                mx->r[i] += (xr * (gr >> 4) + 128) >> 8;
             }
-            a = x < 0 ? -x : x;
-            xs = clamp(x, -xmax, xmax);
-            if (a > pk)
-                pk = a;
-            if (c)
-                mx->sc[i] += mulq15(xs, c);
-            if (d)
-                mx->sd[i] += mulq15(xs, d);
-            if (r)
-                mx->sr[i] += mulq15(xs, r);
-            gl = gl0 + ((dgl * (int32_t)i) >> CTL_LOG2), gr = gr0 + ((dgr * (int32_t)i) >> CTL_LOG2);
-            mx->l[i] += (x * (gl >> 4) + 128) >> 8;
-            mx->r[i] += (x * (gr >> 4) + 128) >> 8;
         }
+
         t->peak = pk;
     }
 }
