@@ -1001,18 +1001,45 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 ui_message("SOURCE LOCKED");
             }
         } else if (!ui.home && ui.scr == UI_GLO) {
-            uint8_t row = ui.list_sel % 10u;
+            uint8_t row = ui.list_sel % 12u;
             if (row == 0u) {
+                ui.trans_target = ui.radio_part % 3u;
+                ui.trans_t0 = fm1_ms;
+                ui.scr = UI_PART_TRANS;
+            } else if (row == 1u) {
                 if (ui.setup_vault == 0u) { project_new(); ui_message("NEW BLANK SONG"); }
                 else { project_load((uint32_t)(ui.setup_vault - 1u)); ui_message("SONG LOADED"); }
                 go_home();
+            } else if (row == 11u) {
+                ui_message("AUDILUNE + GEMINI");
             } else {
                 audilune_hud_popup(*(AL_GLO_ROWS + row), (int32_t)ui.save_vault + 1, "");
             }
+        } else if (!ui.home && ui.scr == UI_PRESET_CAT) {
+            ui.preset_cat = ui.list_sel % 9u;
+            ui.list_sel = 0u; ui.list_top = 0u;
+            ui.scr = (ui.preset_cat == 0u || ui.preset_cat == 2u || ui.preset_cat == 3u) ? UI_PRESET_SUB : UI_PRESET_LIST;
+        } else if (!ui.home && ui.scr == UI_PRESET_SUB) {
+            ui.preset_sub = ui.list_sel;
+            ui.list_sel = 0u; ui.list_top = 0u;
+            ui.scr = UI_PRESET_LIST;
+        } else if (!ui.home && ui.scr == UI_PRESET_LIST) {
+            if (ui.preset_cat == 0u) { select_engine(ui.preset_sub % 12u); apply_preset(ui.list_sel); }
+            else if (ui.preset_cat == 1u) { TSEL->synth_mode = 0; TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u); }
+            ui_message("SOUND LOADED");
+            go_home();
+        } else if (!ui.home && ui.scr == UI_BT_AUDIO) {
+            uint8_t row = ui.list_sel % 9u;
+            if (row == 0u) ui_message("BT SPEAKER CONNECTED");
+            else if (row == 8u) { ui.scr = UI_VIS; vis_open(); }
+            else audilune_hud_popup("PLAYING SLOT", (int32_t)row - 1, "");
+        } else if (!ui.home && ui.scr == UI_WIFI_LIB) {
+            ui_message("WI-FI VAULT SYNCED");
         } else if (!ui.home && ui.scr == UI_SAVE) {
             uint8_t row = ui.list_sel % 5u;
             if (row == 4u) project_save((uint32_t)ui.save_vault);
             audilune_hud_popup(*(AL_SAVE_ROWS + row), (int32_t)ui.save_vault + 1, "");
+
             go_home();
         } else {
             ui.sel_trk_mask ^= (uint8_t)(1u << (song.sel % NTRK));
