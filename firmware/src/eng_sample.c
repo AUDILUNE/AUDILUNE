@@ -249,9 +249,19 @@ static void sample_spread(track_t *t, voice_t *v, uint32_t r)
                                                                  /* gave many voices the same start) */
 }
 
-/* AUDILUNE 5.0s Threshold-Triggered IMA-ADPCM Capture into USR1..USR6 (14.7 kHz Smart Fit = 36,750 B) */
+/* AUDILUNE 5.0s User Sample Capture (USR1..6, 36,750 B) & 4 x 120s Shared LIVE RECORD Vault (LIVE REC 01..04) */
 #define AL_CAP_MAX_BYTES 36750u
+#define AL_REC_SLOTS 4u
+#define AL_REC_BASE 0x280000u
+#define AL_REC_SIZE 0x144000u                         /* 1,327,104 B per slot (header + 120s @ 22.05 kHz ADPCM) */
+#define AL_REC_OFF(k) (AL_REC_BASE + (uint32_t)(k) * AL_REC_SIZE)
+#define AL_REC_MAX_BYTES 1323000u                     /* 120s x 22,050 Hz / 2 nibbles = 1,323,000 B */
+#define AL_REC_MAGIC 0x43455241u                      /* "AREC" */
 #define AL_CAP_RING 512u
+typedef struct {
+    uint32_t magic, data_len, start_step, start_bar;
+    smp_zone_t zone;
+} al_rec_hdr_t;
 static struct {
     volatile uint8_t state;   /* 0=idle, 1=armed (threshold wait), 2=recording, 3=finishing */
     uint8_t slot, is_usb, dec_cnt, nib_hi, nib_buf;
@@ -259,14 +269,96 @@ static struct {
     int8_t idx;
     volatile uint32_t wr, rd, total_bytes;
 } al_cap;
+static uint8_t al_cap_rec_mode __attribute__((section(".pool")));
+static uint8_t al_rec_slot_sel __attribute__((section(".pool")));
+static uint32_t al_rec_start_step[AL_REC_SLOTS] __attribute__((section(".pool")));
+static uint32_t al_rec_start_bar[AL_REC_SLOTS] __attribute__((section(".pool")));
+static smp_zone_t al_rec_zone[AL_REC_SLOTS] __attribute__((section(".pool")));
+static uint8_t al_rec_valid[AL_REC_SLOTS] __attribute__((section(".pool")));
 static uint8_t al_cap_ring[256 + 256] __attribute__((section(".pool")));
+
+#define AL_TAPE_N 176400u                             /* 4.0s circular rolling tape buffer @ 44.1 kHz (.pool) */
+static int16_t al_tape_buf[AL_TAPE_N] __attribute__((section(".pool")));
+static uint32_t al_tape_w __attribute__((section(".pool")));
+static uint32_t al_tape_pos16 __attribute__((section(".pool")));
+static int32_t al_tape_rate16 __attribute__((section(".pool")));
+
+static void al_tape_push(int16_t pcm)
+{
+    uint32_t w = al_tape_w;
+    al_tape_buf[w % AL_TAPE_N] = pcm;
+    al_tape_w = w + 1u;
+    if (!al_tape_rate16 || al_tape_rate16 == 65536)
+        al_tape_pos16 = (w + 1u) << 16;
+}
+
+static void al_tape_read(int32_t *out, uint32_t n)
+{
+    uint32_t i, w = al_tape_w, pos16 = al_tape_pos16;
+    int32_t rate = al_tape_rate16 ? al_tape_rate16 : 65536;
+    uint32_t min_s = w > AL_TAPE_N ? w - AL_TAPE_N : 0u;
+    for (i = 0; i < n; i++) {
+        uint32_t idx = pos16 >> 16;
+        if (idx < min_s) {
+            idx = min_s;
+            pos16 = idx << 16;
+            if (rate < 0)
+                rate = 65536;
+        } else if (idx >= w) {
+            idx = w ? w - 1u : 0u;
+            pos16 = w << 16;
+            rate = 65536;
+        }
+        out[i] = w ? (int32_t)al_tape_buf[idx % AL_TAPE_N] : 0;
+        pos16 = (uint32_t)((int64_t)pos16 + rate);
+    }
+    al_tape_pos16 = pos16;
+    al_tape_rate16 = rate;
+}
+
+static void al_rec_scan(uint32_t k)
+{
+    const al_rec_hdr_t *h = (const al_rec_hdr_t *)fm1_xip_ptr(AL_REC_OFF(k % AL_REC_SLOTS));
+    uint32_t base;
+    al_rec_valid[k % AL_REC_SLOTS] = 0u;
+    if (h->magic != AL_REC_MAGIC || !h->data_len || h->data_len > AL_REC_MAX_BYTES)
+        return;
+    base = (uint32_t)(uintptr_t)(fm1_xip_ptr(AL_REC_OFF(k % AL_REC_SLOTS)) + SMP_USER_DATA) - (uint32_t)(uintptr_t)SMP_DATA;
+    al_rec_zone[k % AL_REC_SLOTS] = h->zone;
+    al_rec_zone[k % AL_REC_SLOTS].off += base;
+    al_rec_start_step[k % AL_REC_SLOTS] = h->start_step;
+    al_rec_start_bar[k % AL_REC_SLOTS] = h->start_bar;
+    al_rec_valid[k % AL_REC_SLOTS] = 1u;
+}
 
 static void al_smp_cap_arm(uint32_t slot, uint32_t is_usb)
 {
     al_cap.state = 0u;
+    al_cap_rec_mode = 0u;
     al_cap.slot = (uint8_t)(slot % SMP_USER_SLOTS);
     al_cap.is_usb = (uint8_t)(is_usb ? 1u : 0u);
 
+    al_cap.dec_cnt = 0u;
+    al_cap.nib_hi = 0u;
+    al_cap.nib_buf = 0u;
+    al_cap.pred = 0;
+    al_cap.idx = 0;
+    al_cap.wr = 0u;
+    al_cap.rd = 0u;
+    al_cap.total_bytes = 0u;
+    al_cap.state = 1u;
+}
+
+static void al_rec_cap_arm(uint32_t slot, uint32_t is_usb, uint32_t start_step, uint32_t start_bar)
+{
+    uint32_t k = slot % AL_REC_SLOTS;
+    al_cap.state = 0u;
+    al_cap_rec_mode = 1u;
+    al_rec_slot_sel = (uint8_t)k;
+    al_rec_start_step[k] = start_step;
+    al_rec_start_bar[k] = start_bar;
+    al_cap.slot = (uint8_t)k;
+    al_cap.is_usb = (uint8_t)(is_usb ? 1u : 0u);
     al_cap.dec_cnt = 0u;
     al_cap.nib_hi = 0u;
     al_cap.nib_buf = 0u;
@@ -288,6 +380,7 @@ static void al_smp_cap_stop(void)
 
 static void al_smp_cap_push(int16_t pcm)
 {
+
     int32_t diff, step, delta, vp;
     uint32_t code = 0u;
     if (al_cap.state == 0u || al_cap.state >= 3u)
