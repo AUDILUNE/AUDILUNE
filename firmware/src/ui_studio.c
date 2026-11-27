@@ -271,7 +271,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     uint32_t beat = clk_beat, k, playing = song.playing, armed = (song.rec != 0) || (rec_wait != 0);
     int32_t raw_lvl = song.sel == TRK_DRUM && !TDRUM->synth_mode ? song.g[G_DRLVL] : TSEL->p[P_LEVEL];
     uint32_t mst = (uint32_t)clamp(raw_lvl * 100 / 127, 0, 100);
-    const char *clk_s = song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : "INT";
+    const char *clk_s = song.g[G_SYNC] == 1 ? "USB" : song.g[G_SYNC] == 2 ? "MIDI" : song.g[G_SYNC] == 3 ? "AUD" : "INT";
     uint16_t bg = armed ? C_WHITE : C_BLACK;
     uint16_t fg = armed ? C_BLACK : C_WHITE;
     uint16_t dim = armed ? TE_G3 : TE_G2;
@@ -283,6 +283,7 @@ UI_SMALL static void te_header(const char *title, uint16_t tc, uint32_t *cache, 
     if (!ui.force && sig == *cache)
         return;
     *cache = sig;
+
     cv_begin(240, 40, bg);
     if (title && title[0])
         te_text_c(120, 2, title, armed ? C_BLACK : HUD_ACCENT);
