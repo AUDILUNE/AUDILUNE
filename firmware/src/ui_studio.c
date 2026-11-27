@@ -1597,19 +1597,39 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             song.g[gp] = (int16_t)((song.g[gp] + (s > 0 ? 1 : 16)) % 17);
             audilune_hud_popup("MIDI CH", song.g[gp], "");
 
-        } else if (row == 7u) {
+        } else if (row == 8u) {
             static const char *const AL_MROUTE[] = {"SEND+RECV", "SEND", "RECV", "INT"};
             song.g[G_MIDI] = (int16_t)((song.g[G_MIDI] + (s > 0 ? 1 : 3)) & 3);
             audilune_hud_text("ROUTING", *(AL_MROUTE + (song.g[G_MIDI] & 3)));
-        } else if (row == 8u) {
+        } else if (row == 9u) {
             song.g[G_SYNC] = (int16_t)((song.g[G_SYNC] + (s > 0 ? 1 : 2)) % 3);
             audilune_hud_text("SYNC", song.g[G_SYNC] == 1 ? "USB-C" : song.g[G_SYNC] == 2 ? "MIDI" : "INT");
-        } else if (row == 9u) {
+        } else if (row == 10u) {
             static const char *const AL_USBIO[] = {"STEREO+IN", "STEREO ONLY", "DRY MON"};
             static uint8_t usb_io_m;
             usb_io_m = (uint8_t)((usb_io_m + (s > 0 ? 1u : 2u)) % 3u);
             audilune_hud_text("USB I/O", *(AL_USBIO + usb_io_m));
-
+        } else if (row == 11u) {
+            static const char *const AL_CRED[] = {"DAVID MACARTHUR", "GOOGLE GEMINI", "FM1 OPEN SOURCE"};
+            static uint8_t cred_idx;
+            cred_idx = (uint8_t)((cred_idx + (s > 0 ? 1u : 2u)) % 3u);
+            audilune_hud_text("CREDITS", *(AL_CRED + cred_idx));
+        }
+    } else if (ui.scr == UI_BT_AUDIO) {
+        if (k == 2u) {
+            audilune_sel_vol(s);
+        } else if (row == 0u) {
+            ui.bt_dev_idx = (uint8_t)((ui.bt_dev_idx + (s > 0 ? 1u : 4u)) % 5u);
+            audilune_hud_popup("BT SCAN", (int32_t)ui.bt_dev_idx + 1, "");
+        } else if (row == 1u) {
+            ui.bt_cat = (uint8_t)((ui.bt_cat + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_text("CATEGORY", *(AL_BT_CATS + ui.bt_cat));
+        }
+    } else if (ui.scr == UI_WIFI_LIB) {
+        if (row >= 1u && row <= 8u) {
+            ui.wifi_cat = (uint8_t)(row - 1u);
+            ui.save_vault = (uint8_t)((ui.save_vault + (s > 0 ? 1u : 5u)) % 6u);
+            audilune_hud_popup(*(AL_WIFI_CATS + ui.wifi_cat), (int32_t)ui.save_vault + 1, "");
         }
     } else if (ui.scr == UI_SAVE) {
         if (k == 2u) {
@@ -1623,6 +1643,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         if (row == 0u) {
             if (k == 3u) {
                 uint8_t mode = (uint8_t)(((*mp & 0x0Fu) + (s > 0 ? 1u : 9u)) % 10u);
+
                 *mp = (uint8_t)((*mp & 0xF0u) | mode);
                 audilune_hud_popup("ARP MODE", (int32_t)mode + 1, "");
             } else {
