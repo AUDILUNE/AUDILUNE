@@ -1027,10 +1027,6 @@ UI_SMALL static void layer_tap(uint32_t layer)
                 TSEL->synth_mode = 1; TSEL->eng_req = 4u; TSEL->preset = 13u;
                 ui_message("USB-C AUDIO IN");
                 go_home();
-            } else if (ui.preset_cat == 1u) {
-                TSEL->synth_mode = 1; TSEL->eng_req = 4u; TSEL->preset = 12u;
-                ui_message("LIVE REC (120S)");
-                go_home();
             } else {
                 ui.scr = (ui.preset_cat == 2u || ui.preset_cat == 4u || ui.preset_cat == 5u) ? UI_PRESET_SUB : UI_PRESET_LIST;
             }
@@ -1039,7 +1035,12 @@ UI_SMALL static void layer_tap(uint32_t layer)
             ui.list_sel = 0u; ui.list_top = 0u;
             ui.scr = UI_PRESET_LIST;
         } else if (!ui.home && ui.scr == UI_PRESET_LIST) {
-            if (ui.preset_cat == 2u) { select_engine(ui.preset_sub % 12u); apply_preset(ui.list_sel); }
+            if (ui.preset_cat == 1u) {
+                uint8_t sl = ui.list_sel & 3u;
+                TSEL->synth_mode = 1; TSEL->eng_req = 4u; TSEL->preset = 12u;
+                TSEL->p[P_E0] = (int16_t)sl;
+                al_rec_slot_sel = sl;
+            } else if (ui.preset_cat == 2u) { select_engine(ui.preset_sub % 12u); apply_preset(ui.list_sel); }
             else if (ui.preset_cat == 3u) { TSEL->synth_mode = 0; TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u); }
             else if (ui.preset_cat == 5u) {
                 uint32_t ei;
@@ -1053,6 +1054,7 @@ UI_SMALL static void layer_tap(uint32_t layer)
             go_home();
         } else if (!ui.home && ui.scr == UI_BT_AUDIO) {
             uint8_t row = ui.list_sel % 9u;
+
             if (row == 0u) ui_message("BT SPEAKER CONNECTED");
             else if (row == 8u) { ui.scr = UI_VIS; vis_open(); }
             else audilune_hud_popup("PLAYING SLOT", (int32_t)row - 1, "");
