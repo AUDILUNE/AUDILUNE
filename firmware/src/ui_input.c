@@ -1768,7 +1768,7 @@ UI_SMALL static void ui_input(void)
     if ((s = panel_enc(EN_SELECT)) != 0 && !ft_on) {
         ui_input_ms = fm1_ms;
         if (rec_hud_pick) {
-            static const char *const RN[5] = {"ACTIVE TRK", "LOCKED TRKS", "SAMPLE USR", "USB USR", "WHOLE SONG"};
+            static const char *const RN[5] = {"ACTIVE TRK", "LOCKED TRKS", "SAMPLE USR", "USB USR", "LIVE 120S"};
             rec_hud_mode = (uint8_t)((rec_hud_mode + (s > 0 ? 1u : 4u)) % 5u);
             audilune_hud_text("REC", *(RN + rec_hud_mode));
             ui.force = 1;
@@ -1796,13 +1796,21 @@ UI_SMALL static void ui_input(void)
             ui.list_sel = (uint8_t)next_row;
             if (ui.scr == UI_CHOP_WAVE)
                 ui.chop_sel = (uint8_t)(ui.list_sel >= 2u ? (ui.list_sel - 2u) & 15u : 0u);
-            else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 0u) {
+            else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 2u) {
                 if (!TSEL->synth_mode) TSEL->synth_mode = 1;
                 if (TSEL->eng_req != (ui.preset_sub % 12u)) select_engine(ui.preset_sub % 12u);
                 apply_preset(ui.list_sel);
-            } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 1u) {
+            } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 3u) {
                 TSEL->synth_mode = 0;
                 TSEL->p[P_E0] = (int16_t)(ui.list_sel & 31u);
+            } else if (ui.scr == UI_PRESET_LIST && ui.preset_cat == 5u) {
+                uint32_t ei;
+                for (ei = 0u; ei < NENGINES && ENGINES[ei] != &ENG_FORMANT; ei++) ;
+                if (!TSEL->synth_mode) TSEL->synth_mode = 1;
+                if (TSEL->eng_req != (ei % NENGINES)) select_engine(ei);
+                al_vox_char = ui.preset_sub & 7u;
+                if (ui.list_sel >= 33u) apply_preset(ui.list_sel == 33u ? 18u : 19u);
+                else { al_vox_phrase = ui.list_sel % 33u; apply_preset(7u); }
             }
             ui.force = 1;
         } else {
@@ -1840,7 +1848,7 @@ UI_SMALL static void ui_input(void)
             ui.force = 1;
         } else if (ui.scr >= UI_PRESET_CAT && ui.scr <= UI_PRESET_LIST && k == 3u && s < 0) {
             ui.list_sel = 0u; ui.list_top = 0u;
-            if (ui.scr == UI_PRESET_LIST) ui.scr = (ui.preset_cat == 0u || ui.preset_cat == 2u || ui.preset_cat == 3u) ? UI_PRESET_SUB : UI_PRESET_CAT;
+            if (ui.scr == UI_PRESET_LIST) ui.scr = (ui.preset_cat == 2u || ui.preset_cat == 4u || ui.preset_cat == 5u) ? UI_PRESET_SUB : UI_PRESET_CAT;
             else if (ui.scr == UI_PRESET_SUB) ui.scr = UI_PRESET_CAT;
             else go_home();
             ui.force = 1;
@@ -1872,4 +1880,5 @@ UI_SMALL static void panel_setup(void)
     layers_init();
     ui.force = 1;
 }
+
 
