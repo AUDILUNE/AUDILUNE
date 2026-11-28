@@ -883,56 +883,57 @@ static uint16_t al_land_on;
 static uint8_t al_land_sub[5 + 5], al_land_vol[5 + 5];
 static const char *const AL_ENV_ROWS[] = {
     "TARGET ENV", "FILTER MODE", "ATTACK", "DECAY",
-    "SUSTAIN", "RELEASE", "DESTINATION", "VELOCITY -> ENV"
+    "SUSTAIN", "RELEASE", "DESTINATION", "VEL -> ENV"
 };
 
 static const char *const AL_LFO_ROWS[] = {
     "LFO SELECT", "WAVEFORM", "RATE / SYNC", "DESTINATION",
-    "TRIGGER", "FADE-IN / SLEW", "VELOCITY -> LFO"
+    "TRIGGER", "FADE / SLEW", "VEL -> LFO"
 };
 static const char *const AL_GLO_ROWS[] = {
-    "RADIO MODE", "LOAD SONG", "LOAD / RESTORE SMP", "LOAD BOUNCE", "LOAD CHOP KIT",
-    "LOAD ARP PATTERN", "COLOR THEME", "MIDI CHANNELS", "MIDI ROUTING",
-    "CLOCK SYNC", "USB AUDIO I/O", "CREDITS / ABOUT"
+    "RADIO MODE", "LOAD SONG", "LOAD SAMPLE", "LOAD BOUNCE", "LOAD CHOP",
+    "LOAD ARP", "COLOR THEME", "MIDI CH", "MIDI ROUTE",
+    "CLOCK SYNC", "USB AUDIO", "CREDITS"
 };
 static const char *const AL_PART_NAMES[] = {"AUDILUNE HOME", "BT SPEAKER", "AUDILUNE LIBRARY"};
 static const char *const AL_PRESET_CATS[] = {
-    "USB-C AUDIO IN", "LIVE RECORD (120S)",
-    "SYNTHS & INST", "DRUMS (01-32)", "TEXTURES (32)", "VOCALS (DECTALK)",
-    "SAMPLES (USR1-6)", "BOUNCES (01-06)", "CHOPS (01-06)", "LOOPS (01-06)", "USER PRESETS"
+    "USB-C AUDIO IN", "LIVE REC 01-06",
+    "SYNTHS & INST", "DRUMS 01-32", "TEXTURES 32", "VSYNTH DECTALK",
+    "SAMPLE 01-06", "BOUNCE 01-06", "CHOP 01-06", "LOOP 01-06", "PRESET 01-06"
 };
-static const char *const AL_BT_CATS[] = {"SONGS", "BOUNCES", "LOOPS", "CHOPS", "SAMPLES", "VOCALS"};
+static const char *const AL_BT_CATS[] = {"SONG", "BOUNCE", "LOOP", "CHOP", "SAMPLE", "VSYNTH"};
 static const char *const AL_WIFI_CATS[] = {
-    "SAMPLES", "BOUNCES", "CHOPS", "LOOPS", "USER PRESETS", "SONGS", "ARP PATTERNS", "VOCALS"
+    "SAMPLE", "BOUNCE", "CHOP", "LOOP", "PRESET", "SONG", "ARP", "VSYNTH"
 };
 static const char *const AL_SAVE_ROWS[] = {
-    "SAVE SAMPLE", "BOUNCE / FLATTEN", "SAVE CHOP KIT",
-    "SAVE ARP PATTERN", "SAVE SONG SNAP"
+    "SAVE SAMPLE", "BOUNCE / FLATTEN", "SAVE CHOP",
+    "SAVE ARP", "SAVE SONG"
 };
 static const char *const AL_ARP_ROWS[] = {
     "ARP MODE", "RATE", "OCTAVES", "LATCH"
 };
 static const char *const AL_ALGO_ROWS[] = {
     "GENRE", "SYNTH ENGINES", "DRUMS", "VOCAL PHRASINGS",
-    "SAMPLES", "BOUNCES", "CHOPS"
+    "SAMPLE 01-06", "BOUNCE 01-06", "CHOP 01-06"
 };
 static const char *const AL_SETUP_ROWS[] = {
-    "READY -> PLAY SCREEN", "SONG VAULT", "SESSION MODE", "TIMING / GRAVITY",
-    "FREQ LAYER", "HELPER NOTES", "AUTO POWER OFF", "SESSION TIMER",
-    "TEMPO", "ROOT NOTE", "SCALE TYPE", "PATTERN LENGTH", "MIDI / CLOCK SYNC"
+    "PLAY SCREEN", "SONG VAULT", "SESSION MODE", "GRAVITY",
+    "FREQ LAYER", "HELPER NOTES", "AUTO OFF", "TIMER",
+    "TEMPO", "ROOT NOTE", "SCALE TYPE", "LENGTH", "CLOCK SYNC"
 };
-static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "STUDY FOCUS", "CHILL", "DANCE"};
-static const char *const AL_TIMER_NAMES[] = {"OFF", "15 MIN", "30 MIN", "45 MIN", "60 MIN", "90 MIN", "120 MIN"};
+static const char *const AL_SESS_NAMES[] = {"STUDIO", "SLEEP", "MEDITATE", "FOCUS", "CHILL", "DANCE"};
+static const char *const AL_TIMER_NAMES[] = {"OFF", "15M", "30M", "45M", "60M", "90M", "120M"};
 static const char *const AL_NOTE_NAMES[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-static const char *const AL_CHOP_MODES[] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "AUTO TRANSIENT", "MANUAL"};
+static const char *const AL_CHOP_MODES[] = {"4 EQUAL", "8 EQUAL", "16 EQUAL", "TRANSIENT", "MANUAL"};
 static uint8_t al_fx_sub[6 + 7], al_fx_val[6 + 7], al_chop_chrom;
 static uint8_t al_pad_list_mode;
-static uint8_t al_pad_z[4 + 4] = {64, 64, 64, 64, 64, 64, 64, 64}, al_vec_corner[2 + 2] = {0, 1, 2, 3};
+static uint8_t al_vec_corner[2 + 2] = {0, 1, 2, 3};
 static uint8_t al_vec_sel, al_seq_ovw, al_seq_ovw_trk, al_seq_ovw_step;
 static uint8_t al_gravity = 50u, al_helper_notes = 1u, al_chop_sens = 50u, al_chop_trim_s = 0u, al_chop_trim_e = 100u;
 UI_SMALL static void audilune_hud_popup(const char *label, int32_t val, const char *unit);
 UI_SMALL static void audilune_hud_text(const char *prefix, const char *value);
 static uint8_t audilune_theme_idx, al_arp_mode[3 + 3], al_clip_ok;
+
 uint8_t al_layer_preset, al_layer_mix;
 uint16_t al_row_lock_mask;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
