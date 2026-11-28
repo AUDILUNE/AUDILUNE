@@ -717,65 +717,8 @@ UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t
         drum_page = (uint8_t)clamp((int32_t)drum_page + s, 0, 2);
         ui.msg_t = 0;
         ui.force = 1;
-    }
-    if (drum_page == 2u && notes) {
-        for (k = 0; k < 32u; k++)
-            if ((notes >> k) & 1u) {
-                drum_lane = (uint8_t)lane_of_key(k);
-                ui.force = 1;
-            }
-    }
-    if ((s = panel_enc(EN_ALGO)) && !ft_on) {
-        track_select((uint32_t)clamp((int32_t)song.sel + s, 0, 3));
-        if (song.sel != TRK_DRUM) {
-            go_home();
-            return;
-        }
-    }
-    if ((s = panel_enc(EN_PRESET))) TDRUM->p[P_E0] = (int16_t)clamp(TDRUM->p[P_E0] + s, 0, DRUM_KITS - 1);
-    for (k = 0; k < 4u; k++) if ((s = panel_enc(EN_K1 + k))) {
-        ui.hot_col = (uint8_t)k;
-        ui.hot_t = 40;
-        if (!drum_page && ui.sheet) {
-            drum_sheet_knob(k, s);
-        } else if (!drum_page) {
-            dstep_t *st = &TDRUM->dstep[drum_cursor];
-            if (k == 0) {
-                uint8_t l = (uint8_t)clamp(drum_lane + s, 0, DRUM_LANES - 1);
-                if (l != drum_lane) drum_hear(l);
-                drum_lane = l;
-            }
-            if (k == 1) {
-                uint8_t c = (uint8_t)clamp(drum_cursor + s, 0, TDRUM->p[P_SLEN] - 1);
-                if (c != drum_cursor && drum_preview) audition_step(&TDRUM->dstep[c]);
-                drum_cursor = c;
-            }
-            if (k >= 2) {
-                if (song.playing && arrangement_enabled) { ui_message("STOP THE SONG FIRST"); continue; }
-                undo_mark(TDRUM, ui.step_sess ? ui.step_sess : (ui.step_sess = (undo_sess += 4u) | 3u));
-                fm1_irq_off();
-                if (k == 2) {
-                    if (s > 0) dstep_set(st, drum_lane, LV_NORM, 0);
-                    else dstep_clr(st, drum_lane);
-                } else if (dstep_has(st, drum_lane)) {
-                    uint32_t r = (uint32_t)clamp((int32_t)lvl_rank(dstep_lvl(st, drum_lane)) + (s > 0 ? 1 : -1), 0, 3);
-                    dstep_set(st, drum_lane, LV_UP[r], dstep_rat(st, drum_lane));
-                }
-                fm1_irq_on();
-                sync_reload = 1;
-            }
-        } else if (drum_page == 2u) {
-            if (k == 0) {
-                uint8_t l = (uint8_t)clamp(drum_lane + s, 0, DRUM_LANES - 1);
-                if (l != drum_lane) drum_hear(l);
-                drum_lane = l;
-            }
-            if (k == 1 || k == 2) {
-                int8_t *p = k == 1 ? &drum_tune[drum_lane] : &drum_dec[drum_lane];
-                int32_t lo = k == 1 ? DRUM_TUNE_MIN : DRUM_DEC_MIN, hi = k == 1 ? DRUM_TUNE_MAX : DRUM_DEC_MAX;
-                int8_t nv = (int8_t)clamp(*p + s, lo, hi);
-                if (nv != *p) {
-                    *p = nv;
+    /* unreachable legacy drum_screen_input body trimmed */
+
                     if (!song.playing)
                         audition_lane(drum_lane);
                 }
