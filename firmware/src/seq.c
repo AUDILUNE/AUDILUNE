@@ -2524,48 +2524,106 @@ static void seq_step(track_t *t, const step_t *s, uint32_t slen, uint32_t skip)
     for (i = 0; i < s->n; i++)
         if (roll_has(t, s->note[i]))
             skip |= 1u << i;
-    for (i = 0; i < s->n; i++)
-        if (!((skip >> i) & 1u)) {
-            if (slide_in)
-                trk_note_on(t, s->note[i], step_vel(s, i));
-            else
-                trk_note_chord(t, s->note, s->n, i, step_vel(s, i));
-            if (!slide_in || !(mo_set[trk_index(t) % NTRK][s->note[i] >> 5] & (1u << (s->note[i] & 31u))))
-                seq_out_on(t, s->note[i], step_vel(s, i));
+    {
+        uint32_t ti = trk_index(t) % NTRK, idx = t->seq_idx % NSTEP;
+        int32_t syn = clamp((int32_t)al_syntropy[ti], -100, 100);
+        if (al_syntropy_scope == 1u && !((al_syn_step_mask[idx >> 5] >> (idx & 31u)) & 1u))
+            syn = 0;
+        if (syn < 0) {
+            int32_t dis = -syn;
+            uint32_t dec = al_syntropy_decay[ti];
+            gate = gate * (uint32_t)(100 - (dis * 82) / 100) / 100u;
+            if (gate < slen / 16u)
+                gate = slen / 16u;
+            if ((rng() & 32767u) < dec)
+                skip = 0xFu;
+        } else if (syn > 0) {
+            if ((idx & 3u) != 0u && (int32_t)(rng() % 100u) < syn)
+                skip = 0xFu;
+            else if ((idx & 7u) != 0u && syn > 60 && (int32_t)(rng() % 100u) < (syn - 50) * 2)
+                skip = 0xFu;
+            gate = gate * (uint32_t)(100 - (syn * 45) / 100) / 100u;
         }
-    if (slide_in)
-        for (i = 0; i < t->seq_n; i++) {
-            for (j = 0; j < s->n && s->note[j] != t->seq_notes[i]; j++)
-                ;
-            if (j == s->n) {
-                if (!live_has(t, t->seq_notes[i]))
-                    trk_note_off(t, t->seq_notes[i]);
-                seq_out_off(t, t->seq_notes[i]);
+        t->seq_n = 0;
+        for (i = 0; i < s->n; i++) {
+            if ((skip >> i) & 1u)
+                continue;
+            uint32_t nt = s->note[i], vel = step_vel(s, i);
+            if (syn < 0) {
+                int32_t dis = -syn;
+                if ((int32_t)(rng() % 100u) < dis) {
+                    static const int8_t OCT_SCAT[4] = {-12, 0, 12, 24};
+                    nt = (uint32_t)clamp((int32_t)nt + OCT_SCAT[rng() & 3u], 24, 108);
+                }
+            } else if (syn > 0) {
+                int32_t root = (t->p[P_ROOT] % 12 + 12) % 12;
+                int32_t oct = (int32_t)nt / 12;
+                int32_t rel = ((int32_t)nt - root + 120) % 12;
+                int32_t target = (syn > 70 || rel < 4 || rel > 9) ? 0 : 7;
+                if ((int32_t)(rng() % 100u) < syn)
+                    nt = (uint32_t)clamp(oct * 12 + root + target, 12, 108);
+                if ((idx & 3u) == 0u)
+                    vel = (uint32_t)clamp((int32_t)vel + (syn >> 2), 1, 127);
             }
+            if (slide_in)
+                trk_note_on(t, nt, vel);
+            else {
+                uint8_t cn[4];
+                memcpy(cn, s->note, s->n);
+                cn[i] = (uint8_t)nt;
+                trk_note_chord(t, cn, s->n, i, vel);
+            }
+            if (!slide_in || !(mo_set[ti][nt >> 5] & (1u << (nt & 31u))))
+                seq_out_on(t, nt, vel);
+            t->seq_notes[t->seq_n++] = (uint8_t)nt;
         }
-    t->seq_n = 0;
-    for (i = 0; i < s->n; i++)
-        if (!((skip >> i) & 1u))
-            t->seq_notes[t->seq_n++] = s->note[i];
+        if (slide_in)
+            for (i = 0; i < t->seq_n; i++) {
+                for (j = 0; j < s->n && s->note[j] != t->seq_notes[i]; j++)
+                    ;
+                if (j == s->n) {
+                    if (!live_has(t, t->seq_notes[i]))
+                        trk_note_off(t, t->seq_notes[i]);
+                    seq_out_off(t, t->seq_notes[i]);
+                }
+            }
+    }
     t->seq_off = gate;
     t->seq_hold = !s->rat && ((s->flags & SF_SLIDE) != 0 || next_tie);
 }
 
 static void drum_step(track_t *t, const dstep_t *s, uint32_t skip)
 {
+    uint32_t idx = t->seq_idx % NSTEP;
     uint32_t l, m = dstep_mask(s) & ~skip & ~roll_lanes(t) & ~(uint32_t)drum_mute;
+    int32_t syn = clamp((int32_t)al_syntropy[TRK_DRUM], -100, 100);
+    if (al_syntropy_scope == 1u && !((al_syn_step_mask[idx >> 5] >> (idx & 31u)) & 1u))
+        syn = 0;
     seq_out_track_off(t);
-    for (l = 0; m; l++, m >>= 1)
-        if (m & 1u) {
-            trk_note_on(t, LANE_NOTE[l], lvl_vel(dstep_lvl(s, l), 100));
-            seq_out_on(t, LANE_NOTE[l], lvl_vel(dstep_lvl(s, l), 100));
+    for (l = 0; m; l++, m >>= 1) {
+        if (!(m & 1u))
+            continue;
+        int32_t lsyn = (al_syntropy_scope == 2u && !((al_syn_drum_mask >> l) & 1u)) ? 0 : syn;
+        uint32_t vel = lvl_vel(dstep_lvl(s, l), 100);
+        if (lsyn < 0) {
+            if ((rng() & 32767u) < al_syntropy_decay[TRK_DRUM])
+                continue;
+        } else if (lsyn > 0) {
+            if ((idx & 3u) != 0u && (int32_t)(rng() % 100u) < lsyn)
+                continue;
+            if ((idx & 3u) == 0u)
+                vel = (uint32_t)clamp((int32_t)vel + (lsyn >> 2), 1, 127);
         }
+        trk_note_on(t, LANE_NOTE[l], vel);
+        seq_out_on(t, LANE_NOTE[l], vel);
+    }
 }
 #include "audilune_gen.c"
 
 static void seq_ratchets(track_t *t, uint32_t into, uint32_t slen)
 {
     uint32_t i;
+
     if (t->seq_skip)
         return;
     if (is_drum(t)) {
