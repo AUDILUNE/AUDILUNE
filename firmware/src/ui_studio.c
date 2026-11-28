@@ -727,27 +727,16 @@ static const char AL_LAND_STR[] =
     "DRONE\0WEATHER\0WATER\0EARTH\0BIRDS\0"
     "BIO\0CROWD\0CITY\0MACHINE\0SPACE";
 static const char AL_LAND_SUB_STR[] =
-    "OFF\0FIFTHS\0SUB MONO\0SHIMMER\0MYSTIC\0ORGAN\0"
-    "RAIN\0STORM\0WIND\0GALE\0THUNDER\0HAIL\0"
-    "SURF\0UNDERWTR\0CREEK\0FALLS\0HARBOR\0CAVE DRP\0"
-    "FIRE\0EARTH\0GRAVEL\0LEAVES\0ICE\0VOLCANO\0"
-    "CHORUS\0CRICKET\0CICADA\0OWLS\0SEAGULLS\0FROGS\0"
-    "WHALE\0PURR\0WOLF\0SONAR\0HEART\0SWARM\0"
-    "CAFE\0CHATTER\0STEPS\0WHISPER\0SUBWAY\0APPLAUSE\0"
-    "HIGHWAY\0STREET\0CARS\0TRAIN\0SIREN\0CITY HUM\0"
-    "HISS\0CRACKLE\0CLOCK\0ENGINE\0METAL\0STATIC\0SOLAR\0STARSHIP\0"
-    "CENTER\0DRIFT\0BINAURAL\0GUSTS\0CAVERN\0WASH";
+    "OFF\0SUBTLE\0DRIFT\0WIDE\0GUSTS\0CAVERN\0SHIMMER\0WASH";
 UI_SMALL static const char *al_nth_str(const char *s, uint32_t n)
-
 {
     while (n--) while (*s++) ;
     return s;
 }
 UI_SMALL static const char *al_land_sub_name(uint32_t row, uint32_t sub)
 {
-    uint32_t base = row < 8u ? row * 6u : row == 8u ? 48u : 56u;
-    uint32_t cnt = row == 8u ? 8u : 6u;
-    return al_nth_str(AL_LAND_SUB_STR, base + (sub % cnt));
+    (void)row;
+    return al_nth_str(AL_LAND_SUB_STR, sub & 7u);
 }
 static uint8_t al_punch_div[8 + 8], al_punch_val[8 + 8], al_punch_active, al_punch_slot;
 static uint16_t al_land_on;
@@ -763,6 +752,7 @@ static const char *const AL_LFO_ROWS[] = {
 };
 static const char *const AL_GLO_ROWS[] = {
     "RADIO MODE", "LOAD SONG", "LOAD SAMPLE", "LOAD BOUNCE", "LOAD CHOP",
+
     "LOAD ARP", "COLOR THEME", "MIDI CH", "MIDI ROUTE",
     "CLOCK SYNC", "USB AUDIO", "CREDITS"
 };
