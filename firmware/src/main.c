@@ -401,7 +401,7 @@ UI_SMALL static void fm1_main(void)
                         rh->start_bar = al_rec_start_bar[al_cap.slot % AL_REC_SLOTS];
                         rh->zone.n = al_cap_fl_off * 2u;
                         rh->zone.le = rh->zone.n - 1u;
-                        rh->zone.rate = 32768u;
+                        rh->zone.rate = 43691u;
                         rh->zone.root16 = 60 * 16;
                         rh->zone.hi = 127;
                         fl_write(base, al_cap_pg, sizeof *rh);
@@ -412,8 +412,8 @@ UI_SMALL static void fm1_main(void)
                         uh->magic = SMP_USER_MAGIC;
                         uh->version = 1u;
                         uh->nz = 1u;
-                        uh->name[0] = 'U'; uh->name[1] = 'S'; uh->name[2] = 'R';
-                        uh->name[3] = (char)('1' + (al_cap.slot % SMP_USER_SLOTS));
+                        uh->name[0] = 'S'; uh->name[1] = 'M'; uh->name[2] = 'P';
+                        uh->name[3] = '0'; uh->name[4] = (char)('1' + (al_cap.slot % SMP_USER_SLOTS));
                         uh->data_len = al_cap_fl_off;
                         uh->zone[0].n = al_cap_fl_off * 2u;
                         uh->zone[0].le = uh->zone[0].n - 1u;
@@ -423,6 +423,7 @@ UI_SMALL static void fm1_main(void)
                         fl_write(base, al_cap_pg, 256u);
                         memset(al_cap_pg, 0, sizeof al_cap_pg);
                         memcpy(al_cap_pg, &uh->zone[0], sizeof uh->zone[0]);
+
                         fl_write(base + 256u, al_cap_pg, 256u);
                         smp_user_scan(al_cap.slot);
                     }
