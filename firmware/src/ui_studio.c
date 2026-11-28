@@ -1893,46 +1893,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
 
 UI_SMALL static void audilune_chaos_apply(track_t *t)
 {
-    uint32_t p = al_pad_idx & 7u, x = al_pad_x[p], y = al_pad_y[p], z = al_pad_z[p];
-    uint32_t rec_on = song.playing && ((song.rec >> song.sel) & 1u), step = t->seq_idx % trk_len(t);
-    int32_t pid = -1;
-    if (p == 0u) {
-        pid = P_DLY; song.g[G_DTIME] = (int16_t)(1 + x / 8u);
-        t->p[P_DLY] = (int16_t)clamp((int32_t)(y + z) * 140 / 254, 0, 140);
-    } else if (p == 1u) {
-        pid = P_REV; song.g[G_RSIZE] = (int16_t)(30 + x * 97u / 127u);
-        t->p[P_REV] = (int16_t)clamp((int32_t)(y + z) * 140 / 254, 0, 140);
-    } else if (p == 2u) {
-        static const int16_t VC_FLT[] = {-32, 48, -48, 24}, VC_LFO[] = {16, 96, 64, 32};
-        uint32_t ix = 127u - x, iy = 127u - y, w0 = ix * iy, w1 = x * iy, w2 = ix * y, w3 = x * y;
-        uint32_t c0 = *(al_vec_corner + 0) & 3u, c1 = *(al_vec_corner + 1) & 3u, c2 = *(al_vec_corner + 2) & 3u, c3 = *(al_vec_corner + 3) & 3u;
-        pid = P_TFLT;
-        t->p[P_TFLT] = (int16_t)clamp((int32_t)((w0 * (uint32_t)(VC_FLT[c0] + 64) + w1 * (uint32_t)(VC_FLT[c1] + 64) + w2 * (uint32_t)(VC_FLT[c2] + 64) + w3 * (uint32_t)(VC_FLT[c3] + 64)) / 16129u) - 64 + ((int32_t)z - 64) / 2, -64, 63);
-        t->p[P_LD_FLT] = (int16_t)((w0 * (uint32_t)VC_LFO[c0] + w1 * (uint32_t)VC_LFO[c1] + w2 * (uint32_t)VC_LFO[c2] + w3 * (uint32_t)VC_LFO[c3]) / 16129u);
-
-    } else if (p == 3u) {
-        pid = P_DIST; t->p[P_DIST] = (int16_t)(x * z / 127u); song.g[G_DUST] = (int16_t)(y * z / 127u);
-    } else if (p == 4u) {
-        pid = P_IMIX; t->p[P_ITYPE] = x < 43u ? IT_CHORUS : x < 86u ? IT_PHASER : IT_FLANGER;
-        t->p[P_LRATE] = (int16_t)(4 + y * 120u / 127u); t->p[P_IMIX] = (int16_t)z;
-    } else if (p == 5u) {
-        song.g[G_TUNE] = (int16_t)(((int32_t)x - 64) * 24 / 64);
-        t->p[P_LD_PIT] = (int16_t)(y * z / 127u); punch.req = y > 96u && z > 20u ? PX_STUT : -1;
-    } else if (p == 6u) {
-        punch.req = z < 16u ? -1 : y > 100u ? PX_FREEZE : y > 72u ? PX_REV : x < 43u ? PX_LOOP8 : x < 86u ? PX_LOOP16 : PX_LOOP32;
-    } else if (p == 7u && z > 10u) {
-        static uint8_t last_zone;
-        uint8_t zone = (uint8_t)((x >> 4) + ((y >> 5) << 3));
-        if (zone != last_zone) {
-            int32_t deg = (int32_t)(x / 18u) * 2 + (int32_t)(y / 42u) * 12;
-            uint8_t note = (uint8_t)clamp(48 + t->p[P_ROOT] + deg, 24, 108);
-            last_zone = zone;
-            pid = P_TFLT;
-            t->p[P_TFLT] = (int16_t)clamp(((int32_t)x - 64), -64, 63);
-            if (rec_on) { *(t->step[step].note + 0) = note; t->step[step].n = 1; t->step[step].vel = 100; t->seq_active = 1; }
-        }
-    }
-    if (rec_on && pid >= 0) lock_set(t, step, (uint32_t)pid, t->p[pid]);
+    (void)t;
 }
 
 UI_SMALL static void audilune_page_draw(void)
@@ -1943,6 +1904,7 @@ UI_SMALL static void audilune_page_draw(void)
         "ARP", "SEQ", "CHOP", "SAMPLER", "ALGORITHM", "STUDIO SETUP",
         "PRESETS", "PRESETS", "PRESETS", "BT SPEAKER", "AUDILUNE LIBRARY", "PARTITION"
     };
+
     uint32_t is_wave = (ui.scr == UI_CHOP_SRC || ui.scr == UI_CHOP_WAVE);
     uint32_t rows = audilune_page_rows(ui.scr), sel = rows ? (uint32_t)ui.list_sel % rows : 0u;
     int32_t sect = song.playing && live_sec >= 0 ? live_sec : (int32_t)song.g[G_SLOT] - 1;
