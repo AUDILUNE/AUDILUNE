@@ -867,12 +867,16 @@ UI_SMALL static void project_erase(uint32_t slot)
     fm1_irq_off();
 
     memset(p, 0, sizeof *p);
+#if FELUCCA_FLASH
+    proj_factory_seed(p, s);
+#endif
     sec_dirty &= (uint8_t)~(1u << s);
     if (live_sec == (int8_t)s)
         live_sec = -1;
 #if FELUCCA_ARRANGER
     if (s < 4u && arr_drop_scene(&arrangement, s))
         song_dirty = 1;
+
 #endif
 
     fm1_irq_on();
