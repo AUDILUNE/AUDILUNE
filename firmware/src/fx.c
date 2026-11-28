@@ -701,11 +701,36 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
             static int32_t al_hs_lp[NPART] __attribute__((section(".pool")));
             static uint8_t al_itd_w[NPART] __attribute__((section(".pool")));
             uint32_t ti = (uint32_t)(t - trk) % NPART;
+            static int8_t al_syntropy[NTRK] __attribute__((section(".pool")));
+            static uint8_t al_syntropy_scope __attribute__((section(".pool")));
+            static uint16_t al_syntropy_decay[NTRK] __attribute__((section(".pool")));
+            static uint32_t al_syn_ph[NPART] __attribute__((section(".pool")));
+            static int32_t al_coal_lp[NPART] __attribute__((section(".pool")));
+            int32_t syn = clamp((int32_t)al_syntropy[ti], -100, 100);
             int poly_stage = (smart_voice_mode(t) == V_POLY && t->p[P_TRANS] > -12);
             int32_t orb_pan = poly_stage ? ((int32_t)al_trk_orbit_pan[ti] >> 2) : 0;
             int32_t eff_pan = clamp((int32_t)t->p[P_PAN] + orb_pan, -64, 63);
-            int32_t lvl0, dl, gl0, dgl, gr0, dgr, abs_p = eff_pan < 0 ? -eff_pan : eff_pan;
-            uint32_t itd_d = poly_stage && abs_p > 4 ? (uint32_t)((abs_p * 28) >> 6) : 0u;
+            int32_t lvl0, dl, gl0, dgl, gr0, dgr, abs_p, syn_rev_add = 0;
+            uint32_t itd_d;
+            if (syn < 0) {
+                int32_t dis = -syn;
+                uint32_t dec = al_syntropy_decay[ti] + (uint32_t)(dis >> 2) + 1u;
+                al_syntropy_decay[ti] = (uint16_t)(dec > 32767u ? 32767u : dec);
+                int32_t scat = (((int32_t)((al_syn_ph[ti] >> 12) & 127u) - 64) * dis) / 100;
+                eff_pan = clamp(eff_pan + scat, -64, 63);
+                syn_rev_add = (dis * 240);
+            } else {
+                if (al_syntropy_decay[ti] > 0u) {
+                    uint32_t step_back = 128u + (uint32_t)(syn * 8);
+                    al_syntropy_decay[ti] = al_syntropy_decay[ti] > step_back ? (uint16_t)(al_syntropy_decay[ti] - step_back) : 0u;
+                }
+                if (syn > 0) {
+                    eff_pan = (eff_pan * (100 - syn)) / 100;
+                    lvl = (lvl * (4096 - syn * 6)) >> 12;
+                }
+            }
+            abs_p = eff_pan < 0 ? -eff_pan : eff_pan;
+            itd_d = poly_stage && abs_p > 4 ? (uint32_t)((abs_p * 28) >> 6) : 0u;
             gl = 4096 - (eff_pan > 0 ? eff_pan * 64 : 0);
             gr = 4096 + (eff_pan < 0 ? eff_pan * 64 : 0);
             if (!t->mix_on)
@@ -716,6 +741,24 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
             for (i = 0; i < n; i++) {
                 int32_t lv = lvl0 + dl * (int32_t)i, bi = b[i], x = MULQ12R(bi, lv, 2), a;
                 int32_t xs, g = ga + (((gb - ga) * (int32_t)i) >> CTL_LOG2), xl = x, xr = x;
+                if (syn < 0) {
+                    int32_t dis = -syn;
+                    uint32_t rate = 380000u + (uint32_t)dis * 18000u;
+                    uint32_t ph = al_syn_ph[ti] += rate;
+                    uint32_t duty = (uint32_t)(65535 - dis * 520);
+                    uint32_t win = (ph >> 16) < duty ? 32767u : 0u;
+                    int32_t survive = 32767 - (int32_t)al_syntropy_decay[ti];
+                    int32_t gg = (int32_t)((win * (uint32_t)(survive > 0 ? survive : 0)) >> 15);
+                    if (syn_rev_add)
+                        mx->sr[i] += mulq15(clamp(x, -32767, 32767), syn_rev_add);
+                    x = mulq15(x, gg);
+                    xl = xr = x;
+                } else if (syn > 0) {
+                    al_coal_lp[ti] += (x - al_coal_lp[ti]) >> 5;
+                    int32_t core = al_coal_lp[ti] + ((x - al_coal_lp[ti]) >> 1);
+                    x += mulq15(core - x, syn * 180);
+                    xl = xr = x;
+                }
                 if (g < 32767) {
                     g >>= 3;
                     x = MULQ12R(x, g, 4);
@@ -753,6 +796,7 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
     }
 }
 /* ---- DUST: the master through an old sampler and a record. */
+
 static struct {
     int32_t hl, hr, hn;
     int32_t ll, lr;
