@@ -134,35 +134,28 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
         cv_rect(1, 1, 238, 24, C_WHITE);
         te_text_c(120, 6, "TIME UP - HOLD SEL: DISARM", C_BLACK);
     } else if (song.rec) {
-        uint32_t rem = 60u - rec_sec, slot = (rec_hud_usr % 6u) + 1u;
-        str_cpy(line, "REC 0", sizeof line);
-        fmt_int(nb, (int32_t)slot);
-        str_cpy(line + 5, nb, sizeof line - 5);
-        str_cpy(line + 6, rem == 60u ? " [01:00]" : " [00:", sizeof line - 6);
-        if (rem < 60u) {
-            if (rem < 10u) { line[11] = '0'; fmt_int(line + 12, (int32_t)rem); }
-            else fmt_int(line + 11, (int32_t)rem);
-            str_cpy(line + 13, "]", sizeof line - 13);
-        }
+        uint32_t rem = 60u - rec_sec, m1 = rem == 60u ? 1u : 0u, s2 = rem % 60u;
+        str_cpy(line, "REC 01 [00:00]", sizeof line);
+        line[5] = (char)('1' + (rec_hud_usr % 6u));
+        line[9] = (char)('0' + m1);
+        line[11] = (char)('0' + s2 / 10u);
+        line[12] = (char)('0' + s2 % 10u);
         cv_rect(1, 1, 238, 24, C_WHITE);
         te_text_c(120, 6, line, C_BLACK);
     } else if (arm_hud) {
         static const char REC_HUD_STR[48 + 48] =
-            "REC: ACTIVE TRK\0REC: LOCKED TRKS\0REC: SAMPLE 0\0REC: USB LIVE 0\0LIVE REC 01-06 [01:00]";
+            "REC: ACTIVE TRK\0REC: LOCKED TRKS\0REC: SAMPLE 01\0REC: USB LIVE 01\0LIVE REC 01-06 [01:00]";
         uint32_t m = rec_hud_mode % 5u;
         str_cpy(line, al_nth_str(REC_HUD_STR, m), sizeof line);
-        if (m == 2u || m == 3u) {
-            uint32_t p = str_len(line);
-            fmt_int(nb, (int32_t)(rec_hud_usr % 6u) + 1);
-            str_cpy(line + p, nb, sizeof line - p);
-        }
+        if (m == 2u || m == 3u)
+            line[str_len(line) - 1u] = (char)('1' + (rec_hud_usr % 6u));
         cv_rect(1, 1, 238, 24, C_WHITE);
-
         te_text_c(120, 6, line, C_BLACK);
     } else if (rec_hint) {
         cv_rect(1, 1, 238, 24, C_WHITE);
-        te_text_c(120, 6, "LIVE REC: UP TO 120S (USR SAFE)", C_BLACK);
+        te_text_c(120, 6, "LIVE REC 01-06 [01:00]", C_BLACK);
     } else if (hot) {
+
         char up_l[8 + 8], up_v[8 + 8];
         uint32_t p = 0;
         te_upper(up_l, *(lab + ui.hot_col), sizeof up_l);
