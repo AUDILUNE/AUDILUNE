@@ -692,67 +692,12 @@ UI_SMALL static void rec_rows(uint32_t rt, uint32_t take, uint32_t y0, uint32_t 
         return;
     *cache = sig;
     cv_begin(240, 76, C_BLACK);
-    for (i = 0; i < NTRK; i++) {
-        const track_t *t = &trk[i];
-        uint32_t len = (uint32_t)clamp(t->p[P_SLEN], 1, 64), armed = i == rt;
-        int32_t y = (int32_t)i * 19;
-        char b[8 + 8];
-        if (armed) cv_rect(0, y, 240, 18, TE_RED), cv_rect(1, y + 1, 238, 16, C_BLACK);
-        cv_rect(4, y + 3, 12, 12, armed ? TE_COL[i] : TE_DIM[i]);
-        if (i == TRK_DRUM) str_cpy(b, DRUM_KIT_NAMES[drum_kit()], sizeof b);
-        else trk_short_name(i, b);
-        b[5 + 5] = 0;
-        cv_text(22, y + 1, &FONT_S, b, armed ? C_WHITE : TE_G3);
-        for (j = 0; j < 16u; j++) {
-            uint32_t a = j * len / 16u, z = (j + 1u) * len / 16u, k, on = 0;
-            if (z == a) z = a + 1u;
-            for (k = a; k < z && k < NSTEP; k++) if (trk_step_on(t, k)) on = 1;
-            cv_rect(106 + (int32_t)j * 8, y + 5, 6, 8, on ? (armed ? TE_COL[i] : TE_DIM[i]) : TE_G1);
-        }
-    }
-    cv_blit(0, y0);
+    (void)rt; (void)take; (void)y0; (void)cache;
 }
-/* REC armed (stopped: waiting for the first note, or PLAY), its count-in, or a free take running
- * (seq.c). Armed, the dials say how it records: KNOB 1 MODE free / tempo (an empty project),
- * KNOB 2 LENGTH (1, 2 or 4 bars), KNOB 3 START note / count, KNOB 4 QUANT on / off (2.7) (ui_input.c rec_knobs). The four tracks
- * stay in view; the REC LED blinks while armed, is lit during the take. */
 UI_SMALL static void rec_screen_draw(void)
 {
     return;
-    static uint32_t head, body, rows, foot, dials;
-    static uint8_t layout;
-    uint32_t sig, take = ft_on, empty = take || project_empty(), rt = take ? ft_trk % NTRK : song.sel;
-    uint32_t blink = (fm1_ms / 250u) & 1u, secs = take ? ft_t * CTL / FS : 0u, bars = 0, bpm = 0;
-    uint32_t lay = take ? 1u : 2u, free = empty && !rec_tempo && !take, count = ci_on;
-    if (take)
-        bars = ft_fit(ft_t, &bpm);
-    if (!rec_shown || lay != layout) {
-        lcd_fill(0, 0, 240, 240, C_BLACK);
-        ui.force = 1;
-    }
-    rec_shown = 1;
-    layout = (uint8_t)lay;
-    te_header(take ? "free take" : count ? "count-in" : "rec ready", TE_RED, &head, -1);
-    if (take) {                                         /* free take: the time, the loop it makes */
-        sig = 1000003u + rt * 7919u + blink * 31u + secs * 131u + bars * 17u + bpm * 3u;
-        if (ui.force || sig != body) {
 
-            char b[24];
-            uint32_t n = secs > 99u ? 99u : secs;
-            body = sig;
-            cv_begin(240, 106, C_BLACK);
-            te_disc(18, 30, 9, blink ? TE_RED : TE_DIM[3]);
-            if (n >= 10u)
-                te_digit(36, 4, 32, 56, 7, n / 10u, C_WHITE);
-            te_digit(76, 4, 32, 56, 7, n % 10u, C_WHITE);
-            cv_text(112, 44, &FONT_S, "s", TE_G3);
-            cv_rect(132, 6, 1, 54, TE_G1);
-            if (bars) {
-                fmt_int(b, (int32_t)bars);
-                cv_text(146, 4, &FONT_L, b, TE_COL[rt & 3u]);
-                cv_text(146 + text_w(&FONT_L, b) + 6, 18, &FONT_S, bars == 1u ? "bar" : "bars", TE_G3);
-                fmt_int(b, (int32_t)bpm);
-                cv_text(146, 42, &FONT_S, b, C_WHITE);
                 cv_text(146 + text_w(&FONT_S, b) + 4, 42, &FONT_S, "bpm", TE_G3);
             } else {
                 cv_text(146, 4, &FONT_L, "-", TE_G3);
