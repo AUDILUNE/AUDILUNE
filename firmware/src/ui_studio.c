@@ -1778,9 +1778,9 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
         else { str_cpy(lbl, "SLOT ", 18); fmt_int(lbl + 5, (int32_t)row + 1); row_kv(0, val, 0, "LOAD"); }
     } else if (scr == UI_PRESET_LIST) {
         if (ui.preset_cat == 1u || ui.preset_cat == 6u) {
-            extern int smp_user_has(uint32_t slot);
             uint32_t sl = row % 6u;
-            row_kv(lbl, val, ui.preset_cat == 1u ? "LIVE REC 01" : "SAMPLE 01", smp_user_has(sl) ? "[■]" : "[□]");
+            int full = (ui.preset_cat == 6u) && (smp_user[sl].nzones > 0u);
+            row_kv(lbl, val, ui.preset_cat == 1u ? "LIVE REC 01" : "SAMPLE 01", full ? "[■]" : "[□]");
             lbl[ui.preset_cat == 1u ? 10 : 8] = (char)('1' + sl);
         } else if (ui.preset_cat == 2u) {
             const engine_t *ep = ENGINES[ui.preset_sub % 12u];
@@ -1793,6 +1793,7 @@ UI_SMALL static void audilune_row_text(uint8_t scr, uint32_t row, char *lbl, cha
             str_cpy(lbl, "ITEM ", 18); fmt_int(lbl + 5, (int32_t)row + 1); row_kv(0, val, 0, "SEL");
         }
     } else if (scr == UI_BT_AUDIO) {
+
 
         if (row == 0u) row_kv(lbl, val, "BT SPEAKER", "SCAN");
         else if (row == 1u) row_kv(lbl, val, "CATEGORY", *(AL_BT_CATS + (ui.bt_cat % 6u)));
