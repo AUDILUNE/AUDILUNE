@@ -697,85 +697,11 @@ UI_SMALL static void rec_rows(uint32_t rt, uint32_t take, uint32_t y0, uint32_t 
 UI_SMALL static void rec_screen_draw(void)
 {
     return;
-
-                cv_text(146 + text_w(&FONT_S, b) + 4, 42, &FONT_S, "bpm", TE_G3);
-            } else {
-                cv_text(146, 4, &FONT_L, "-", TE_G3);
-            }
-            te_text_c(120, 80, "press rec on the 1", TE_RED);
-            cv_blit(0, 42);
-        }
-        rec_rows(rt, take, 148u, &rows);
-        if (ui.force || foot != 1u) {
-            foot = 1u;
-            cv_begin(240, 16, C_BLACK);
-            cv_text(4, 0, &FONT_S, "rec: close", TE_G3);
-            cv_text(236 - text_w(&FONT_S, "play: drop"), 0, &FONT_S, "play: drop", TE_G3);
-            cv_blit(0, 224);
-        }
-        return;
-    }
-    foot = 0;
-    /* armed / counting in: what happens next */
-    sig = 2000003u + empty * 7u + free * 11u + rec_count * 13u + count * 17u + ci_beat * 19u + blink * 31u +
-          rec_quant_off * 37u;
-    if (ui.force || sig != body) {
-        static const char *const L1[3] = {"play freely", "play a note", "press play"};
-        static const char *const L2[3] = {"then rec on the 1", "it starts the loop", "4 clicks, then rec"};
-        static const char *const L3[3] = {"the tempo follows you", "play: go  rec: cancel", "rec: cancel"};
-        uint32_t m = free ? 0u : rec_count ? 2u : 1u;
-        body = sig;
-        cv_begin(240, 64, C_BLACK);
-        if (count) {                                    /* the count-in: 4, 3, 2, 1 */
-            te_digit(96, 4, 30, 54, 6, 4u - (ci_beat > 3u ? 3u : ci_beat), C_WHITE);
-            te_disc(60, 31, 12, TE_RED);
-            cv_text(144, 14, &FONT_S, "count-in", TE_G4);
-            cv_text(144, 34, &FONT_S, "rec: cancel", TE_G3);
-        } else {
-            te_disc(28, 30, 18, blink ? TE_RED : TE_DIM[3]);
-            te_disc(28, 30, 7, C_BLACK);
-            cv_text(60, 6, &FONT_S, L1[m], C_WHITE);
-            cv_text(60, 24, &FONT_S, L2[m], TE_G4);
-            cv_text(60, 42, &FONT_S, L3[m], TE_G3);
-        }
-        cv_blit(0, 42);
-    }
-    rec_rows(rt, 0u, 106u, &rows);
-    {   /* the dials: how it records */
-        static char v[3][10];
-              static const char *const LAB_E[4] = {"mode", "length", "start", "quant"};
-        static const char *const LAB_F[4] = {"mode", "", "", "quant"};
-        static const char *const LAB_N[4] = {"", "length", "start", "quant"};
-        static const char *const LAB_0[4] = {"", "", "", ""};
-        const char *val[4] = {v[0], v[1], v[2], rec_quant_off ? "off" : "on"};
-        int32_t ratio[4] = {0, 0, 0, 0};
-        uint32_t len = (uint32_t)clamp(TSEL->p[P_SLEN], 1, 64);
-        str_cpy(v[0], rec_tempo ? "tempo" : "free", sizeof v[0]);
-        if (len % 16u == 0u) {
-            fmt_int(v[1], (int32_t)(len / 16u));
-            str_cpy(v[1] + str_len(v[1]), len == 16u ? " bar" : " bars", 6);
-        } else {
-            fmt_int(v[1], (int32_t)len);
-            str_cpy(v[1] + str_len(v[1]), " st", 4);
-        }
-        str_cpy(v[2], rec_count ? "count" : "note", sizeof v[2]);
-        ratio[0] = rec_tempo ? 1000 : 0;
-        ratio[1] = (int32_t)(len - 1u) * 1000 / 63;
-        ratio[2] = rec_count ? 1000 : 0;
-        ratio[3] = rec_quant_off ? 0 : 1000;
-        {
-            const char *const *lab = count ? LAB_0 : !empty ? LAB_N : free ? LAB_F : LAB_E;
-            uint32_t k;
-            for (k = 0; k < 4u; k++)
-                if (!lab[k][0])
-                    val[k] = "";
-            te_dials(184, lab, val, ratio, rt * 7u + count * 3u, &dials);
-        }
-    }
 }
 /* ------------------------------------------- AUDILUNE 14-PAGE LISTS --- */
 static const char *const AL_FX_ROWS[] = {
     "DELAY", "PITCH", "TIME & STRETCH", "MORPH",
+
     "GRANULAR", "STRUM & GROOVE", "HARMONIC", "DRIVE & GRIT",
     "STEREO & CHORUS", "REVERB", "TEXTURES", "LAYER / TIE", "STUTTER", "SYNTROPY"
 };
