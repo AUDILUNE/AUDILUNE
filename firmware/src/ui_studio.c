@@ -132,7 +132,7 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
         te_text_c(120, 6, ui.msg, C_BLACK);
     } else if (audilune_timer_alert) {
         cv_rect(1, 1, 238, 24, C_WHITE);
-        te_text_c(120, 6, "TIME UP - HOLD SEL", C_BLACK);
+        te_text_c(120, 6, "TIME UP - SEL", C_BLACK);
     } else if (song.rec) {
         uint32_t rem = 60u - rec_sec, m1 = rem == 60u ? 1u : 0u, s2 = rem % 60u;
         str_cpy(line, "REC 01 [00:00]", sizeof line);
@@ -144,7 +144,7 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
         te_text_c(120, 6, line, C_BLACK);
     } else if (arm_hud) {
         static const char REC_HUD_STR[] =
-            "REC: TRK\0REC: LOCKED\0REC: SMP 01\0REC: USB 01\0LIVE REC [01:00]";
+            "REC: TRK\0REC: LOCKED\0REC: SMP 01\0REC: USB 01\0REC [01:00]";
         uint32_t m = rec_hud_mode % 5u;
         str_cpy(line, al_nth_str(REC_HUD_STR, m), sizeof line);
         if (m == 2u || m == 3u)
@@ -153,7 +153,7 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
         te_text_c(120, 6, line, C_BLACK);
     } else if (rec_hint) {
         cv_rect(1, 1, 238, 24, C_WHITE);
-        te_text_c(120, 6, "LIVE REC [01:00]", C_BLACK);
+        te_text_c(120, 6, "REC [01:00]", C_BLACK);
     } else if (hot) {
 
         char up_l[8 + 8], up_v[8 + 8];
