@@ -509,7 +509,10 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
     fm1_irq_off();
     hits = drums.hits;
     drums.hits = 0;
-
+    for (i = 0; i < NPART; i++)
+        for (w = 0; w < 4u; w++) {
+            n[i][w] = note_hits[i][w];
+            note_hits[i][w] = 0;
         }
     fm1_irq_on();
     for (i = 0; i < DRUM_LANES; i++) {
@@ -534,6 +537,7 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
 }
 UI_SMALL static void drum_screen_draw(void)
 {
+
 }
 /* the level order of the knobs: ghost < soft < norm < hard */
 
