@@ -643,9 +643,13 @@ static __attribute__((noinline)) void ins_rest(track_t *t)
     t->ins_run = 0;
 }
 
+static int8_t al_syntropy[NTRK] __attribute__((section(".pool")));
+static uint8_t al_syntropy_scope __attribute__((section(".pool")));
+static uint16_t al_syntropy_decay[NTRK] __attribute__((section(".pool")));
 static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b);
 static void mix_part(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
 {
+
     static int16_t pnew[2][P_COUNT] __attribute__((section(".lowram")));
     int16_t *pn = pnew[mx != &acc[0]];
     if (!(t->pold && t->xf_on && t->xf)) {
