@@ -664,65 +664,12 @@ UI_SMALL static void drum_sheet_do(void)                 /* OCT+ tapped in the s
 UI_SMALL static void drum_screen_input(uint32_t pressed, uint32_t home, uint32_t notes)
 {
     (void)pressed; (void)home; (void)notes;
-    return;
-    uint32_t k, b;
-    int32_t s;
-    if (song.sel != TRK_DRUM || home == 1u) {
-        go_home();
-        return;
-    }
-    if (!drum_page) {                                  /* (2.7.2) OCT+ held: the hit's sheet; tapped: the page */
-        uint32_t ev, ob = 1u << panel.btn[B_OCTDN];
-        pressed = octp_filter(pressed, &ev);
-        if (ev == 2u && !ui.sheet)
-
-            ui.sheet = (uint8_t)(1u + ui.sheet_last);      /* (2.8.1) reopen on the row last used */
-        else if (ev == 1u && ui.sheet)
-            drum_sheet_do();
-        else if (ev == 1u)
-            pressed |= 1u << panel.btn[B_OCTUP];
-        if (ui.sheet && (pressed & ob)) {
-            ui.sheet = 0;
-            pressed &= ~ob;
-        }
-        if (ev)
-            ui.force = 1;
-    } else {
-        ui.sheet = 0;
-    }
-    for (k = 0; k < NB; k++) if ((pressed >> panel.btn[k]) & 1u) {
-        b = k;
-        if ((b == B_OCTDN || b == B_OCTUP) && !drum_page) {   /* (2.7.1) GRID: OCT- / OCT+ the page of steps */
-            uint32_t len = trk_len(TDRUM), pages = (len + 15u) / 16u, pg = drum_cursor / 16u, idx;
-            pg = (pg + (b == B_OCTUP ? 1u : pages - 1u)) % pages;
-            idx = pg * 16u + drum_cursor % 16u;
-            drum_cursor = (uint8_t)(idx < len ? idx : len - 1u);
-            ui.force = 1;
-            continue;
-        }
-        if (b == B_PLAY) {
-            if (ft_owns_press()) ;
-            else if (!song.playing && arrangement_enabled && !arr_valid(&arrangement, arrangement_ready())) ui_message("EMPTY SECTION: REC");
-            else transport_req = song.playing ? 2 : 1;
-        } else if (b == B_SEQ || b == B_EDIT) {
-            drum_page = (uint8_t)((drum_page + 1u) % 3u);   /* GRID -> KIT -> SOUND (2.7) */
-            ui.msg_t = 0;
-            ui.force = 1;
-        } else if (b == B_SAVE) {
-            studio_open(SC_SONG);
-            return;
-        }
-    }
-    if ((s = panel_enc(EN_SELECT)) && (uint32_t)clamp((int32_t)drum_page + s, 0, 2) != drum_page) {
-        drum_page = (uint8_t)clamp((int32_t)drum_page + s, 0, 2);
-        ui.msg_t = 0;
-        ui.force = 1;
-    /* unreachable legacy drum_screen_input body trimmed */
 }
 /* ---------------------------------------------------------------- REC --- */
 /* a big seven-segment digit, TE style: w x h, segments t thick */
 
 UI_SMALL static void te_digit(int32_t x, int32_t y, int32_t w, int32_t h, int32_t t, uint32_t d, uint16_t c)
+
 {
     static const uint8_t SEG[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};   /* gfedcba */
     uint32_t m = SEG[d % 10u];
