@@ -2461,9 +2461,12 @@ static void rec_follow(uint32_t sel)
     if (song.rec)
         song.rec = (uint8_t)(1u << (sel % NTRK));
 }
+static uint32_t al_syn_step_mask[4] __attribute__((section(".pool")));
+static uint16_t al_syn_drum_mask __attribute__((section(".pool")));
 static void seq_step(track_t *t, const step_t *s, uint32_t slen, uint32_t skip)
 {
     uint32_t i, j, gate = slen * (uint32_t)t->p[P_SGATE] / 128u;
+
     uint32_t slide_in = t->seq_hold && t->seq_n;
     const step_t *nx = &t->step[(t->seq_idx + 1u) % trk_len(t)];
     uint32_t next_tie = nx->time == ST_TIE || (nx->time == ST_NOTE && (nx->flags & (SF_CONT_ALL | SF_LEG)));
