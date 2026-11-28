@@ -3137,12 +3137,30 @@ static void events_block(uint32_t n)
     }
     if (rec_wait && song.playing)
         rec_begin();
-    adv = mclk_on() && song.playing ? mclk_adv(n) : n * (uint32_t)song.g[G_BPM];
+    {
+        static uint8_t al_time_div __attribute__((section(".pool")));
+        static uint8_t al_tdiv_rem __attribute__((section(".pool")));
+        adv = mclk_on() && song.playing ? mclk_adv(n) : n * (uint32_t)song.g[G_BPM];
+        if (al_time_div == 1u) {
+            uint32_t num = adv + (uint32_t)al_tdiv_rem;
+            adv = num >> 2;
+            al_tdiv_rem = (uint8_t)(num & 3u);
+        } else if (al_time_div == 2u) {
+            uint32_t num = adv + (uint32_t)al_tdiv_rem;
+            adv = num >> 1;
+            al_tdiv_rem = (uint8_t)(num & 1u);
+        } else if (al_time_div == 3u) {
+            adv <<= 1;
+        } else if (al_time_div == 4u) {
+            adv <<= 2;
+        }
+    }
     clkout_block(n);
     ft_block();
 #if FELUCCA_ARRANGER
     if (song.playing && arrangement_clock.running) {
         int scene = arr_next(&arrangement_clock, &arrangement, FS);
+
         if (scene == ARR_DONE) {
             arrangement_clock.running = 1;
             seq_stop();
