@@ -498,12 +498,7 @@ UI_SMALL static void studio_tracks_draw(void)
 }
 
 /* ---------------------------------------------------------------- DRUMS --- */
-static const char *const LV_NAME[4] = {"norm", "ghost", "soft", "hard"};
 UI_SMALL static uint32_t lvl_rank(uint32_t lvl);                 /* (below) ghost 0, soft 1, norm 2, hard 3 */
-UI_SMALL static uint16_t lvl_col(uint32_t lvl)                   /* a hit's colour by its level */
-{
-    return lvl == LV_GHOST ? TE_DIM[3] : lvl == LV_SOFT ? TE_MID[3] : lvl == LV_HARD ? C_WHITE : TE_DRUM;
-}
 static uint16_t pad_lit[DRUM_LANES];                   /* pads and key LEDs: frames left lit */
 static uint8_t key_lit[27];                             /* menu NOTES, a synth track: frames its key stays lit */
 
@@ -514,6 +509,7 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
     fm1_irq_off();
     hits = drums.hits;
     drums.hits = 0;
+
     for (i = 0; i < NPART; i++)
         for (w = 0; w < 4u; w++) {
             n[i][w] = note_hits[i][w];
