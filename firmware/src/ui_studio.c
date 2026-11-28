@@ -957,12 +957,11 @@ UI_SMALL static void rec_screen_draw(void)
         }
     }
 }
-
 /* ------------------------------------------- AUDILUNE 14-PAGE LISTS --- */
 static const char *const AL_FX_ROWS[] = {
     "DELAY", "PITCH", "TIME & STRETCH", "MORPH",
     "GRANULAR", "STRUM & GROOVE", "HARMONIC", "DRIVE & GRIT",
-    "STEREO & CHORUS", "REVERB", "TEXTURES", "LAYER / TIE", "STUTTER"
+    "STEREO & CHORUS", "REVERB", "TEXTURES", "LAYER / TIE", "STUTTER", "SYNTROPY"
 };
 static const char *const AL_PAD_NAMES[] = {
     "DELAY PAD", "REVERB PAD", "4-CORNER VECTOR", "DRIVE & GRIT",
@@ -979,8 +978,7 @@ static const char *const AL_SCALE_NAMES[] = {
 static const char *const AL_EDIT_ROWS[] = {
     "UNDO / REDO", "ROOT & SCALE", "LENGTH", "QUANTIZE / HUMAN",
     "TRANSPOSE", "NUDGE", "GATE", "PROBABILITY",
-
-    "RATCHET", "REVERSE", "STEP FX", "CHOP MODE", "COPY & PASTE"
+    "RATCHET", "REVERSE", "STEP FX", "CHOP MODE", "COPY & PASTE", "TIME DIVISION"
 };
 static const char AL_PUNCH_STR[] =
     "1/16 STUTTER\0TAPE/VNL BRAKE\0BUFFER REVERSE\0VINYL SPINBACK\0"
@@ -1003,6 +1001,7 @@ static const char AL_LAND_SUB_STR[] =
     "TAPE HISS\0VINYL CRACKLE\0CLOCKWORK TCK\0HEAVY MACHINE\0METAL CLANG\0RADIO STATIC\0SOLAR WIND\0STARSHIP HUM\0"
     "STATIC CENTER\0SLOW DRIFT\0WIDE BINAURAL\0WIND GUSTS\0DEEP CAVERN\0INFINITE WASH";
 UI_SMALL static const char *al_nth_str(const char *s, uint32_t n)
+
 {
     while (n--) while (*s++) ;
     return s;
