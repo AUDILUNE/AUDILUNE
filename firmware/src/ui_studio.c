@@ -1385,21 +1385,6 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             fm1_irq_on();
             sync_reload = 1;
             audilune_hud_popup("NUDGE", dir * 2, "");
-        } else if (row == 8u) {
-            undo_mark(t, (undo_sess += 4u) | 3u);
-            fm1_irq_off();
-            if (is_drum(t)) {
-                for (i = 0; i < DRUM_LANES; i++)
-                    drum_tune[i] = (int8_t)clamp((int32_t)drum_tune[i] + dir, DRUM_TUNE_MIN, DRUM_TUNE_MAX);
-            } else {
-                for (i = 0; i < len; i++)
-                    if ((!has_sel || ((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u)) && step_on(&t->step[i]))
-                        for (j = 0; j < t->step[i].n && j < 4u; j++)
-                            t->step[i].note[j] = (uint8_t)clamp((int32_t)t->step[i].note[j] + dir, 0, 127);
-            }
-            fm1_irq_on();
-            sync_reload = 1;
-            audilune_hud_popup("TRANSPOSE", dir, " ST");
         } else if (row == 6u) {
             t->p[P_SGATE] = (int16_t)clamp(t->p[P_SGATE] + dir * 4, 1, 127);
             audilune_hud_popup("GATE", t->p[P_SGATE] * 100 / 127, "%");
@@ -1413,6 +1398,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             for (i = 0; i < len; i++) {
                 if (has_sel && !((ui.sel_step_mask[i >> 5] >> (i & 31u)) & 1u))
                     continue;
+
                 if (is_drum(t)) {
                     for (j = 0; j < DRUM_LANES; j++)
                         if (dstep_has(&t->dstep[i], j)) {
