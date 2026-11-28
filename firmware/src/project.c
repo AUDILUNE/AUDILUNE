@@ -703,13 +703,116 @@ static union {
 
 UI_SMALL static void *up_stage(void) { return &proj_tmp; }
 
+typedef struct {
+    int16_t bpm;
+    uint8_t root, scale, swing, dr_lvl;
+    uint8_t eng[NTRK], pre[NTRK], lvl[NTRK], pat[NTRK][16u];
+} al_demo_song_t;
+
+static const al_demo_song_t AL_DEMO_SONGS[AUDILUNE_VAULT_SLOTS] = {
+    /* 01: ZEN HORIZON (84 BPM — Lush ambient pads, warm bass, pentatonic pluck, organic percussion) */
+    {84, 0, 9, 10, 72,
+     {0, 1, 7, 12, 0, 0}, {2, 5, 1, 0, 0xFF, 0}, {88, 92, 76, 68, 0, 74},
+     {{48,0,0,0,0,0,0,0, 55,0,0,0,0,0,0,0},
+      {36,0,0,0,0,0,36,0, 31,0,0,0,0,0,34,0},
+      {60,0,67,0,72,0,67,0, 62,0,69,0,74,0,69,0},
+      {72,0,0,0,0,0,0,0, 79,0,0,0,0,0,0,0},
+      {0},
+      {0x01,0,0x10,0, 0x04,0,0x10,0, 0x01,0,0x30,0, 0x04,0,0x10,0}}},
+    /* 02: AOTEAROA DUB (92 BPM — Deep sub-bass groove, spacious dub chord stabs, crisp rim/kick skank) */
+    {92, 2, 2, 28, 86,
+     {0, 0, 1, 7, 0, 0}, {4, 1, 6, 3, 0xFF, 0}, {96, 84, 78, 70, 0, 90},
+     {{38,0,0,38,0,0,38,0, 33,0,0,36,0,38,0,0},
+      {0,0,62,0,0,0,65,0, 0,0,62,0,0,0,67,0},
+      {50,0,0,0,0,0,0,0, 53,0,0,0,0,0,0,0},
+      {74,0,0,0,77,0,0,0, 81,0,0,0,79,0,0,0},
+      {0},
+      {0x01,0x10,0x10,0, 0x06,0x10,0x30,0, 0x01,0x10,0x10,0x01, 0x06,0x10,0x10,0}}},
+    /* 03: KYOTO RAIN (78 BPM — Contemplative Hirajoshi koto pluck & glassy FM bells over soft rain pulse) */
+    {78, 9, 12, 8, 68,
+     {7, 8, 1, 12, 0, 0}, {0, 2, 3, 2, 0xFF, 0}, {86, 82, 80, 64, 0, 70},
+     {{57,0,58,0,64,0,65,0, 69,0,65,0,64,0,58,0},
+      {45,0,0,0,0,0,0,0, 40,0,0,0,0,0,0,0},
+      {69,0,0,64,0,0,65,0, 69,0,0,76,0,0,77,0},
+      {81,0,0,0,0,0,0,0, 83,0,0,0,0,0,0,0},
+      {0},
+      {0x01,0x10,0,0x10, 0x04,0x10,0,0x10, 0x01,0x10,0x10,0, 0x04,0x10,0x30,0}}},
+    /* 04: ORBITAL PULSE (124 BPM — Hypnotic Berlin-school cosmic sequencer arp, four-on-the-floor kick) */
+    {124, 0, 2, 0, 94,
+     {0, 1, 0, 7, 1, 0}, {0, 2, 6, 4, 0, 0}, {94, 88, 82, 76, 74, 96},
+     {{36,36,48,36, 36,36,48,36, 39,39,51,39, 41,41,53,41},
+      {60,63,67,72, 60,63,67,72, 63,67,70,75, 65,68,72,77},
+      {48,0,0,0,0,0,0,0, 51,0,0,0,53,0,0,0},
+      {72,0,75,0,79,0,75,0, 70,0,74,0,77,0,74,0},
+      {60,0,0,0,0,0,0,0, 67,0,0,0,0,0,0,0},
+      {0x01,0,0x10,0, 0x03,0,0x30,0, 0x01,0,0x10,0, 0x03,0,0x30,0x10}}},
+    /* 05: GHOST MACHINE (110 BPM — BBC Radiophonic / industrial electro groove, heterodyne metallic leads) */
+    {110, 4, 4, 18, 92,
+     {0, 2, 12, 8, 0, 0}, {5, 1, 1, 4, 0xFF, 0}, {92, 86, 78, 80, 0, 94},
+     {{40,0,40,0,0,40,0,43, 40,0,40,0,45,0,43,0},
+      {64,0,0,65,0,0,70,0, 71,0,70,0,65,0,64,0},
+      {52,0,0,0,0,0,0,0, 58,0,0,0,0,0,0,0},
+      {76,0,82,0,77,0,83,0, 76,0,71,0,70,0,64,0},
+      {0},
+      {0x01,0x10,0,0x10, 0x0A,0,0x10,0, 0x01,0,0x01,0x10, 0x0A,0x10,0x30,0}}},
+    /* 06: DARK REACTOR (132 BPM — Heavy dark acid-tinged bassline, intense industrial percussion, brooding stabs) */
+    {132, 5, 4, 0, 98,
+     {0, 0, 1, 8, 2, 0}, {3, 7, 4, 5, 2, 0}, {98, 90, 84, 78, 76, 98},
+     {{29,29,41,29, 30,29,29,35, 29,29,41,29, 32,30,29,28},
+      {53,0,0,53,0,0,54,0, 53,0,0,59,0,54,0,0},
+      {41,0,0,0,0,0,0,0, 42,0,0,0,0,0,0,0},
+      {65,0,66,0,71,0,66,0, 65,0,72,0,71,0,66,0},
+      {53,0,0,0,54,0,0,0, 59,0,0,0,54,0,0,0},
+      {0x01,0x10,0x10,0x10, 0x0B,0x10,0x30,0x10, 0x01,0x10,0x01,0x10, 0x0B,0x10,0x30,0x10}}}
+};
+
+UI_SMALL static void proj_factory_seed(project_t *q, uint32_t s)
+{
+    const al_demo_song_t *d = &AL_DEMO_SONGS[s % AUDILUNE_VAULT_SLOTS];
+    uint32_t i, k;
+    memset(q, 0, sizeof *q);
+    q->magic = PROJ_MAGIC;
+    q->size = sizeof *q;
+    for (i = 0; i < PROJ_NG; i++)
+        q->g[i] = GP[i].def;
+    q->g[G_BPM] = d->bpm;
+    q->g[G_ROOT] = d->root;
+    q->g[G_SCALE] = d->scale;
+    q->g[G_SWING] = d->swing;
+    q->g[G_DRLVL] = d->dr_lvl;
+    q->drdly = (uint8_t)GP[G_DRDLY].def;
+    for (i = 0; i < NTRK; i++) {
+        proj_trk_default_init(&q->t[i], i);
+        q->t[i].engine = d->eng[i] % NENGINES;
+        q->t[i].preset = d->pre[i];
+        pt_set(&q->t[i], P_LEVEL, d->lvl[i]);
+        if (d->pre[i] == 0xFFu)
+            continue;
+        for (k = 0; k < NSTEP; k++) {
+            uint8_t v = d->pat[i][k & 15u];
+            if (i == TRK_DRUM) {
+                q->t[i].cstep[k].a = v;
+                q->t[i].cstep[k].b = (k & 15u) == 15u && (k >= 48u) ? 0x02u : 0u;
+            } else if (v) {
+                uint8_t note = (uint8_t)(v + ((k >= 96u && (k & 3u) == 0u) ? 12u : 0u));
+                q->t[i].cstep[k].a = (uint8_t)((note & 127u) | 0x80u);
+                q->t[i].cstep[k].b = (uint8_t)(ST_NOTE | (((k & 3u) == 0u ? LV_HARD : LV_NORM) << 2));
+            } else {
+                q->t[i].cstep[k].a = 0u;
+                q->t[i].cstep[k].b = ST_REST;
+            }
+        }
+    }
+    q->sum = proj_sum(q);
+}
+
 UI_SMALL static void proj_fetch(uint32_t slot)
 {
     uint32_t s = slot % AUDILUNE_VAULT_SLOTS;
     project_t *q = proj_ptr(s);
     int n = st_load(proj_obj(s), &proj_tmp, sizeof proj_tmp);
     if (!proj_import(q, &proj_tmp, n))
-        q->magic = 0;
+        proj_factory_seed(q, s);
 }
 #include "fm6_bank.c"
 #endif
@@ -718,6 +821,7 @@ static const char *const SEC_NAME[AUDILUNE_VAULT_SLOTS] = {"1", "2", "3", "4", "
 UI_SMALL static void project_save(uint32_t slot)
 {
     uint32_t s = slot % AUDILUNE_VAULT_SLOTS;
+
     project_t *p = proj_ptr(s);
 #if FELUCCA_ARRANGER
     if (song.playing || transport_req) {
