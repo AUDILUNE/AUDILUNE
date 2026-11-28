@@ -776,8 +776,6 @@ UI_SMALL static void proj_factory_seed(project_t *q, uint32_t s)
     for (i = 0; i < PROJ_NG; i++)
         q->g[i] = GP[i].def;
     q->g[G_BPM] = d->bpm;
-    q->g[G_ROOT] = d->root;
-    q->g[G_SCALE] = d->scale;
     q->g[G_SWING] = d->swing;
     q->g[G_DRLVL] = d->dr_lvl;
     q->drdly = (uint8_t)GP[G_DRDLY].def;
@@ -786,10 +784,13 @@ UI_SMALL static void proj_factory_seed(project_t *q, uint32_t s)
         q->t[i].engine = d->eng[i] % NENGINES;
         q->t[i].preset = d->pre[i];
         pt_set(&q->t[i], P_LEVEL, d->lvl[i]);
+        pt_set(&q->t[i], P_ROOT, d->root);
+        pt_set(&q->t[i], P_SCALE, d->scale);
         if (d->pre[i] == 0xFFu)
             continue;
         for (k = 0; k < NSTEP; k++) {
             uint8_t v = d->pat[i][k & 15u];
+
             if (i == TRK_DRUM) {
                 q->t[i].cstep[k].a = v;
                 q->t[i].cstep[k].b = (k & 15u) == 15u && (k >= 48u) ? 0x02u : 0u;
