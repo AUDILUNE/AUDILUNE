@@ -510,10 +510,6 @@ UI_SMALL static void pads_tick(void)                             /* once a frame
     hits = drums.hits;
     drums.hits = 0;
 
-    for (i = 0; i < NPART; i++)
-        for (w = 0; w < 4u; w++) {
-            n[i][w] = note_hits[i][w];
-            note_hits[i][w] = 0;
         }
     fm1_irq_on();
     for (i = 0; i < DRUM_LANES; i++) {
