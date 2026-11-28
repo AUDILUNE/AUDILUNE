@@ -102,7 +102,6 @@ UI_SMALL static void te_text_c(int32_t cx, int32_t y, const char *s, uint16_t c)
 
 static uint8_t rec_hud_pick, rec_hud_mode, rec_hud_usr;
 UI_SMALL static const char *al_nth_str(const char *s, uint32_t n);
-
 /* AUDILUNE Block 2: Persistent Bottom Info Bar (HUD Footer) with 1px active theme border
  * and 1.5s live parameter popups when turning any knob */
 UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *const val[2 + 2], int32_t sect, uint32_t *cache)
@@ -111,10 +110,12 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
     uint32_t hot = ui.hot_t > 0 && ui.hot_col < 4u && *(*(lab + ui.hot_col)) != 0;
     uint32_t arm_hud = !song.rec && (rec_hud_pick || rec_wait);
     uint32_t rec_hint = (ui.scr == UI_PRESET_CAT && (ui.list_sel % 11u) == 1u);
+    uint32_t rec_sec = song.rec ? (fm1_ms / 1000u) % 60u : 0u;
     uint32_t sig = studio_hash((uint32_t)song.sel * 17u + (uint32_t)song.g[G_BPM] * 31u +
                                (uint32_t)(sect + 1) * 97u + hot * 5003u + (uint32_t)ui.hot_col * 131u +
                                audilune_timer_alert * 7919u + arm_hud * 104729u + rec_hint * 13001u +
-                               (uint32_t)rec_hud_mode * 313u + (uint32_t)rec_hud_usr * 617u,
+                               (uint32_t)rec_hud_mode * 313u + (uint32_t)rec_hud_usr * 617u +
+                               (song.rec ? 8191u + rec_sec * 43u : 0u),
                                ui.msg_t ? ui.msg : "");
     if (hot) {
         sig = studio_hash(sig, *(lab + ui.hot_col));
@@ -132,9 +133,22 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
     } else if (audilune_timer_alert) {
         cv_rect(1, 1, 238, 24, C_WHITE);
         te_text_c(120, 6, "TIME UP - HOLD SEL: DISARM", C_BLACK);
+    } else if (song.rec) {
+        uint32_t rem = 60u - rec_sec, slot = (rec_hud_usr % 6u) + 1u;
+        str_cpy(line, "REC 0", sizeof line);
+        fmt_int(nb, (int32_t)slot);
+        str_cpy(line + 5, nb, sizeof line - 5);
+        str_cpy(line + 6, rem == 60u ? " [01:00]" : " [00:", sizeof line - 6);
+        if (rem < 60u) {
+            if (rem < 10u) { line[11] = '0'; fmt_int(line + 12, (int32_t)rem); }
+            else fmt_int(line + 11, (int32_t)rem);
+            str_cpy(line + 13, "]", sizeof line - 13);
+        }
+        cv_rect(1, 1, 238, 24, C_WHITE);
+        te_text_c(120, 6, line, C_BLACK);
     } else if (arm_hud) {
         static const char REC_HUD_STR[48 + 48] =
-            "REC: ACTIVE TRK (PLAY)\0REC: LOCKED TRKS\0REC: SAMPLE USR\0REC: USB USR\0LIVE REC: 120S (USR SAFE)";
+            "REC: ACTIVE TRK\0REC: LOCKED TRKS\0REC: SAMPLE 0\0REC: USB LIVE 0\0LIVE REC 01-06 [01:00]";
         uint32_t m = rec_hud_mode % 5u;
         str_cpy(line, al_nth_str(REC_HUD_STR, m), sizeof line);
         if (m == 2u || m == 3u) {
@@ -143,6 +157,7 @@ UI_SMALL static void audilune_hud_bar(const char *const lab[2 + 2], const char *
             str_cpy(line + p, nb, sizeof line - p);
         }
         cv_rect(1, 1, 238, 24, C_WHITE);
+
         te_text_c(120, 6, line, C_BLACK);
     } else if (rec_hint) {
         cv_rect(1, 1, 238, 24, C_WHITE);
