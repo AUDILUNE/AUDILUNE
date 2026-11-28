@@ -878,14 +878,16 @@ static void drum_insert(int32_t *l, int32_t *r, int32_t *v, int32_t *d, uint32_t
 }
 static void mix_drums(uint32_t n, mixacc_t *mx)
 {
+    static uint32_t al_dr_syn_ph __attribute__((section(".pool")));
+    static int32_t al_dr_coal_lp __attribute__((section(".pool")));
     uint32_t i;
     tsvf_t fc;
     djf_t *f = &tflt[TRK_DRUM];
-    int flt;
+    int flt, syn = clamp((int32_t)al_syntropy[TRK_DRUM], -100, 100);
     drums.a0 = TDRUM->att;
     drums.a1 = 32767 - gain_next(TDRUM);
     flt = n <= CTL && djf_block(f, TDRUM->p[P_TFLT], &fc, tflt_reso());
-    if (flt || (n <= CTL && (TDRUM->p[P_ITYPE] | TDRUM->ins_run))) {
+    if (flt || (n <= CTL && ((TDRUM->p[P_ITYPE] | TDRUM->ins_run) || syn != 0))) {
         int32_t *dl = drum_buf[0], *dr = drum_buf[1], *dv = drum_buf[2], *dd = drum_buf[3];
         for (i = 0; i < n; i++)
             dl[i] = dr[i] = dv[i] = dd[i] = 0;
@@ -897,6 +899,41 @@ static void mix_drums(uint32_t n, mixacc_t *mx)
             tflt_run(f, &fc, dv, n, 2);
             tflt_run(f, &fc, dd, n, 3);
         }
+        if (syn < 0) {
+            int32_t dis = -syn;
+            uint32_t dec = al_syntropy_decay[TRK_DRUM] + (uint32_t)(dis >> 2) + 1u;
+            al_syntropy_decay[TRK_DRUM] = (uint16_t)(dec > 32767u ? 32767u : dec);
+            int32_t survive = 32767 - (int32_t)al_syntropy_decay[TRK_DRUM];
+            uint32_t rate = 420000u + (uint32_t)dis * 20000u;
+            uint32_t duty = (uint32_t)(65535 - dis * 520);
+            for (i = 0; i < n; i++) {
+                uint32_t ph = al_dr_syn_ph += rate;
+                uint32_t win = (ph >> 16) < duty ? 32767u : 0u;
+                int32_t gg = (int32_t)((win * (uint32_t)(survive > 0 ? survive : 0)) >> 15);
+                int32_t mono = (dl[i] + dr[i]) >> 1;
+                int32_t pan = (((int32_t)((ph >> 9) & 127u) - 64) * dis) / 100;
+                dv[i] += mulq15(clamp(mono, -32767, 32767), dis * 220);
+                dl[i] = mulq15(dl[i] + ((mono * pan) >> 6), gg);
+                dr[i] = mulq15(dr[i] - ((mono * pan) >> 6), gg);
+            }
+        } else {
+            if (al_syntropy_decay[TRK_DRUM] > 0u) {
+                uint32_t step_back = 128u + (uint32_t)(syn * 8);
+                al_syntropy_decay[TRK_DRUM] = al_syntropy_decay[TRK_DRUM] > step_back ? (uint16_t)(al_syntropy_decay[TRK_DRUM] - step_back) : 0u;
+            }
+            if (syn > 0) {
+                int32_t comp = 4096 - syn * 6;
+                for (i = 0; i < n; i++) {
+                    int32_t mono = (dl[i] + dr[i]) >> 1;
+                    int32_t side = ((dl[i] - dr[i]) >> 1) * (100 - syn) / 100;
+                    al_dr_coal_lp += (mono - al_dr_coal_lp) >> 5;
+                    mono += mulq15(al_dr_coal_lp - mono, syn * 180);
+                    mono = (mono * comp) >> 12;
+                    dl[i] = mono + side;
+                    dr[i] = mono - side;
+                }
+            }
+        }
         for (i = 0; i < n; i++) {
             mx->l[i] += dl[i];
             mx->r[i] += dr[i];
@@ -904,6 +941,8 @@ static void mix_drums(uint32_t n, mixacc_t *mx)
             mx->sd[i] += dd[i];
         }
     } else {
+        if (al_syntropy_decay[TRK_DRUM] > 0u)
+            al_syntropy_decay[TRK_DRUM] = al_syntropy_decay[TRK_DRUM] > 128u ? (uint16_t)(al_syntropy_decay[TRK_DRUM] - 128u) : 0u;
         slicer_drums(mx->l, mx->r, mx->sr, mx->sd, n);
     }
     click_render(mx->l, mx->r, n);
@@ -913,6 +952,7 @@ static void mix_units(uint32_t mask, uint32_t n, mixacc_t *mx, int32_t *scratch)
     uint32_t k;
     for (k = 0; k < NPART; k++)
         if (mask & (1u << k))
+
             mix_part(&trk[k], n, mx, scratch);
     if (mask & U_DRUMS)
         mix_drums(n, mx);
