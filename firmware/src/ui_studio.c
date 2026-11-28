@@ -1210,41 +1210,30 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
             audilune_landscape_apply();
             audilune_hud_popup(al_nth_str(AL_LAND_STR, row), nv, "%");
         }
-    } else if (ui.scr == UI_FX && al_pad_list_mode) {
-        uint32_t p = al_pad_idx & 7u;
-        if (k == 3u && p == 5u) {
-            al_gravity = (al_gravity == 0u) ? 50u : 0u;
-
-            al_pad_x[p] = al_gravity ? 127u : 0u;
-            audilune_gravity_apply(al_gravity);
-            audilune_hud_text("GRAVITY", al_gravity ? "UNQUANTIZED" : "QUANTIZED");
-        } else if (k == 3u) {
-            al_pad_x[p] = (uint8_t)clamp((int32_t)al_pad_x[p] + s * 4, 0, 127);
-             audilune_chaos_apply(t);
-            audilune_hud_popup("PAD X", (int32_t)al_pad_x[p] * 100 / 127, "%");
-        } else if (p == 5u) {
-            al_gravity = (uint8_t)clamp((int32_t)al_gravity + s * 4, 0, 100);
-            al_pad_z[p] = (uint8_t)(al_gravity * 127u / 100u);
-            audilune_gravity_apply(al_gravity);
-            audilune_hud_popup("GRAVITY", (int32_t)al_gravity, "%");
-        } else {
-            al_pad_z[p] = (uint8_t)clamp((int32_t)al_pad_z[p] + s * 4, 0, 127);
-            audilune_chaos_apply(t);
-            audilune_hud_popup("WET/MIX", (int32_t)al_pad_z[p] * 110 / 127, "%");
-        }
     } else if (ui.scr == UI_FX) {
-        static const uint8_t FX_CNT[6 + 7] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 16u, 8u};
+        static const uint8_t FX_CNT[7 + 7] = {7u, 7u, 7u, 5u, 8u, 7u, 6u, 8u, 7u, 7u, 13u, 16u, 8u, 5u};
         static const char *const AL_STUT_NAMES[4 + 4] = {
             "3+3+2 BREATHE", "5/16 POLYSTUT", "7/8 FRACTURE", "STUTTER & GASP",
             "TRIPLET WEAVE", "ECHO SKIP", "GALLOP STUT", "SOLAR FLARE"
         };
-        uint32_t cnt = *(FX_CNT + (row % 13u));
+        static const char *const AL_SYN_SCOPES[5] = {"STEP", "DRUM", "TRACK", "LOCKED", "SONG"};
+        uint32_t cnt = *(FX_CNT + (row % 14u));
         if (k == 3u) {
-            *(al_fx_sub + row) = (uint8_t)((*(al_fx_sub + row) + (s > 0 ? 1u : cnt - 1u)) % cnt);
-            if (row == 1u && *(al_fx_sub + row) < 4u && *(al_fx_val + row) == 0u) *(al_fx_val + row) = 55u;
-            audilune_fx_apply(t, row, *(al_fx_sub + row), *(al_fx_val + row));
-            if (row == 12u) audilune_hud_text("STUTTER", *(AL_STUT_NAMES + (*(al_fx_sub + row) & 7u)));
-            else audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
+            if (row == 13u) {
+                al_syntropy_scope = (uint8_t)((al_syntropy_scope + (s > 0 ? 1u : 4u)) % 5u);
+                audilune_hud_text("SCOPE", *(AL_SYN_SCOPES + al_syntropy_scope));
+            } else {
+                *(al_fx_sub + row) = (uint8_t)((*(al_fx_sub + row) + (s > 0 ? 1u : cnt - 1u)) % cnt);
+                if (row == 1u && *(al_fx_sub + row) < 4u && *(al_fx_val + row) == 0u) *(al_fx_val + row) = 55u;
+                audilune_fx_apply(t, row, *(al_fx_sub + row), *(al_fx_val + row));
+                if (row == 12u) audilune_hud_text("STUTTER", *(AL_STUT_NAMES + (*(al_fx_sub + row) & 7u)));
+                else audilune_hud_popup(*(AL_FX_ROWS + row), (int32_t)(*(al_fx_sub + row) + 1u), "");
+            }
+        } else if (row == 13u) {
+            int32_t sv = clamp((int32_t)al_syntropy[song.sel % NTRK] + s * 5, -100, 100);
+            uint8_t raw = (uint8_t)clamp((sv + 100) * 110 / 200, 0, 110);
+            audilune_fx_apply(t, 13u, al_syntropy_scope, raw);
+            audilune_hud_popup(sv < 0 ? "DISINTEGRATE" : sv > 0 ? "COALESCENCE" : "SYNTROPY", sv, "%");
         } else {
             uint32_t mask = (al_row_lock_mask & 0x1FFFu) ? (al_row_lock_mask & 0x1FFFu) : (1u << row);
             uint32_t ri;
@@ -1263,6 +1252,7 @@ UI_SMALL static void audilune_list_knob(uint32_t k, int32_t s)
         static uint8_t al_env_sub[4 + 4];
         if (k == 3u) {
             uint32_t cnt = *(ENV_CNT + (row & 7u));
+
             *(al_env_sub + (row & 7u)) = (uint8_t)((*(al_env_sub + (row & 7u)) + (s > 0 ? 1u : cnt - 1u)) % cnt);
             audilune_hud_popup(*(AL_ENV_ROWS + row), (int32_t)(*(al_env_sub + (row & 7u)) + 1u), "");
         } else {
