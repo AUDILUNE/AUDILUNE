@@ -3079,6 +3079,7 @@ static void clkout_block(uint32_t n)
         midi_out_event(0x0Fu | 0xF8u << 8);
     }
 }
+static uint8_t al_time_div __attribute__((section(".pool")));
 static void events_block(uint32_t n)
 {
     uint32_t i, pr, adv;
@@ -3090,6 +3091,7 @@ static void events_block(uint32_t n)
     if (transport_req == 1u || transport_req == 3u) {
         uint32_t ext = transport_req == 3u;
         transport_req = 0;
+
         if (ext && ci_on)
             ci_on = 0;
         if (ft_on) {
