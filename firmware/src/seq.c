@@ -3140,7 +3140,6 @@ static void events_block(uint32_t n)
     if (rec_wait && song.playing)
         rec_begin();
     {
-        static uint8_t al_time_div __attribute__((section(".pool")));
         static uint8_t al_tdiv_rem __attribute__((section(".pool")));
         adv = mclk_on() && song.playing ? mclk_adv(n) : n * (uint32_t)song.g[G_BPM];
         if (al_time_div == 1u) {
@@ -3148,6 +3147,7 @@ static void events_block(uint32_t n)
             adv = num >> 2;
             al_tdiv_rem = (uint8_t)(num & 3u);
         } else if (al_time_div == 2u) {
+
             uint32_t num = adv + (uint32_t)al_tdiv_rem;
             adv = num >> 1;
             al_tdiv_rem = (uint8_t)(num & 1u);
