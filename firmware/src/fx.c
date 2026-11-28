@@ -705,13 +705,11 @@ static void mix_part_run(track_t *t, uint32_t n, mixacc_t *mx, int32_t *b)
             static int32_t al_hs_lp[NPART] __attribute__((section(".pool")));
             static uint8_t al_itd_w[NPART] __attribute__((section(".pool")));
             uint32_t ti = (uint32_t)(t - trk) % NPART;
-            static int8_t al_syntropy[NTRK] __attribute__((section(".pool")));
-            static uint8_t al_syntropy_scope __attribute__((section(".pool")));
-            static uint16_t al_syntropy_decay[NTRK] __attribute__((section(".pool")));
             static uint32_t al_syn_ph[NPART] __attribute__((section(".pool")));
             static int32_t al_coal_lp[NPART] __attribute__((section(".pool")));
             int32_t syn = clamp((int32_t)al_syntropy[ti], -100, 100);
             int poly_stage = (smart_voice_mode(t) == V_POLY && t->p[P_TRANS] > -12);
+
             int32_t orb_pan = poly_stage ? ((int32_t)al_trk_orbit_pan[ti] >> 2) : 0;
             int32_t eff_pan = clamp((int32_t)t->p[P_PAN] + orb_pan, -64, 63);
             int32_t lvl0, dl, gl0, dgl, gr0, dgr, abs_p, syn_rev_add = 0;
