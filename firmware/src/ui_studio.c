@@ -1071,14 +1071,14 @@ uint8_t al_layer_preset, al_layer_mix;
 uint16_t al_row_lock_mask;
 UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 {
-    if (scr == UI_FX) return 13u;
+    if (scr == UI_FX) return 14u;
 
     if (scr == UI_PUNCH) return 16u;
 
     if (scr == UI_ENV) return 8u;
     if (scr == UI_LFO) return 7u;
     if (scr == UI_LANDSCAPE) return 10u;
-    if (scr == UI_EDIT) return 13u;
+    if (scr == UI_EDIT) return 14u;
     if (scr == UI_ARP) return 4u;
     if (scr == UI_GLO) return 12u;
     if (scr == UI_SAVE) return 5u;
@@ -1098,6 +1098,8 @@ UI_SMALL static uint32_t audilune_page_rows(uint8_t scr)
 
 extern uint8_t al_layer_eng, al_layer_ready;
 extern int8_t al_layer_e[4 + 4];
+extern int8_t al_syntropy[NTRK];
+extern uint8_t al_syntropy_scope, al_time_div;
 static uint32_t base_at(uint32_t n, uint32_t *k);
 
 
@@ -1108,11 +1110,21 @@ UI_SMALL static void audilune_fx_apply(track_t *t, uint32_t row, uint8_t sub, ui
     uint32_t step = t->seq_idx % trk_len(t);
     int32_t pid = -1;
 
+    if (row == 13u) {
+        int32_t sv = clamp(((int32_t)val - 55) * 100 / 55, -100, 100);
+        uint32_t ti, mask = (sub == 4u) ? 0x3Fu : (sub == 3u && ui.sel_trk_mask) ? ui.sel_trk_mask : (1u << song.sel);
+        al_syntropy_scope = (uint8_t)(sub % 5u);
+        for (ti = 0u; ti < NTRK; ti++)
+            if ((mask >> ti) & 1u)
+                al_syntropy[ti] = (int8_t)sv;
+        return;
+    }
     if (row == 12u) {
         if (val == 0u) {
             t->p[P_SLCR] = SL_OFF;
 
         } else {
+
             t->p[P_SLCR] = SL_STUT;
             t->p[P_SLPAT] = (int16_t)(17 + (sub & 7u));
             t->p[P_SLRATE] = (int16_t)(val > 100u ? 2 : 1);
